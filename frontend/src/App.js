@@ -1,53 +1,60 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AdminProvider } from './AdminContext';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Pages
+import HomePage from './pages/HomePage';
+import CollectionsPage from './pages/CollectionsPage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import CalculatorPage from './pages/CalculatorPage';
+import CustomOrderPage from './pages/CustomOrderPage';
+import TrackOrderPage from './pages/TrackOrderPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
+// Admin Pages
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminCustomers from './pages/admin/AdminCustomers';
+import AdminSettings from './pages/admin/AdminSettings';
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+// Layout
+import Layout from './components/Layout';
+import AdminLayout from './components/AdminLayout';
 
 function App() {
   return (
-    <div className="App">
+    <AdminProvider>
       <BrowserRouter>
+        <Toaster position="top-right" />
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
+          {/* Public Routes */}
+          <Route path="/" element={<Layout />}>
+            <Route index element={<HomePage />} />
+            <Route path="collections" element={<CollectionsPage />} />
+            <Route path="product/:id" element={<ProductDetailPage />} />
+            <Route path="calculator" element={<CalculatorPage />} />
+            <Route path="custom-order" element={<CustomOrderPage />} />
+            <Route path="track/:orderId" element={<TrackOrderPage />} />
+            <Route path="about" element={<AboutPage />} />
+            <Route path="contact" element={<ContactPage />} />
+          </Route>
+
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="customers" element={<AdminCustomers />} />
+            <Route path="settings" element={<AdminSettings />} />
           </Route>
         </Routes>
       </BrowserRouter>
-    </div>
+    </AdminProvider>
   );
 }
 
