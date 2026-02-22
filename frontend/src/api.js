@@ -1,0 +1,107 @@
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+export const API_BASE = `${BACKEND_URL}/api`;
+
+const api = axios.create({
+  baseURL: API_BASE,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth token to requests if available
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('admin_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export default api;
+
+// Public API calls
+export const goldAPI = {
+  getRates: () => api.get('/gold-rates'),
+  refreshRates: () => api.post('/admin/gold-rates/refresh'),
+};
+
+export const calculatorAPI = {
+  calculate: (data) => api.post('/calculator', data),
+};
+
+export const categoriesAPI = {
+  getAll: (activeOnly = true) => api.get(`/categories?active_only=${activeOnly}`),
+  getById: (id) => api.get(`/categories/${id}`),
+};
+
+export const productsAPI = {
+  getAll: (params = {}) => api.get('/products', { params }),
+  getById: (id) => api.get(`/products/${id}`),
+};
+
+export const customOrderAPI = {
+  create: (data) => api.post('/custom-order', data),
+};
+
+export const orderAPI = {
+  track: (orderId) => api.get(`/track/${orderId}`),
+};
+
+export const settingsAPI = {
+  getPublic: () => api.get('/settings/public'),
+};
+
+// Admin API calls
+export const adminAPI = {
+  login: (credentials) => api.post('/admin/login', credentials),
+  getMe: () => api.get('/admin/me'),
+  
+  dashboard: {
+    getStats: () => api.get('/admin/dashboard'),
+  },
+  
+  categories: {
+    getAll: () => api.get('/categories?active_only=false'),
+    create: (data) => api.post('/admin/categories', data),
+    update: (id, data) => api.put(`/admin/categories/${id}`, data),
+    delete: (id) => api.delete(`/admin/categories/${id}`),
+  },
+  
+  products: {
+    getAll: (params = {}) => api.get('/products?active_only=false', { params }),
+    getById: (id) => api.get(`/products/${id}`),
+    create: (data) => api.post('/admin/products', data),
+    update: (id, data) => api.put(`/admin/products/${id}`, data),
+    delete: (id) => api.delete(`/admin/products/${id}`),
+  },
+  
+  orders: {
+    getAll: () => api.get('/admin/orders'),
+    create: (data) => api.post('/admin/orders', data),
+    update: (id, data) => api.put(`/admin/orders/${id}`, data),
+  },
+  
+  customers: {
+    getAll: () => api.get('/admin/customers'),
+    getById: (id) => api.get(`/admin/customers/${id}`),
+  },
+  
+  customOrders: {
+    getAll: () => api.get('/admin/custom-orders'),
+    updateStatus: (id, status) => api.put(`/admin/custom-orders/${id}`, null, { params: { status } }),
+  },
+  
+  settings: {
+    get: () => api.get('/admin/settings'),
+    update: (data) => api.put('/admin/settings', data),
+    uploadLogo: (file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return api.post('/admin/upload-logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+  },
+};
