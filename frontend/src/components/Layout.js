@@ -69,14 +69,23 @@ const Layout = () => {
             {/* Logo */}
             <Link to="/" className="relative z-10">
               <motion.div 
-                className="flex flex-col"
+                className="flex items-center space-x-3"
                 whileHover={{ scale: 1.05 }}
                 transition={{ type: 'spring', stiffness: 400 }}
               >
-                <h1 className="text-3xl font-playfair font-bold gold-text text-glow">
-                  Jewellers MB
-                </h1>
-                <p className="text-xs text-gray-400 tracking-widest">NAKSHI • ANTIQUE • BRIDAL</p>
+                {settings?.logo_url ? (
+                  <img 
+                    src={settings.logo_url} 
+                    alt="MB Jewellers" 
+                    className="h-16 w-auto"
+                  />
+                ) : (
+                  <img 
+                    src="https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/6lie68ha_openart-fabf0c3b-095b-4c9f-ba55-7fb5f24a5ff2.png" 
+                    alt="MB Jewellers" 
+                    className="h-16 w-auto"
+                  />
+                )}
               </motion.div>
             </Link>
 

@@ -8,7 +8,16 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// User uploaded images
+// User uploaded images - NEW BATCH
+const LOGO_URL = 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/6lie68ha_openart-fabf0c3b-095b-4c9f-ba55-7fb5f24a5ff2.png';
+
+const NEW_BRIDAL_IMAGES = [
+  'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ui57govy_Lucid_Realism_Take_reference_from_the_images_which_I_have_shar_0.jpg',
+  'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ljp2cik2_Lucid_Realism_artistic_portrait_photography_of_Take_reference__1.jpg',
+  'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/9dnccvp8_Lucid_Realism_Take_reference_from_the_images_which_I_have_shar_1.jpg',
+  'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ok2l7fm8_Lucid_Realism_artistic_portrait_photography_of_Take_reference__2.jpg',
+];
+
 const BRIDAL_IMAGES = [
   'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/p6odm8yi_bridal%203.jpg',
   'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/n3t9l1kh_Bridal.jpg',
@@ -97,7 +106,7 @@ const HomePage = () => {
         >
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black z-10"></div>
           <img
-            src={BRIDAL_IMAGES[0]}
+            src={NEW_BRIDAL_IMAGES[0]}
             alt="Nakshi Antique Jewellery"
             className="w-full h-full object-cover zoom-image"
             style={{ filter: 'brightness(0.7)' }}
@@ -216,9 +225,9 @@ const HomePage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { name: 'Nakshi Jewellery', image: BRIDAL_IMAGES[1], desc: 'Intricate embossed artistry' },
-              { name: 'Antique Collections', image: BRIDAL_IMAGES[3], desc: 'Timeless heritage pieces' },
-              { name: 'Bridal Sets', image: BRIDAL_IMAGES[2], desc: 'Complete wedding elegance' },
+              { name: 'Nakshi Jewellery', image: NEW_BRIDAL_IMAGES[1], desc: 'Intricate embossed artistry' },
+              { name: 'Antique Collections', image: NEW_BRIDAL_IMAGES[2], desc: 'Timeless heritage pieces' },
+              { name: 'Bridal Sets', image: NEW_BRIDAL_IMAGES[3], desc: 'Complete wedding elegance' },
             ].map((item, index) => (
               <motion.div
                 key={index}

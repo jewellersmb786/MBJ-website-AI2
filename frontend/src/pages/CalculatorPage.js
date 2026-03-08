@@ -79,25 +79,25 @@ const CalculatorPage = () => {
   };
 
   return (
-    <div className=\"min-h-screen py-32 relative\">
+    <div className="min-h-screen py-32 relative">
       {/* Background Pattern */}
-      <div className=\"absolute inset-0 grid-overlay opacity-30\"></div>
+      <div className="absolute inset-0 grid-overlay opacity-30"></div>
 
-      <div className=\"container mx-auto px-4 relative z-10\">
-        <div className=\"max-w-4xl mx-auto\">
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className=\"text-center mb-16\"
+            className="text-center mb-16"
           >
-            <div className=\"flex items-center justify-center space-x-4 mb-6\">
-              <CalcIcon className=\"w-16 h-16 text-gold\" />
-              <h1 className=\"text-6xl font-playfair font-bold gold-text\">
+            <div className="flex items-center justify-center space-x-4 mb-6">
+              <CalcIcon className="w-16 h-16 text-gold" />
+              <h1 className="text-6xl font-playfair font-bold gold-text">
                 Price Calculator
               </h1>
             </div>
-            <p className=\"text-gray-400 text-lg\">
+            <p className="text-gray-400 text-lg">
               Calculate your jewellery price with precision
             </p>
           </motion.div>
@@ -107,53 +107,53 @@ const CalculatorPage = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className=\"glass-gold rounded-3xl p-8 mb-8\"
+            className="glass-gold rounded-3xl p-8 mb-8"
           >
-            <div className=\"flex items-center space-x-3 mb-6\">
-              <TrendingUp className=\"w-6 h-6 text-gold\" />
-              <h3 className=\"text-xl font-bold text-gold\">Manual Gold Rates (per gram)</h3>
+            <div className="flex items-center space-x-3 mb-6">
+              <TrendingUp className="w-6 h-6 text-gold" />
+              <h3 className="text-xl font-bold text-gold">Manual Gold Rates (per gram)</h3>
             </div>
-            <p className=\"text-sm text-gray-400 mb-6\">
-              Reference: <a href=\"https://www.goodreturns.in/gold-rates/mysore.html\" target=\"_blank\" rel=\"noopener noreferrer\" className=\"text-gold hover:underline\">goodreturns.in/gold-rates/mysore</a>
+            <p className="text-sm text-gray-400 mb-6">
+              Reference: <a href="https://www.goodreturns.in/gold-rates/mysore.html" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">goodreturns.in/gold-rates/mysore</a>
             </p>
-            <div className=\"grid grid-cols-1 md:grid-cols-3 gap-6\">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className=\"block text-sm font-semibold text-gray-300 mb-2\">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   24K Gold Rate (\u20b9/g)
                 </label>
                 <input
-                  type=\"number\"
-                  name=\"k24_rate\"
+                  type="number"
+                  name="k24_rate"
                   value={manualRates.k24_rate}
                   onChange={handleManualRateChange}
-                  className=\"w-full px-4 py-3 bg-black/50 border border-gold/30 rounded-xl text-gold font-bold text-lg focus:ring-2 focus:ring-gold focus:border-transparent\"
-                  placeholder=\"7200\"
+                  className="w-full px-4 py-3 bg-black/50 border border-gold/30 rounded-xl text-gold font-bold text-lg focus:ring-2 focus:ring-gold focus:border-transparent"
+                  placeholder="7200"
                 />
               </div>
               <div>
-                <label className=\"block text-sm font-semibold text-gray-300 mb-2\">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   22K Gold Rate (\u20b9/g)
                 </label>
                 <input
-                  type=\"number\"
-                  name=\"k22_rate\"
+                  type="number"
+                  name="k22_rate"
                   value={manualRates.k22_rate}
                   onChange={handleManualRateChange}
-                  className=\"w-full px-4 py-3 bg-black/50 border border-gold/30 rounded-xl text-gold font-bold text-lg focus:ring-2 focus:ring-gold focus:border-transparent\"
-                  placeholder=\"6600\"
+                  className="w-full px-4 py-3 bg-black/50 border border-gold/30 rounded-xl text-gold font-bold text-lg focus:ring-2 focus:ring-gold focus:border-transparent"
+                  placeholder="6600"
                 />
               </div>
               <div>
-                <label className=\"block text-sm font-semibold text-gray-300 mb-2\">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   18K Gold Rate (\u20b9/g)
                 </label>
                 <input
-                  type=\"number\"
-                  name=\"k18_rate\"
+                  type="number"
+                  name="k18_rate"
                   value={manualRates.k18_rate}
                   onChange={handleManualRateChange}
-                  className=\"w-full px-4 py-3 bg-black/50 border border-gold/30 rounded-xl text-gold font-bold text-lg focus:ring-2 focus:ring-gold focus:border-transparent\"
-                  placeholder=\"5400\"
+                  className="w-full px-4 py-3 bg-black/50 border border-gold/30 rounded-xl text-gold font-bold text-lg focus:ring-2 focus:ring-gold focus:border-transparent"
+                  placeholder="5400"
                 />
               </div>
             </div>
@@ -164,19 +164,19 @@ const CalculatorPage = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className=\"glass rounded-3xl p-8 mb-8\"
+            className="glass rounded-3xl p-8 mb-8"
           >
-            <form onSubmit={handleCalculate} className=\"space-y-8\">
+            <form onSubmit={handleCalculate} className="space-y-8">
               {/* Purity Selection */}
               <div>
-                <label className=\"block text-sm font-semibold text-gray-300 mb-3\">
+                <label className="block text-sm font-semibold text-gray-300 mb-3">
                   Gold Purity *
                 </label>
-                <div className=\"grid grid-cols-3 gap-4\">
+                <div className="grid grid-cols-3 gap-4">
                   {['24k', '22k', '18k'].map((purity) => (
                     <button
                       key={purity}
-                      type=\"button\"
+                      type="button"
                       onClick={() => setFormData({ ...formData, purity })}
                       className={`py-3 rounded-xl font-semibold transition-all ${\n                        formData.purity === purity\n                          ? 'bg-gold text-black'\n                          : 'bg-black/50 text-gray-400 border border-gold/20 hover:border-gold/50'\n                      }`}
                     >
@@ -188,32 +188,32 @@ const CalculatorPage = () => {
 
               {/* Weight */}
               <div>
-                <label className=\"block text-sm font-semibold text-gray-300 mb-2\">
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
                   Weight (grams) *
                 </label>
                 <input
-                  type=\"number\"
-                  name=\"weight\"
+                  type="number"
+                  name="weight"
                   value={formData.weight}
                   onChange={handleChange}
-                  step=\"0.01\"
-                  min=\"0\"
-                  className=\"w-full px-6 py-4 bg-black/50 border border-gold/30 rounded-xl text-white text-lg focus:ring-2 focus:ring-gold focus:border-transparent\"
-                  placeholder=\"Enter weight in grams\"
+                  step="0.01"
+                  min="0"
+                  className="w-full px-6 py-4 bg-black/50 border border-gold/30 rounded-xl text-white text-lg focus:ring-2 focus:ring-gold focus:border-transparent"
+                  placeholder="Enter weight in grams"
                   required
                 />
               </div>
 
               {/* Wastage - Exactly 4 Options */}
               <div>
-                <label className=\"block text-sm font-semibold text-gray-300 mb-3\">
+                <label className="block text-sm font-semibold text-gray-300 mb-3">
                   Wastage (VA) *
                 </label>
-                <div className=\"grid grid-cols-4 gap-4\">
+                <div className="grid grid-cols-4 gap-4">
                   {wastageOptions.map((value) => (
                     <button
                       key={value}
-                      type=\"button\"
+                      type="button"
                       onClick={() => selectWastage(value)}
                       className={`py-4 rounded-xl font-bold text-lg transition-all ${\n                        formData.wastage_percent === value\n                          ? 'bg-gold text-black'\n                          : 'bg-black/50 text-gray-400 border border-gold/20 hover:border-gold/50'\n                      }`}
                     >
@@ -225,44 +225,44 @@ const CalculatorPage = () => {
 
               {/* Making Charges - Optional */}
               <div>
-                <label className=\"block text-sm font-semibold text-gray-300 mb-2\">
-                  Making Charges (\u20b9) <span className=\"text-gray-500 text-xs\">(Optional)</span>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  Making Charges (\u20b9) <span className="text-gray-500 text-xs">(Optional)</span>
                 </label>
                 <input
-                  type=\"number\"
-                  name=\"making_charges\"
+                  type="number"
+                  name="making_charges"
                   value={formData.making_charges}
                   onChange={handleChange}
-                  step=\"0.01\"
-                  min=\"0\"
-                  className=\"w-full px-6 py-4 bg-black/50 border border-gold/30 rounded-xl text-white text-lg focus:ring-2 focus:ring-gold focus:border-transparent\"
-                  placeholder=\"Enter making charges (if any)\"
+                  step="0.01"
+                  min="0"
+                  className="w-full px-6 py-4 bg-black/50 border border-gold/30 rounded-xl text-white text-lg focus:ring-2 focus:ring-gold focus:border-transparent"
+                  placeholder="Enter making charges (if any)"
                 />
               </div>
 
               {/* Stone Charges - Optional */}
               <div>
-                <label className=\"block text-sm font-semibold text-gray-300 mb-2\">
-                  Stone Charges (\u20b9) <span className=\"text-gray-500 text-xs\">(Optional)</span>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                  Stone Charges (\u20b9) <span className="text-gray-500 text-xs">(Optional)</span>
                 </label>
                 <input
-                  type=\"number\"
-                  name=\"stone_charges\"
+                  type="number"
+                  name="stone_charges"
                   value={formData.stone_charges}
                   onChange={handleChange}
-                  step=\"0.01\"
-                  min=\"0\"
-                  className=\"w-full px-6 py-4 bg-black/50 border border-gold/30 rounded-xl text-white text-lg focus:ring-2 focus:ring-gold focus:border-transparent\"
-                  placeholder=\"Enter stone charges (if any)\"
+                  step="0.01"
+                  min="0"
+                  className="w-full px-6 py-4 bg-black/50 border border-gold/30 rounded-xl text-white text-lg focus:ring-2 focus:ring-gold focus:border-transparent"
+                  placeholder="Enter stone charges (if any)"
                 />
               </div>
 
               {/* Calculate Button */}
               <button
-                type=\"submit\"
+                type="submit"
                 disabled={calculating}
-                className=\"w-full bg-gold hover:bg-gold-dark text-black py-5 rounded-full font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 hover-glow\"
-                data-testid=\"calculate-button\"
+                className="w-full bg-gold hover:bg-gold-dark text-black py-5 rounded-full font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 hover-glow"
+                data-testid="calculate-button"
               >
                 <CalcIcon size={24} />
                 <span>{calculating ? 'Calculating...' : 'Calculate Price'}</span>
@@ -275,16 +275,16 @@ const CalculatorPage = () => {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className=\"glass-gold rounded-3xl p-12 text-center\"
+              className="glass-gold rounded-3xl p-12 text-center"
             >
-              <div className=\"flex items-center justify-center mb-6\">
-                <Sparkles className=\"w-12 h-12 text-gold\" />
+              <div className="flex items-center justify-center mb-6">
+                <Sparkles className="w-12 h-12 text-gold" />
               </div>
-              <h3 className=\"text-2xl font-semibold text-gray-300 mb-4\">Final Price</h3>
-              <p className=\"text-7xl font-playfair font-bold gold-text text-glow mb-4\" data-testid=\"final-price\">
+              <h3 className="text-2xl font-semibold text-gray-300 mb-4">Final Price</h3>
+              <p className="text-7xl font-playfair font-bold gold-text text-glow mb-4" data-testid="final-price">
                 \u20b9{result.final_price.toLocaleString('en-IN')}
               </p>
-              <p className=\"text-sm text-gray-400\">
+              <p className="text-sm text-gray-400">
                 Gold Rate: \u20b9{result.gold_rate_used}/g ({result.purity.toUpperCase()}) • GST: 3%
               </p>
             </motion.div>
