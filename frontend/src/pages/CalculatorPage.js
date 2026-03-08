@@ -22,7 +22,6 @@ const CalculatorPage = () => {
   const [result, setResult] = useState(null);
   const [calculating, setCalculating] = useState(false);
 
-  // Wastage buttons as specified
   const wastageOptions = [13, 12, 10, 8];
 
   const handleManualRateChange = (e) => {
@@ -56,7 +55,6 @@ const CalculatorPage = () => {
 
     setCalculating(true);
     try {
-      // Use manual gold rate
       const goldRate = parseFloat(manualRates[`k${formData.purity.replace('k', '')}_rate`]);
 
       const response = await calculatorAPI.calculate({
@@ -80,12 +78,10 @@ const CalculatorPage = () => {
 
   return (
     <div className="min-h-screen py-32 relative">
-      {/* Background Pattern */}
       <div className="absolute inset-0 grid-overlay opacity-30"></div>
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -102,7 +98,6 @@ const CalculatorPage = () => {
             </p>
           </motion.div>
 
-          {/* Manual Gold Rate Input */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -119,7 +114,7 @@ const CalculatorPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  24K Gold Rate (\u20b9/g)
+                  24K Gold Rate (₹/g)
                 </label>
                 <input
                   type="number"
@@ -132,7 +127,7 @@ const CalculatorPage = () => {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  22K Gold Rate (\u20b9/g)
+                  22K Gold Rate (₹/g)
                 </label>
                 <input
                   type="number"
@@ -145,7 +140,7 @@ const CalculatorPage = () => {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  18K Gold Rate (\u20b9/g)
+                  18K Gold Rate (₹/g)
                 </label>
                 <input
                   type="number"
@@ -159,7 +154,6 @@ const CalculatorPage = () => {
             </div>
           </motion.div>
 
-          {/* Calculator Form */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -167,7 +161,6 @@ const CalculatorPage = () => {
             className="glass rounded-3xl p-8 mb-8"
           >
             <form onSubmit={handleCalculate} className="space-y-8">
-              {/* Purity Selection */}
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-3">
                   Gold Purity *
@@ -178,7 +171,11 @@ const CalculatorPage = () => {
                       key={purity}
                       type="button"
                       onClick={() => setFormData({ ...formData, purity })}
-                      className={`py-3 rounded-xl font-semibold transition-all ${\n                        formData.purity === purity\n                          ? 'bg-gold text-black'\n                          : 'bg-black/50 text-gray-400 border border-gold/20 hover:border-gold/50'\n                      }`}
+                      className={`py-3 rounded-xl font-semibold transition-all ${
+                        formData.purity === purity
+                          ? 'bg-gold text-black'
+                          : 'bg-black/50 text-gray-400 border border-gold/20 hover:border-gold/50'
+                      }`}
                     >
                       {purity.toUpperCase()}
                     </button>
@@ -186,7 +183,6 @@ const CalculatorPage = () => {
                 </div>
               </div>
 
-              {/* Weight */}
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">
                   Weight (grams) *
@@ -204,7 +200,6 @@ const CalculatorPage = () => {
                 />
               </div>
 
-              {/* Wastage - Exactly 4 Options */}
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-3">
                   Wastage (VA) *
@@ -215,7 +210,11 @@ const CalculatorPage = () => {
                       key={value}
                       type="button"
                       onClick={() => selectWastage(value)}
-                      className={`py-4 rounded-xl font-bold text-lg transition-all ${\n                        formData.wastage_percent === value\n                          ? 'bg-gold text-black'\n                          : 'bg-black/50 text-gray-400 border border-gold/20 hover:border-gold/50'\n                      }`}
+                      className={`py-4 rounded-xl font-bold text-lg transition-all ${
+                        formData.wastage_percent === value
+                          ? 'bg-gold text-black'
+                          : 'bg-black/50 text-gray-400 border border-gold/20 hover:border-gold/50'
+                      }`}
                     >
                       {value}%
                     </button>
@@ -223,10 +222,9 @@ const CalculatorPage = () => {
                 </div>
               </div>
 
-              {/* Making Charges - Optional */}
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Making Charges (\u20b9) <span className="text-gray-500 text-xs">(Optional)</span>
+                  Making Charges (₹) <span className="text-gray-500 text-xs">(Optional)</span>
                 </label>
                 <input
                   type="number"
@@ -240,10 +238,9 @@ const CalculatorPage = () => {
                 />
               </div>
 
-              {/* Stone Charges - Optional */}
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Stone Charges (\u20b9) <span className="text-gray-500 text-xs">(Optional)</span>
+                  Stone Charges (₹) <span className="text-gray-500 text-xs">(Optional)</span>
                 </label>
                 <input
                   type="number"
@@ -257,7 +254,6 @@ const CalculatorPage = () => {
                 />
               </div>
 
-              {/* Calculate Button */}
               <button
                 type="submit"
                 disabled={calculating}
@@ -270,7 +266,6 @@ const CalculatorPage = () => {
             </form>
           </motion.div>
 
-          {/* Result - Clean & Short */}
           {result && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -282,10 +277,10 @@ const CalculatorPage = () => {
               </div>
               <h3 className="text-2xl font-semibold text-gray-300 mb-4">Final Price</h3>
               <p className="text-7xl font-playfair font-bold gold-text text-glow mb-4" data-testid="final-price">
-                \u20b9{result.final_price.toLocaleString('en-IN')}
+                ₹{result.final_price.toLocaleString('en-IN')}
               </p>
               <p className="text-sm text-gray-400">
-                Gold Rate: \u20b9{result.gold_rate_used}/g ({result.purity.toUpperCase()}) • GST: 3%
+                Gold Rate: ₹{result.gold_rate_used}/g ({result.purity.toUpperCase()}) • GST: 3%
               </p>
             </motion.div>
           )}
