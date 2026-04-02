@@ -20,6 +20,7 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminCustomers from './pages/admin/AdminCustomers';
+import AdminCustomOrders from './pages/admin/AdminCustomOrders';
 import AdminSettings from './pages/admin/AdminSettings';
 
 // Layout
