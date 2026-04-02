@@ -140,7 +140,7 @@ const Layout = () => {
       )}
 
       {/* Main Content */}
-      <main className="relative">
+      <main className="pt-20">
         <Outlet />
       </main>
 
@@ -174,7 +174,16 @@ const Layout = () => {
               <ul className="space-y-3 text-sm text-gray-400">
                 {settings?.phone && <li>{settings.phone}</li>}
                 {settings?.email && <li>{settings.email}</li>}
-                {settings?.instagram && <li>{settings.instagram}</li>}
+              <div className="flex items-center space-x-2 text-sm text-gray-400\">
+                <a 
+                  href={settings?.instagram ? `https://instagram.com/${settings.instagram.replace('@', '')}` : 'https://instagram.com/jewellersmb'} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-[#D4AF37] transition-colors"
+                >
+                  {settings?.instagram || '@jewellersmb'}
+                </a>
+              </div>
               </ul>
             </div>
           </div>

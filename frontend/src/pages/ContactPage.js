@@ -3,8 +3,8 @@ import { Phone, Mail, MapPin } from 'lucide-react';
 
 const ContactPage = () => {
   return (
-    <div className="container mx-auto px-4 py-12">
-      <h1 className="text-4xl font-playfair font-bold mb-6">Contact Us</h1>
+    <div className="container mx-auto px-4 py-32">
+      <h1 className="text-4xl font-playfair font-bold mb-6 text-[#D4AF37]">Contact Us</h1>
       <div className="max-w-2xl">
         <div className="space-y-6">
           <div className="flex items-center space-x-4">

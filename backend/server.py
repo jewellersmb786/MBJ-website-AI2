@@ -97,13 +97,14 @@ async def startup_event():
             "whatsapp": "+917019539776",
             "instagram": "@jewellersmb",
             "gold_rate_url": "https://www.goodreturns.in/gold-rates/mysore.html",
+            "current_gold_rate": 6600.0,  # Default gold rate
             "advance_payment_percent": 30.0,
             "gst_percent": 3.0,
             "card_payment_charges_percent": 2.0,
             "updated_at": datetime.utcnow()
         }
         await db.settings.insert_one(default_settings)
-        logger.info("Default settings created")
+        logger.info("Default settings created with current_gold_rate")
     
     # Scrape and cache gold rates
     await update_gold_rates()
@@ -281,7 +282,7 @@ async def get_public_settings():
     if not settings:
         return {}
     
-    # Return only public fields
+    # Return only public fields including current_gold_rate
     return {
         "logo_url": settings.get("logo_url"),
         "business_name": settings.get("business_name"),
@@ -290,7 +291,8 @@ async def get_public_settings():
         "phone": settings.get("phone"),
         "whatsapp": settings.get("whatsapp"),
         "instagram": settings.get("instagram"),
-        "address": settings.get("address")
+        "address": settings.get("address"),
+        "current_gold_rate": settings.get("current_gold_rate", 6600.0)  # Live gold rate for calculator
     }
 
 # ============================================================================

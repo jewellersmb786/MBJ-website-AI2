@@ -243,6 +243,7 @@ class Settings(BaseModel):
     instagram: str = "@jewellersmb"
     address: Optional[str] = None
     gold_rate_url: str = "https://www.goodreturns.in/gold-rates/mysore.html"
+    current_gold_rate: float = 6600.0  # Live admin-controlled gold rate
     razorpay_key_id: Optional[str] = None
     razorpay_key_secret: Optional[str] = None
     advance_payment_percent: float = 30.0
@@ -260,6 +261,7 @@ class SettingsUpdate(BaseModel):
     instagram: Optional[str] = None
     address: Optional[str] = None
     gold_rate_url: Optional[str] = None
+    current_gold_rate: Optional[float] = None  # Admin live gold rate
     razorpay_key_id: Optional[str] = None
     razorpay_key_secret: Optional[str] = None
     advance_payment_percent: Optional[float] = None
