@@ -97,14 +97,36 @@ async def startup_event():
             "whatsapp": "+917019539776",
             "instagram": "@jewellersmb",
             "gold_rate_url": "https://www.goodreturns.in/gold-rates/mysore.html",
-            "current_gold_rate": 6600.0,  # Default gold rate
+            "k24_rate": 7200.0,
+            "k22_rate": 6600.0,
+            "k18_rate": 5400.0,
+            "current_gold_rate": 6600.0,  # Kept for backward compatibility
             "advance_payment_percent": 30.0,
             "gst_percent": 3.0,
             "card_payment_charges_percent": 2.0,
+            "rates_updated_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         }
         await db.settings.insert_one(default_settings)
-        logger.info("Default settings created with current_gold_rate")
+        logger.info("Default settings created with k24_rate, k22_rate, k18_rate")
+    else:
+        # Ensure existing settings have the new rate fields
+        update_fields = {}
+        if "k24_rate" not in settings_exists:
+            update_fields["k24_rate"] = 7200.0
+        if "k22_rate" not in settings_exists:
+            update_fields["k22_rate"] = 6600.0
+        if "k18_rate" not in settings_exists:
+            update_fields["k18_rate"] = 5400.0
+        if "rates_updated_at" not in settings_exists:
+            update_fields["rates_updated_at"] = datetime.utcnow()
+        
+        if update_fields:
+            await db.settings.update_one(
+                {"id": "site_settings"},
+                {"$set": update_fields}
+            )
+            logger.info(f"Updated settings with new rate fields: {update_fields}")
     
     # Scrape and cache gold rates
     await update_gold_rates()
@@ -282,7 +304,7 @@ async def get_public_settings():
     if not settings:
         return {}
     
-    # Return only public fields including current_gold_rate
+    # Return only public fields including all gold rates
     return {
         "logo_url": settings.get("logo_url"),
         "business_name": settings.get("business_name"),
@@ -292,7 +314,11 @@ async def get_public_settings():
         "whatsapp": settings.get("whatsapp"),
         "instagram": settings.get("instagram"),
         "address": settings.get("address"),
-        "current_gold_rate": settings.get("current_gold_rate", 6600.0)  # Live gold rate for calculator
+        "k24_rate": settings.get("k24_rate", 7200.0),
+        "k22_rate": settings.get("k22_rate", 6600.0),
+        "k18_rate": settings.get("k18_rate", 5400.0),
+        "current_gold_rate": settings.get("k22_rate", 6600.0),  # Use 22K as default
+        "rates_updated_at": settings.get("rates_updated_at", settings.get("updated_at"))
     }
 
 # ============================================================================
@@ -569,6 +595,10 @@ async def update_settings(updates: SettingsUpdate, admin = Depends(get_current_a
     """Update settings"""
     update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
     update_data['updated_at'] = datetime.utcnow()
+    
+    # If any gold rate is updated, update rates_updated_at
+    if any(k in update_data for k in ['k24_rate', 'k22_rate', 'k18_rate']):
+        update_data['rates_updated_at'] = datetime.utcnow()
     
     result = await db.settings.update_one(
         {"id": "site_settings"},

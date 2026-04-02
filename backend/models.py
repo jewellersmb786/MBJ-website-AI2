@@ -243,12 +243,16 @@ class Settings(BaseModel):
     instagram: str = "@jewellersmb"
     address: Optional[str] = None
     gold_rate_url: str = "https://www.goodreturns.in/gold-rates/mysore.html"
-    current_gold_rate: float = 6600.0  # Live admin-controlled gold rate
+    k24_rate: float = 7200.0  # 24K gold rate
+    k22_rate: float = 6600.0  # 22K gold rate (default for calculations)
+    k18_rate: float = 5400.0  # 18K gold rate
+    current_gold_rate: float = 6600.0  # Kept for backward compatibility
     razorpay_key_id: Optional[str] = None
     razorpay_key_secret: Optional[str] = None
     advance_payment_percent: float = 30.0
     gst_percent: float = 3.0
     card_payment_charges_percent: float = 2.0
+    rates_updated_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class SettingsUpdate(BaseModel):
@@ -261,7 +265,10 @@ class SettingsUpdate(BaseModel):
     instagram: Optional[str] = None
     address: Optional[str] = None
     gold_rate_url: Optional[str] = None
-    current_gold_rate: Optional[float] = None  # Admin live gold rate
+    k24_rate: Optional[float] = None
+    k22_rate: Optional[float] = None
+    k18_rate: Optional[float] = None
+    current_gold_rate: Optional[float] = None
     razorpay_key_id: Optional[str] = None
     razorpay_key_secret: Optional[str] = None
     advance_payment_percent: Optional[float] = None

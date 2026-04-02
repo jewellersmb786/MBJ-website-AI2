@@ -62,8 +62,8 @@ const CollectionsPage = () => {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-playfair font-bold mb-4">Our Collections</h1>
-          <p className="text-gray-600 dark:text-gray-400">Explore our exquisite range of South Indian jewellery</p>
+          <h1 className="text-5xl font-playfair font-bold mb-4 text-[#D4AF37]">Our Collections</h1>
+          <p className="text-gray-400">Explore our exquisite range of South Indian jewellery</p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -71,8 +71,8 @@ const CollectionsPage = () => {
           <div className="lg:w-64 flex-shrink-0">
             <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-lg sticky top-24">
               <div className="flex items-center space-x-2 mb-6">
-                <Filter size={20} className="text-gold" />
-                <h3 className="font-bold text-lg">Filters</h3>
+                <Filter size={20} className="text-[#D4AF37]" />
+                <h3 className="font-bold text-lg text-white">Filters</h3>
               </div>
 
               {/* Category Filter */}
@@ -83,19 +83,20 @@ const CollectionsPage = () => {
                     onClick={() => handleCategoryChange('')}
                     className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                       !selectedCategory
-                        ? 'bg-gold text-white'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ? 'bg-[#D4AF37] text-black font-semibold'
+                        : 'text-[#D4AF37] hover:bg-gray-800'
                     }`}
                   >
                     All Categories
                   </button>
                   {categories.map((category) => (
                     <button
+                      key={category.id}
                       onClick={() => handleCategoryChange(category.id)}
                       className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                         selectedCategory === category.id
                           ? 'bg-[#D4AF37] text-black font-semibold'
-                          : 'text-white hover:bg-gray-800'
+                          : 'text-[#D4AF37] hover:bg-gray-800'
                       }`}
                     >
                       {category.name}
@@ -107,14 +108,14 @@ const CollectionsPage = () => {
               {/* Subcategory Filter */}
               {selectedCategoryData?.subcategories?.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-3 text-sm text-gray-600 dark:text-gray-400">TYPE</h4>
+                  <h4 className="font-semibold mb-3 text-sm text-gray-400">TYPE</h4>
                   <div className="space-y-2">
                     <button
                       onClick={() => setSelectedSubcategory('')}
                       className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                         !selectedSubcategory
-                          ? 'bg-maroon text-white'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                          ? 'bg-[#800020] text-white'
+                          : 'text-[#D4AF37] hover:bg-gray-800'
                       }`}
                     >
                       All
@@ -125,8 +126,8 @@ const CollectionsPage = () => {
                         onClick={() => setSelectedSubcategory(sub)}
                         className={`w-full text-left px-3 py-2 rounded-lg transition-colors capitalize ${
                           selectedSubcategory === sub
-                            ? 'bg-maroon text-white'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                            ? 'bg-[#800020] text-white'
+                            : 'text-[#D4AF37] hover:bg-gray-800'
                         }`}
                       >
                         {sub}
@@ -182,7 +183,7 @@ const CollectionsPage = () => {
                       </div>
                       <div className="p-4">
                         <div className="flex items-start justify-between mb-2">
-                          <h3 className="text-lg font-semibold group-hover:text-gold transition-colors">
+                          <h3 className="text-lg font-semibold text-white group-hover:text-[#D4AF37] transition-colors">
                             {product.name}
                           </h3>
                           {product.stock_status === 'in_stock' ? (
@@ -191,11 +192,11 @@ const CollectionsPage = () => {
                             <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">Made to Order</span>
                           )}
                         </div>
-                        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center justify-between text-sm text-gray-400">
                           <span>Weight: {product.weight}g</span>
                           <span className="capitalize">{product.purity}</span>
                         </div>
-                        <div className="mt-3 text-gold font-semibold text-sm">View Details →</div>
+                        <div className="mt-3 text-[#D4AF37] font-semibold text-sm">View Details →</div>
                       </div>
                     </Link>
                   </motion.div>

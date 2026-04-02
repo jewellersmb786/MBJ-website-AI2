@@ -40,6 +40,11 @@ const JEWELLERY_IMAGES = [
 const HomePage = () => {
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [goldRates, setGoldRates] = useState({
+    k24_rate: 7200,
+    k22_rate: 6600,
+    k18_rate: 5400
+  });
   const heroRef = useRef(null);
   const parallaxRef = useRef(null);
 
@@ -49,6 +54,7 @@ const HomePage = () => {
 
   useEffect(() => {
     fetchData();
+    fetchGoldRates();
     
     // GSAP Scroll Animations
     gsap.fromTo('.fade-in-up', 
@@ -95,8 +101,53 @@ const HomePage = () => {
     }
   };
 
+  const fetchGoldRates = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/settings/public`);
+      const data = await response.json();
+      setGoldRates({
+        k24_rate: data.k24_rate || 7200,
+        k22_rate: data.k22_rate || 6600,
+        k18_rate: data.k18_rate || 5400
+      });
+    } catch (error) {
+      console.error('Error fetching gold rates:', error);
+    }
+  };
+
+  const getCurrentDate = () => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date().toLocaleDateString('en-IN', options);
+  };
+
   return (
     <div className="min-h-screen overflow-hidden">
+      {/* LIVE GOLD RATES BANNER - TOP */}
+      <section className="bg-gradient-to-r from-black via-[#800020]/30 to-black py-4 border-b border-[#D4AF37]/20">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-center md:text-left">
+              <p className="text-xs text-gray-400 mb-1">Today's Gold Rates (Per Gram)</p>
+              <p className="text-sm text-white font-semibold">{getCurrentDate()}</p>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <p className="text-xs text-gray-400">24K</p>
+                <p className="text-lg font-bold text-[#D4AF37]">₹{goldRates.k24_rate}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-400">22K</p>
+                <p className="text-lg font-bold text-[#D4AF37]">₹{goldRates.k22_rate}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-400">18K</p>
+                <p className="text-lg font-bold text-[#D4AF37]">₹{goldRates.k18_rate}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CINEMATIC HERO SECTION */}
       <section ref={heroRef} className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* Background Parallax Image */}
@@ -150,7 +201,11 @@ const HomePage = () => {
             transition={{ duration: 1, type: 'spring' }}
             className="mb-8"
           >
-            <Sparkles className="w-20 h-20 mx-auto text-gold" />
+            <img 
+              src="https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/h2uw7m7n_openart-image_-rw2Sfjg_1736872346359_raw-removebg-preview%20%281%29.png"
+              alt="Jewellers MB Logo"
+              className="w-32 h-32 md:w-40 md:h-40 mx-auto object-contain"
+            />
           </motion.div>
 
           <motion.h1

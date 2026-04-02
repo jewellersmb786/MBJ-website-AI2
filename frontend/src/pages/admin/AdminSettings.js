@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../../api';
 import { motion } from 'framer-motion';
-import { Save, Upload, TrendingUp } from 'lucide-react';
+import { Save, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminSettings = () => {
@@ -13,7 +13,9 @@ const AdminSettings = () => {
     whatsapp: '',
     instagram: '',
     address: '',
-    current_gold_rate: 6600,
+    k24_rate: 7200,
+    k22_rate: 6600,
+    k18_rate: 5400,
     logo_url: ''
   });
   const [loading, setLoading] = useState(true);
@@ -36,9 +38,10 @@ const AdminSettings = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const isRate = ['k24_rate', 'k22_rate', 'k18_rate'].includes(name);
     setSettings({
       ...settings,
-      [name]: name === 'current_gold_rate' ? parseFloat(value) : value
+      [name]: isRate ? parseFloat(value) : value
     });
   };
 
@@ -47,8 +50,8 @@ const AdminSettings = () => {
     setSaving(true);
     try {
       await adminAPI.settings.update(settings);
-      toast.success('Settings saved! Gold rate updated globally.');
-      fetchSettings(); // Refresh to confirm
+      toast.success('Settings saved! Gold rates updated globally.');
+      fetchSettings();
     } catch (error) {
       toast.error('Error saving settings');
     } finally {
@@ -72,11 +75,11 @@ const AdminSettings = () => {
         className="mb-8"
       >
         <h1 className="text-4xl font-playfair font-bold text-[#D4AF37] mb-2">Site Settings</h1>
-        <p className="text-gray-400">Manage your store configuration</p>
+        <p className="text-gray-400">Manage gold rates and store configuration</p>
       </motion.div>
 
       <form onSubmit={handleSave} className="space-y-8">
-        {/* Live Gold Rate - PRIORITY */}
+        {/* Live Gold Rates - All Three */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -85,29 +88,67 @@ const AdminSettings = () => {
           <div className="flex items-center gap-3 mb-6">
             <TrendingUp className="w-8 h-8 text-[#D4AF37]" />
             <div>
-              <h2 className="text-2xl font-bold text-[#D4AF37]">Live Gold Rate (22K)</h2>
-              <p className="text-sm text-gray-400">This rate is used globally in calculator and product pricing</p>
+              <h2 className="text-2xl font-bold text-[#D4AF37]">Live Gold Rates</h2>
+              <p className="text-sm text-gray-400">These rates are displayed on homepage and used in calculations</p>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">
-              Current Gold Rate (₹ per gram) *
-            </label>
-            <input
-              type="number"
-              name="current_gold_rate"
-              value={settings.current_gold_rate}
-              onChange={handleChange}
-              step="0.01"
-              min="0"
-              className="w-full px-6 py-4 bg-black/50 border border-[#D4AF37]/50 rounded-xl text-[#D4AF37] font-bold text-2xl focus:ring-2 focus:ring-[#D4AF37]"
-              placeholder="6600"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-2">
-              Updates immediately across calculator and all product pages
-            </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* 24K Rate */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                24K Gold Rate (₹/g) *
+              </label>
+              <input
+                type="number"
+                name="k24_rate"
+                value={settings.k24_rate}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                className="w-full px-4 py-3 bg-black/50 border border-[#D4AF37]/50 rounded-xl text-[#D4AF37] font-bold text-xl focus:ring-2 focus:ring-[#D4AF37]"
+                required
+              />
+            </div>
+
+            {/* 22K Rate */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                22K Gold Rate (₹/g) * <span className="text-xs text-gray-500">(Used in Calculator)</span>
+              </label>
+              <input
+                type="number"
+                name="k22_rate"
+                value={settings.k22_rate}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                className="w-full px-4 py-3 bg-black/50 border border-[#D4AF37]/50 rounded-xl text-[#D4AF37] font-bold text-xl focus:ring-2 focus:ring-[#D4AF37]"
+                required
+              />
+            </div>
+
+            {/* 18K Rate */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                18K Gold Rate (₹/g) *
+              </label>
+              <input
+                type="number"
+                name="k18_rate"
+                value={settings.k18_rate}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+                className="w-full px-4 py-3 bg-black/50 border border-[#D4AF37]/50 rounded-xl text-[#D4AF37] font-bold text-xl focus:ring-2 focus:ring-[#D4AF37]"
+                required
+              />
+            </div>
           </div>
+          
+          <p className="text-xs text-gray-500 mt-4 text-center">
+            Updates immediately across homepage and calculator • 22K rate is primary for South Indian jewellery
+          </p>
         </motion.div>
 
         {/* Business Details */}
@@ -155,7 +196,7 @@ const AdminSettings = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">Instagram Handle</label>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">Instagram</label>
               <input
                 type="text"
                 name="instagram"
@@ -165,38 +206,6 @@ const AdminSettings = () => {
                 placeholder="@jewellersmb"
               />
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">Tagline</label>
-              <input
-                type="text"
-                name="tagline"
-                value={settings.tagline}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-black/50 border border-[#D4AF37]/30 rounded-xl text-white focus:ring-2 focus:ring-[#D4AF37]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Logo Upload */}
-        <div className="bg-black/50 border border-[#D4AF37]/20 rounded-2xl p-6">
-          <h3 className="text-xl font-bold text-[#D4AF37] mb-6">Branding</h3>
-          <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">Logo URL</label>
-            <input
-              type="url"
-              name="logo_url"
-              value={settings.logo_url || ''}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-black/50 border border-[#D4AF37]/30 rounded-xl text-white focus:ring-2 focus:ring-[#D4AF37]"
-              placeholder="https://example.com/logo.png"
-            />
-            {settings.logo_url && (
-              <div className="mt-4">
-                <p className="text-sm text-gray-400 mb-2">Current Logo:</p>
-                <img src={settings.logo_url} alt="Logo" className="h-20 w-auto" />
-              </div>
-            )}
           </div>
         </div>
 

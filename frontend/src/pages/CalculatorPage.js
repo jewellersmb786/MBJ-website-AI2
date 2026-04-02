@@ -15,7 +15,11 @@ const CalculatorPage = () => {
 
   const [result, setResult] = useState(null);
   const [calculating, setCalculating] = useState(false);
-  const [liveGoldRate, setLiveGoldRate] = useState(6600);
+  const [goldRates, setGoldRates] = useState({
+    k24_rate: 7200,
+    k22_rate: 6600,
+    k18_rate: 5400
+  });
   const [settings, setSettings] = useState(null);
 
   useEffect(() => {
@@ -25,7 +29,11 @@ const CalculatorPage = () => {
   const fetchLiveGoldRate = async () => {
     try {
       const response = await settingsAPI.getPublic();
-      setLiveGoldRate(response.data.current_gold_rate || 6600);
+      setGoldRates({
+        k24_rate: response.data.k24_rate || 7200,
+        k22_rate: response.data.k22_rate || 6600,
+        k18_rate: response.data.k18_rate || 5400
+      });
       setSettings(response.data);
     } catch (error) {
       console.error('Error fetching live gold rate:', error);
@@ -62,7 +70,16 @@ const CalculatorPage = () => {
       const wastagePercent = parseFloat(formData.wastage_percent);
       const makingChargesPerGram = parseFloat(formData.making_charges || 0);
       const stoneCharges = parseFloat(formData.stone_charges || 0);
-      const goldRate = liveGoldRate; // Use live admin-controlled rate
+      
+      // Use correct rate based on purity selection
+      let goldRate;
+      if (formData.purity === '24k') {
+        goldRate = goldRates.k24_rate;
+      } else if (formData.purity === '18k') {
+        goldRate = goldRates.k18_rate;
+      } else {
+        goldRate = goldRates.k22_rate; // Default 22K
+      }
 
       // HIDDEN CALCULATION (Industry Standard)
       const billableWeight = weight + (weight * (wastagePercent / 100));
@@ -74,7 +91,7 @@ const CalculatorPage = () => {
       setResult({
         final_price: Math.round(finalPrice),
         gold_rate_used: goldRate,
-        purity: '22k'
+        purity: formData.purity
       });
       
       toast.success('Price calculated!');
@@ -112,11 +129,24 @@ const CalculatorPage = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-3xl p-6 mb-8 text-center"
+            className="bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-3xl p-6 mb-8"
           >
-            <h3 className="text-lg font-bold text-white mb-2">Live 22K Gold Rate</h3>
-            <p className="text-4xl font-playfair font-bold text-[#D4AF37]">₹{liveGoldRate}/g</p>
-            <p className="text-sm text-gray-400 mt-2">Updated by Admin • Used in all calculations</p>
+            <h3 className="text-lg font-bold text-white mb-4 text-center">Live Gold Rates (Per Gram)</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-sm text-gray-400 mb-1">24K</p>
+                <p className="text-2xl font-playfair font-bold text-[#D4AF37]">₹{goldRates.k24_rate}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-400 mb-1">22K</p>
+                <p className="text-2xl font-playfair font-bold text-[#D4AF37]">₹{goldRates.k22_rate}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-400 mb-1">18K</p>
+                <p className="text-2xl font-playfair font-bold text-[#D4AF37]">₹{goldRates.k18_rate}</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-4 text-center">Updated by Admin • Select purity below</p>
           </motion.div>
 
           <motion.div
@@ -245,7 +275,7 @@ const CalculatorPage = () => {
                 ₹{result.final_price.toLocaleString('en-IN')}
               </p>
               <p className="text-sm text-gray-400 mb-8">
-                Based on 22K Gold Rate: ₹{result.gold_rate_used}/g • Includes 3% GST
+                Based on {result.purity.toUpperCase()} Gold Rate: ₹{result.gold_rate_used}/g • Includes 3% GST
               </p>
               
               {/* WhatsApp Inquiry Button */}
