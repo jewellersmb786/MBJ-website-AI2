@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { goldAPI, settingsAPI } from '../api';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, Menu, X } from 'lucide-react';
+import { Phone, Menu, X, Mail } from 'lucide-react';
 import CustomCursor from './CustomCursor';
 
 const Layout = () => {
@@ -103,41 +102,42 @@ const Layout = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden text-gold"
+              className="lg:hidden text-white"
             >
               {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
           </div>
         </div>
-      </motion.header>
+      </header>
 
       {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: '100%' }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: '100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed inset-y-0 right-0 w-64 glass z-40 lg:hidden"
-          >
-            <nav className="flex flex-col space-y-6 p-8 mt-20">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`text-lg font-medium ${
-                    location.pathname === link.to ? 'text-gold' : 'text-gray-400'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {mobileMenuOpen && (
+        <div className="fixed inset-y-0 right-0 w-64 bg-black/95 backdrop-blur-sm z-40 lg:hidden border-l border-[#D4AF37]/20">
+          <nav className="flex flex-col space-y-6 p-8 mt-20">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`text-lg font-medium ${
+                  location.pathname === link.to ? 'text-[#D4AF37]' : 'text-white'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setShowContactModal(true);
+              }}
+              className="bg-[#D4AF37] text-black px-6 py-3 rounded-full font-semibold"
+            >
+              Contact
+            </button>
+          </nav>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="relative">
