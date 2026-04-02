@@ -9,6 +9,8 @@ const Layout = () => {
   const [settings, setSettings] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [prevScrollPos, setPrevScrollPos] = useState(0);
+  const [visible, setVisible] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
   const location = useLocation();
 
@@ -17,12 +19,17 @@ const Layout = () => {
     fetchSettings();
 
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      const currentScrollPos = window.scrollY;
+      
+      // Show navbar when scrolling up or at top
+      setVisible(prevScrollPos > currentScrollPos || currentScrollPos < 10);
+      setPrevScrollPos(currentScrollPos);
+      setScrolled(currentScrollPos > 50);
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [prevScrollPos]);
 
   const fetchGoldRates = async () => {
     try {
@@ -57,23 +64,18 @@ const Layout = () => {
       {/* Header */}
       <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'bg-black/95 backdrop-blur-sm shadow-lg' : 'bg-transparent'
+          visible ? 'translate-y-0' : '-translate-y-full'
+        } ${
+          scrolled 
+            ? 'bg-black/70 backdrop-blur-md shadow-2xl border-b border-[#D4AF37]/10' 
+            : 'bg-black/30 backdrop-blur-sm'
         }`}
       >
         <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between py-4 gap-8">
-            {/* Logo - Centered */}
-            <Link to="/" className="flex-shrink-0">
-              <img 
-                src={settings?.logo_url || "https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/6lie68ha_openart-fabf0c3b-095b-4c9f-ba55-7fb5f24a5ff2.png"} 
-                alt="MBJ Jewellers" 
-                className="h-14 w-auto"
-              />
-            </Link>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-8 flex-1 justify-center">
-              {navLinks.map((link) => (
+          <div className="flex items-center justify-between py-6 gap-8">
+            {/* Desktop Navigation - Left Side */}
+            <nav className="hidden lg:flex items-center gap-6 flex-1">
+              {navLinks.slice(0, 3).map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
@@ -88,16 +90,38 @@ const Layout = () => {
               ))}
             </nav>
 
-            {/* Contact Button */}
-            <div className="hidden lg:flex items-center">
+            {/* Logo - Centered */}
+            <Link to="/" className="flex-shrink-0">
+              <img 
+                src={settings?.logo_url || "https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/6lie68ha_openart-fabf0c3b-095b-4c9f-ba55-7fb5f24a5ff2.png"} 
+                alt="MBJ Jewellers" 
+                className="h-16 w-auto"
+              />
+            </Link>
+
+            {/* Desktop Navigation - Right Side */}
+            <nav className="hidden lg:flex items-center gap-6 flex-1 justify-end">
+              {navLinks.slice(3).map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`text-base font-medium transition-colors ${
+                    location.pathname === link.to 
+                      ? 'text-[#D4AF37]' 
+                      : 'text-white hover:text-[#D4AF37]'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
               <button
                 onClick={() => setShowContactModal(true)}
-                className="bg-[#D4AF37] hover:bg-[#B8960F] text-black px-6 py-2 rounded-full font-semibold transition-all flex items-center gap-2"
+                className="bg-[#D4AF37] hover:bg-[#B8960F] text-black px-6 py-2.5 rounded-full font-semibold transition-all flex items-center gap-2 shadow-lg"
               >
                 <Phone size={16} />
                 <span>Contact</span>
               </button>
-            </div>
+            </nav>
 
             {/* Mobile Menu Button */}
             <button

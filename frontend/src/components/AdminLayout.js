@@ -33,6 +33,7 @@ const AdminLayout = () => {
     { to: '/admin/products', label: 'Products', icon: <Package size={20} /> },
     { to: '/admin/orders', label: 'Orders', icon: <ShoppingCart size={20} /> },
     { to: '/admin/customers', label: 'Customers', icon: <Users size={20} /> },
+    { to: '/admin/custom-orders', label: 'Custom Orders', icon: <Package size={20} /> },
     { to: '/admin/settings', label: 'Settings', icon: <Settings size={20} /> },
   ];
 

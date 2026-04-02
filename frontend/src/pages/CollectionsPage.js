@@ -8,9 +8,12 @@ const CollectionsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
+  const [weightRange, setWeightRange] = useState([0, 200]);
+  const [selectedPurities, setSelectedPurities] = useState([]);
 
   useEffect(() => {
     fetchCategories();
@@ -19,6 +22,10 @@ const CollectionsPage = () => {
   useEffect(() => {
     fetchProducts();
   }, [selectedCategory, selectedSubcategory]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [weightRange, selectedPurities, allProducts]);
 
   const fetchCategories = async () => {
     try {
@@ -37,12 +44,35 @@ const CollectionsPage = () => {
       if (selectedSubcategory) params.subcategory = selectedSubcategory;
       
       const response = await productsAPI.getAll(params);
+      setAllProducts(response.data);
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...allProducts];
+
+    // Weight filter
+    filtered = filtered.filter(p => p.weight >= weightRange[0] && p.weight <= weightRange[1]);
+
+    // Purity filter
+    if (selectedPurities.length > 0) {
+      filtered = filtered.filter(p => selectedPurities.includes(p.purity));
+    }
+
+    setProducts(filtered);
+  };
+
+  const togglePurity = (purity) => {
+    setSelectedPurities(prev => 
+      prev.includes(purity) 
+        ? prev.filter(p => p !== purity)
+        : [...prev, purity]
+    );
   };
 
   const handleCategoryChange = (categoryId) => {
@@ -107,7 +137,7 @@ const CollectionsPage = () => {
 
               {/* Subcategory Filter */}
               {selectedCategoryData?.subcategories?.length > 0 && (
-                <div>
+                <div className="mb-6">
                   <h4 className="font-semibold mb-3 text-sm text-gray-400">TYPE</h4>
                   <div className="space-y-2">
                     <button
@@ -136,6 +166,53 @@ const CollectionsPage = () => {
                   </div>
                 </div>
               )}
+
+              {/* Weight Range Filter */}
+              <div className="mb-6">
+                <h4 className="font-semibold mb-3 text-sm text-gray-400">WEIGHT (GRAMS)</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm text-[#D4AF37]">
+                    <span>{weightRange[0]}g</span>
+                    <span>{weightRange[1]}g</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="200"
+                    step="1"
+                    value={weightRange[0]}
+                    onChange={(e) => setWeightRange([parseInt(e.target.value), weightRange[1]])}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[#D4AF37]"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="200"
+                    step="1"
+                    value={weightRange[1]}
+                    onChange={(e) => setWeightRange([weightRange[0], parseInt(e.target.value)])}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[#D4AF37]"
+                  />
+                </div>
+              </div>
+
+              {/* Purity Filter */}
+              <div>
+                <h4 className="font-semibold mb-3 text-sm text-gray-400">PURITY</h4>
+                <div className="space-y-2">
+                  {['24k', '22k', '18k'].map(purity => (
+                    <label key={purity} className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedPurities.includes(purity)}
+                        onChange={() => togglePurity(purity)}
+                        className="w-4 h-4 rounded border-[#D4AF37]/30 bg-gray-800 text-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]"
+                      />
+                      <span className="text-white text-sm">{purity.toUpperCase()}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 

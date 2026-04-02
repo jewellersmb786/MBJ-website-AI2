@@ -47,6 +47,7 @@ const CustomOrderPage = () => {
 
     setSubmitting(true);
     try {
+      // Save to database first
       await customOrderAPI.create({
         name: formData.name,
         phone: formData.phone,
@@ -56,7 +57,16 @@ const CustomOrderPage = () => {
         reference_images: formData.instagram_screenshot ? [formData.instagram_screenshot] : []
       });
       
-      toast.success('Custom order inquiry submitted! We will contact you soon.');
+      toast.success('Custom order inquiry submitted!');
+
+      // Prepare WhatsApp message
+      const whatsappNumber = '917019539776';
+      const message = `New Custom Order Request:%0A%0AName: ${encodeURIComponent(formData.name)}%0AContact: ${encodeURIComponent(formData.phone)}%0AEmail: ${encodeURIComponent(formData.email || 'Not provided')}%0AJewellery Type: ${encodeURIComponent(formData.jewellery_type || 'Custom Design')}%0ADetails: ${encodeURIComponent(formData.description || 'Not provided')}%0AInstagram: ${encodeURIComponent(formData.instagram_url || 'Not provided')}`;
+      
+      // Open WhatsApp
+      window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+      
+      // Reset form for next customer
       setFormData({
         name: '',
         phone: '',
