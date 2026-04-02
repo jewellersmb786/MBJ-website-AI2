@@ -91,12 +91,11 @@ const CollectionsPage = () => {
                   </button>
                   {categories.map((category) => (
                     <button
-                      key={category.id}
                       onClick={() => handleCategoryChange(category.id)}
                       className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
                         selectedCategory === category.id
-                          ? 'bg-gold text-white'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                          ? 'bg-[#D4AF37] text-black font-semibold'
+                          : 'text-white hover:bg-gray-800'
                       }`}
                     >
                       {category.name}

@@ -55,18 +55,34 @@ const CalculatorPage = () => {
 
     setCalculating(true);
     try {
-      const goldRate = parseFloat(manualRates[`k${formData.purity.replace('k', '')}_rate`]);
+      const weight = parseFloat(formData.weight);
+      const wastagePercent = parseFloat(formData.wastage_percent);
+      const makingChargesPerGram = parseFloat(formData.making_charges || 0);
+      const stoneCharges = parseFloat(formData.stone_charges || 0);
+      const goldRate = parseFloat(manualRates.k22_rate); // Always use 22k
 
-      const response = await calculatorAPI.calculate({
-        weight: parseFloat(formData.weight),
-        wastage_percent: parseFloat(formData.wastage_percent),
-        making_charges: parseFloat(formData.making_charges || 0),
-        stone_charges: parseFloat(formData.stone_charges || 0),
-        purity: formData.purity,
-        gold_rate: goldRate
+      // HIDDEN CALCULATION (Industry Standard)
+      // Step 1: Calculate Billable Weight (includes wastage)
+      const billableWeight = weight + (weight * (wastagePercent / 100));
+      
+      // Step 2: Calculate Gold Value
+      const goldValue = billableWeight * goldRate;
+      
+      // Step 3: Calculate Total Making Charges (per gram of item weight)
+      const totalMakingCharges = weight * makingChargesPerGram;
+      
+      // Step 4: Calculate Subtotal
+      const subtotal = goldValue + totalMakingCharges + stoneCharges;
+      
+      // Step 5: Add 3% GST
+      const finalPrice = subtotal * 1.03;
+
+      setResult({
+        final_price: Math.round(finalPrice),
+        gold_rate_used: goldRate,
+        purity: '22k'
       });
-
-      setResult(response.data);
+      
       toast.success('Price calculated!');
     } catch (error) {
       toast.error('Error calculating price');
@@ -109,7 +125,7 @@ const CalculatorPage = () => {
               <h3 className="text-xl font-bold text-gold">Manual Gold Rates (per gram)</h3>
             </div>
             <p className="text-sm text-gray-400 mb-6">
-              Reference: <a href="https://www.goodreturns.in/gold-rates/mysore.html" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">goodreturns.in/gold-rates/mysore</a>
+              Currently using 22K Gold Rate (Industry Standard for South Indian Jewellery)
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
@@ -173,8 +189,8 @@ const CalculatorPage = () => {
                       onClick={() => setFormData({ ...formData, purity })}
                       className={`py-3 rounded-xl font-semibold transition-all ${
                         formData.purity === purity
-                          ? 'bg-gold text-black'
-                          : 'bg-black/50 text-gray-400 border border-gold/20 hover:border-gold/50'
+                          ? 'bg-[#D4AF37] text-black'
+                          : 'bg-black/50 text-white border border-[#D4AF37]/20 hover:border-[#D4AF37]/50'
                       }`}
                     >
                       {purity.toUpperCase()}
@@ -224,7 +240,7 @@ const CalculatorPage = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Making Charges (₹) <span className="text-gray-500 text-xs">(Optional)</span>
+                  Making Charges (₹ per gram) <span className="text-gray-500 text-xs">(Optional)</span>
                 </label>
                 <input
                   type="number"
@@ -234,13 +250,13 @@ const CalculatorPage = () => {
                   step="0.01"
                   min="0"
                   className="w-full px-6 py-4 bg-black/50 border border-gold/30 rounded-xl text-white text-lg focus:ring-2 focus:ring-gold focus:border-transparent"
-                  placeholder="Enter making charges (if any)"
+                  placeholder="Enter making charges per gram"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Stone Charges (₹) <span className="text-gray-500 text-xs">(Optional)</span>
+                  Stone/Beads Charges (₹) <span className="text-gray-500 text-xs">(Optional)</span>
                 </label>
                 <input
                   type="number"
@@ -250,7 +266,7 @@ const CalculatorPage = () => {
                   step="0.01"
                   min="0"
                   className="w-full px-6 py-4 bg-black/50 border border-gold/30 rounded-xl text-white text-lg focus:ring-2 focus:ring-gold focus:border-transparent"
-                  placeholder="Enter stone charges (if any)"
+                  placeholder="Enter stone/beads charges"
                 />
               </div>
 
@@ -275,12 +291,12 @@ const CalculatorPage = () => {
               <div className="flex items-center justify-center mb-6">
                 <Sparkles className="w-12 h-12 text-gold" />
               </div>
-              <h3 className="text-2xl font-semibold text-gray-300 mb-4">Final Price</h3>
-              <p className="text-7xl font-playfair font-bold gold-text text-glow mb-4" data-testid="final-price">
+              <h3 className="text-2xl font-semibold text-gray-300 mb-4">Estimated Final Price</h3>
+              <p className="text-7xl font-playfair font-bold text-[#D4AF37] mb-4" data-testid="final-price">
                 ₹{result.final_price.toLocaleString('en-IN')}
               </p>
               <p className="text-sm text-gray-400">
-                Gold Rate: ₹{result.gold_rate_used}/g ({result.purity.toUpperCase()}) • GST: 3%
+                Based on 22K Gold Rate: ₹{result.gold_rate_used}/g • Includes 3% GST
               </p>
             </motion.div>
           )}
