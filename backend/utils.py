@@ -11,13 +11,11 @@ import re
 
 logger = logging.getLogger(__name__)
 
-# Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# JWT settings
 SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "jewellers_mb_secret_key_change_in_production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -47,138 +45,54 @@ def generate_order_number() -> str:
     random_suffix = str(uuid.uuid4())[:4].upper()
     return f"JMB{timestamp}{random_suffix}"
 
-def extract_number(text: str) -> float:
-    """Extract a float number from text like Rs.14,897 or 14897.00"""
-    cleaned = re.sub(r'[₹,\s]', '', text)
-    match = re.search(r'\d+\.?\d*', cleaned)
-    if match:
-        val = float(match.group())
-        if 5000 < val < 100000:
-            return val
-    return 0.0
-
-def scrape_from_goodreturns() -> dict:
-    """Scrape from goodreturns.in Mysore page"""
-    url = "https://www.goodreturns.in/gold-rates/mysore.html"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-IN,en;q=0.9',
-        'Referer': 'https://www.google.com/',
-        'Connection': 'keep-alive',
-    }
-    response = requests.get(url, headers=headers, timeout=15)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.content, 'html.parser')
-    rates = {'k24_rate': 0.0, 'k22_rate': 0.0, 'k18_rate': 0.0}
-
-    for table in soup.find_all('table'):
-        rows = table.find_all('tr')
-        for row in rows:
-            cells = row.find_all(['td', 'th'])
-            row_text = row.get_text().lower()
-            if 'gram' in row_text and '10 gram' not in row_text and '10gm' not in row_text:
-                for i, cell in enumerate(cells):
-                    cell_text = cell.get_text(strip=True).lower()
-                    if '24' in cell_text and rates['k24_rate'] == 0.0:
-                        for j in range(i+1, min(i+4, len(cells))):
-                            val = extract_number(cells[j].get_text(strip=True))
-                            if val > 0:
-                                rates['k24_rate'] = val
-                                break
-                    elif '22' in cell_text and rates['k22_rate'] == 0.0:
-                        for j in range(i+1, min(i+4, len(cells))):
-                            val = extract_number(cells[j].get_text(strip=True))
-                            if val > 0:
-                                rates['k22_rate'] = val
-                                break
-                    elif '18' in cell_text and rates['k18_rate'] == 0.0:
-                        for j in range(i+1, min(i+4, len(cells))):
-                            val = extract_number(cells[j].get_text(strip=True))
-                            if val > 0:
-                                rates['k18_rate'] = val
-                                break
-    return rates
-
-def scrape_from_ibja() -> dict:
-    """Scrape from IBJA - Indian Bullion and Jewellers Association"""
-    url = "https://ibjarates.com/"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-IN,en;q=0.9',
-        'Referer': 'https://www.google.com/',
-    }
-    response = requests.get(url, headers=headers, timeout=15)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.content, 'html.parser')
-    rates = {'k24_rate': 0.0, 'k22_rate': 0.0, 'k18_rate': 0.0}
-
-    for table in soup.find_all('table'):
-        rows = table.find_all('tr')
-        for row in rows:
-            cells = row.find_all(['td', 'th'])
-            if len(cells) >= 2:
-                row_text = row.get_text().lower()
-                if '999' in row_text or '24k' in row_text:
-                    for cell in cells[1:]:
-                        val = extract_number(cell.get_text(strip=True))
-                        if val > 50000:
-                            rates['k24_rate'] = round(val / 10, 2)
-                            break
-                elif '916' in row_text or '22k' in row_text:
-                    for cell in cells[1:]:
-                        val = extract_number(cell.get_text(strip=True))
-                        if val > 50000:
-                            rates['k22_rate'] = round(val / 10, 2)
-                            break
-                elif '750' in row_text or '18k' in row_text:
-                    for cell in cells[1:]:
-                        val = extract_number(cell.get_text(strip=True))
-                        if val > 50000:
-                            rates['k18_rate'] = round(val / 10, 2)
-                            break
-    return rates
-
 def scrape_gold_rates(url: str) -> dict:
     """
-    Try multiple sources for gold rates.
-    Falls back to correct current market rates if all scraping fails.
+    Scrapes goodreturns.in Mysore page and extracts rates from the summary sentence:
+    "Today's gold price in Mysore stands at ₹15,093 per gram for 24 karat gold..."
+    Returns None if scraping fails so server keeps last known good rates.
     """
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-IN,en;q=0.9',
+            'Referer': 'https://www.google.com/',
+            'Connection': 'keep-alive',
+        }
 
-    # Up-to-date fallback rates (April 2026 Mysore rates)
-    FALLBACK_RATES = {
-        'k24_rate': 15093.0,
-        'k22_rate': 13835.0,
-        'k18_rate': 11320.0
-    }
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
 
-    scrapers = [
-        ('goodreturns', scrape_from_goodreturns),
-        ('ibja', scrape_from_ibja),
-    ]
+        soup = BeautifulSoup(response.content, 'html.parser')
+        full_text = soup.get_text()
 
-    for source_name, scraper_func in scrapers:
-        try:
-            logger.info(f"Trying to scrape gold rates from {source_name}...")
-            rates = scraper_func()
+        # Target exact sentence:
+        # "Today's gold price in Mysore stands at ₹15,093 per gram for 24 karat gold"
+        match_24 = re.search(r'₹([\d,]+)\s*per\s*gram\s*for\s*24\s*karat', full_text, re.IGNORECASE)
+        match_22 = re.search(r'₹([\d,]+)\s*per\s*gram\s*for\s*22\s*karat', full_text, re.IGNORECASE)
+        match_18 = re.search(r'₹([\d,]+)\s*per\s*gram\s*for\s*18\s*karat', full_text, re.IGNORECASE)
 
-            if rates.get('k24_rate', 0) > 5000:
-                if rates.get('k22_rate', 0) == 0:
-                    rates['k22_rate'] = round(rates['k24_rate'] * 0.9167, 2)
-                if rates.get('k18_rate', 0) == 0:
-                    rates['k18_rate'] = round(rates['k24_rate'] * 0.75, 2)
-                logger.info(f"Successfully scraped from {source_name}: {rates}")
-                return rates
-            else:
-                logger.warning(f"{source_name} returned invalid rates: {rates}")
+        rates = {
+            'k24_rate': float(match_24.group(1).replace(',', '')) if match_24 else 0.0,
+            'k22_rate': float(match_22.group(1).replace(',', '')) if match_22 else 0.0,
+            'k18_rate': float(match_18.group(1).replace(',', '')) if match_18 else 0.0,
+        }
 
-        except Exception as e:
-            logger.error(f"Failed to scrape from {source_name}: {str(e)}")
-            continue
+        # Validate — 24K must be a realistic value
+        if rates['k24_rate'] > 5000:
+            if rates['k22_rate'] == 0.0:
+                rates['k22_rate'] = round(rates['k24_rate'] * 0.9167, 2)
+            if rates['k18_rate'] == 0.0:
+                rates['k18_rate'] = round(rates['k24_rate'] * 0.75, 2)
+            logger.info(f"Successfully scraped gold rates: {rates}")
+            return rates
 
-    logger.warning("All scraping sources failed. Using fallback rates.")
-    return FALLBACK_RATES
+        logger.warning("Rates not found in page — will keep last known good rates")
+        return None
+
+    except Exception as e:
+        logger.error(f"Error scraping gold rates: {str(e)}")
+        return None
 
 
 def calculate_price(weight: float, wastage_percent: float, making_charges: float,
