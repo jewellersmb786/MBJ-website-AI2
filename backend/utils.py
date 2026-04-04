@@ -47,133 +47,142 @@ def generate_order_number() -> str:
     random_suffix = str(uuid.uuid4())[:4].upper()
     return f"JMB{timestamp}{random_suffix}"
 
+def extract_number(text: str) -> float:
+    """Extract a float number from text like Rs.14,897 or 14897.00"""
+    cleaned = re.sub(r'[₹,\s]', '', text)
+    match = re.search(r'\d+\.?\d*', cleaned)
+    if match:
+        val = float(match.group())
+        if 5000 < val < 100000:
+            return val
+    return 0.0
+
+def scrape_from_goodreturns() -> dict:
+    """Scrape from goodreturns.in Mysore page"""
+    url = "https://www.goodreturns.in/gold-rates/mysore.html"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-IN,en;q=0.9',
+        'Referer': 'https://www.google.com/',
+        'Connection': 'keep-alive',
+    }
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.content, 'html.parser')
+    rates = {'k24_rate': 0.0, 'k22_rate': 0.0, 'k18_rate': 0.0}
+
+    for table in soup.find_all('table'):
+        rows = table.find_all('tr')
+        for row in rows:
+            cells = row.find_all(['td', 'th'])
+            row_text = row.get_text().lower()
+            if 'gram' in row_text and '10 gram' not in row_text and '10gm' not in row_text:
+                for i, cell in enumerate(cells):
+                    cell_text = cell.get_text(strip=True).lower()
+                    if '24' in cell_text and rates['k24_rate'] == 0.0:
+                        for j in range(i+1, min(i+4, len(cells))):
+                            val = extract_number(cells[j].get_text(strip=True))
+                            if val > 0:
+                                rates['k24_rate'] = val
+                                break
+                    elif '22' in cell_text and rates['k22_rate'] == 0.0:
+                        for j in range(i+1, min(i+4, len(cells))):
+                            val = extract_number(cells[j].get_text(strip=True))
+                            if val > 0:
+                                rates['k22_rate'] = val
+                                break
+                    elif '18' in cell_text and rates['k18_rate'] == 0.0:
+                        for j in range(i+1, min(i+4, len(cells))):
+                            val = extract_number(cells[j].get_text(strip=True))
+                            if val > 0:
+                                rates['k18_rate'] = val
+                                break
+    return rates
+
+def scrape_from_ibja() -> dict:
+    """Scrape from IBJA - Indian Bullion and Jewellers Association"""
+    url = "https://ibjarates.com/"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-IN,en;q=0.9',
+        'Referer': 'https://www.google.com/',
+    }
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.content, 'html.parser')
+    rates = {'k24_rate': 0.0, 'k22_rate': 0.0, 'k18_rate': 0.0}
+
+    for table in soup.find_all('table'):
+        rows = table.find_all('tr')
+        for row in rows:
+            cells = row.find_all(['td', 'th'])
+            if len(cells) >= 2:
+                row_text = row.get_text().lower()
+                if '999' in row_text or '24k' in row_text:
+                    for cell in cells[1:]:
+                        val = extract_number(cell.get_text(strip=True))
+                        if val > 50000:
+                            rates['k24_rate'] = round(val / 10, 2)
+                            break
+                elif '916' in row_text or '22k' in row_text:
+                    for cell in cells[1:]:
+                        val = extract_number(cell.get_text(strip=True))
+                        if val > 50000:
+                            rates['k22_rate'] = round(val / 10, 2)
+                            break
+                elif '750' in row_text or '18k' in row_text:
+                    for cell in cells[1:]:
+                        val = extract_number(cell.get_text(strip=True))
+                        if val > 50000:
+                            rates['k18_rate'] = round(val / 10, 2)
+                            break
+    return rates
+
 def scrape_gold_rates(url: str) -> dict:
     """
-    Scrape gold rates from goodreturns.in Mysore page.
-    Falls back to correct current market rates if scraping fails.
+    Try multiple sources for gold rates.
+    Falls back to correct current market rates if all scraping fails.
     """
 
-    # Current fallback rates (updated April 2026 — update these monthly if scraping fails)
+    # Up-to-date fallback rates (April 2026 Mysore rates)
     FALLBACK_RATES = {
-        'k24_rate': 14897.0,
-        'k22_rate': 13655.0,
-        'k18_rate': 11173.0
+        'k24_rate': 15093.0,
+        'k22_rate': 13835.0,
+        'k18_rate': 11320.0
     }
 
-    def extract_number(text: str) -> float:
-        """Extract a float number from a string like ₹14,897 or 14897.00"""
-        cleaned = re.sub(r'[₹,\s]', '', text)
-        match = re.search(r'\d+\.?\d*', cleaned)
-        if match:
-            return float(match.group())
-        return 0.0
-
-    # Try multiple user agents to bypass 403 blocks
-    headers_list = [
-        {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-IN,en;q=0.9',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Referer': 'https://www.google.com/',
-            'Connection': 'keep-alive',
-        },
-        {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-IN,en;q=0.5',
-            'Referer': 'https://www.google.com/',
-        }
+    scrapers = [
+        ('goodreturns', scrape_from_goodreturns),
+        ('ibja', scrape_from_ibja),
     ]
 
-    for headers in headers_list:
+    for source_name, scraper_func in scrapers:
         try:
-            response = requests.get(
-                url,
-                headers=headers,
-                timeout=15,
-                allow_redirects=True
-            )
+            logger.info(f"Trying to scrape gold rates from {source_name}...")
+            rates = scraper_func()
 
-            if response.status_code != 200:
-                logger.warning(f"Got status {response.status_code} from {url}")
-                continue
-
-            soup = BeautifulSoup(response.content, 'html.parser')
-            rates = {'k24_rate': 0.0, 'k22_rate': 0.0, 'k18_rate': 0.0}
-
-            # Strategy 1: Look for table rows with gold purity info
-            tables = soup.find_all('table')
-            for table in tables:
-                rows = table.find_all('tr')
-                for row in rows:
-                    cells = row.find_all(['td', 'th'])
-                    if len(cells) >= 2:
-                        row_text = row.get_text().lower()
-                        # Look for per gram rates (not per 10 gram)
-                        if '1 gram' in row_text or 'per gram' in row_text or ('gram' in row_text and '10' not in row_text):
-                            for i, cell in enumerate(cells):
-                                cell_text = cell.get_text(strip=True).lower()
-                                if '24' in cell_text:
-                                    # Next cell should have rate
-                                    for j in range(i+1, min(i+3, len(cells))):
-                                        val = extract_number(cells[j].get_text(strip=True))
-                                        if 5000 < val < 50000:
-                                            rates['k24_rate'] = val
-                                elif '22' in cell_text:
-                                    for j in range(i+1, min(i+3, len(cells))):
-                                        val = extract_number(cells[j].get_text(strip=True))
-                                        if 5000 < val < 50000:
-                                            rates['k22_rate'] = val
-                                elif '18' in cell_text:
-                                    for j in range(i+1, min(i+3, len(cells))):
-                                        val = extract_number(cells[j].get_text(strip=True))
-                                        if 5000 < val < 50000:
-                                            rates['k18_rate'] = val
-
-            # Strategy 2: Look for elements with specific class names
-            if rates['k24_rate'] == 0.0:
-                for elem in soup.find_all(['span', 'div', 'td', 'p']):
-                    text = elem.get_text(strip=True)
-                    val = extract_number(text)
-                    if 5000 < val < 50000:
-                        parent_text = ''
-                        if elem.parent:
-                            parent_text = elem.parent.get_text().lower()
-                        combined = (text + parent_text).lower()
-                        if '24' in combined and rates['k24_rate'] == 0.0:
-                            rates['k24_rate'] = val
-                        elif '22' in combined and rates['k22_rate'] == 0.0:
-                            rates['k22_rate'] = val
-                        elif '18' in combined and rates['k18_rate'] == 0.0:
-                            rates['k18_rate'] = val
-
-            # Validate — rates should be in reasonable range for 2024-2026
-            if rates['k24_rate'] > 5000:
-                # Calculate missing rates from 24k
-                if rates['k22_rate'] == 0.0:
+            if rates.get('k24_rate', 0) > 5000:
+                if rates.get('k22_rate', 0) == 0:
                     rates['k22_rate'] = round(rates['k24_rate'] * 0.9167, 2)
-                if rates['k18_rate'] == 0.0:
+                if rates.get('k18_rate', 0) == 0:
                     rates['k18_rate'] = round(rates['k24_rate'] * 0.75, 2)
-
-                logger.info(f"Successfully scraped gold rates: {rates}")
+                logger.info(f"Successfully scraped from {source_name}: {rates}")
                 return rates
+            else:
+                logger.warning(f"{source_name} returned invalid rates: {rates}")
 
         except Exception as e:
-            logger.error(f"Scraping attempt failed: {str(e)}")
+            logger.error(f"Failed to scrape from {source_name}: {str(e)}")
             continue
 
-    # All attempts failed — use up-to-date fallback
-    logger.warning("All scraping attempts failed. Using fallback rates.")
+    logger.warning("All scraping sources failed. Using fallback rates.")
     return FALLBACK_RATES
 
 
 def calculate_price(weight: float, wastage_percent: float, making_charges: float,
                    stone_charges: float, gold_rate: float, gst_percent: float = 3.0) -> float:
-    """
-    Calculate final jewellery price
-    Formula: (((weight + wastage%) × gold rate) + stone charges + making charges) + GST%
-    """
     wastage_weight = weight * (wastage_percent / 100)
     total_weight = weight + wastage_weight
     gold_cost = total_weight * gold_rate
