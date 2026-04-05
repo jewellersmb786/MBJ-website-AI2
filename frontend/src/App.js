@@ -12,6 +12,8 @@ import CustomOrderPage from './pages/CustomOrderPage';
 import TrackOrderPage from './pages/TrackOrderPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
+import SchemesPage from './pages/SchemesPage';
+import SpiritualPage from './pages/SpiritualPage';
 
 // Admin Pages
 import AdminLogin from './pages/admin/AdminLogin';
@@ -43,6 +45,8 @@ function App() {
             <Route path="track/:orderId" element={<TrackOrderPage />} />
             <Route path="about" element={<AboutPage />} />
             <Route path="contact" element={<ContactPage />} />
+            <Route path="schemes" element={<SchemesPage />} />
+            <Route path="spiritual" element={<SpiritualPage />} />
           </Route>
 
           {/* Admin Routes */}
