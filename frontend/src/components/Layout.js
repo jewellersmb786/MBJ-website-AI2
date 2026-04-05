@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { goldAPI, settingsAPI } from '../api';
 import { Phone, Menu, X, Mail, MessageCircle } from 'lucide-react';
 import CustomCursor from './CustomCursor';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const LOGO_URL = 'https://i.ibb.co/DHmMcnm9/openart-image-rw2-Sfjg-1736872346359-raw-removebg-preview-1.png';
 
@@ -12,344 +11,387 @@ const Layout = () => {
   const [settings, setSettings] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [navVisible, setNavVisible] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
+  const lastScrollY = useRef(0);
   const location = useLocation();
+  const isHomePage = location.pathname === '/';
 
   useEffect(() => {
     fetchGoldRates();
     fetchSettings();
-    const handleScroll = () => setScrolled(window.scrollY > 80);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      setScrolled(currentY > 100);
+      // Hide on scroll down, show on scroll up
+      if (currentY > lastScrollY.current && currentY > 150) {
+        setNavVisible(false);
+      } else {
+        setNavVisible(true);
+      }
+      lastScrollY.current = currentY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const fetchGoldRates = async () => {
     try {
-      const response = await goldAPI.getRates();
-      setGoldRates(response.data);
-    } catch (error) {
-      console.error('Error fetching gold rates:', error);
-    }
+      const res = await goldAPI.getRates();
+      setGoldRates(res.data);
+    } catch (e) {}
   };
 
   const fetchSettings = async () => {
     try {
-      const response = await settingsAPI.getPublic();
-      setSettings(response.data);
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-    }
+      const res = await settingsAPI.getPublic();
+      setSettings(res.data);
+    } catch (e) {}
   };
 
-  const navLinksLeft = [
+  const navLinks = [
     { to: '/', label: 'Home' },
     { to: '/collections', label: 'Collections' },
-    { to: '/calculator', label: 'Calculator' },
-  ];
-
-  const navLinksRight = [
+    { to: '/calculator', label: 'Gold Calculator' },
     { to: '/custom-order', label: 'Custom Orders' },
     { to: '/about', label: 'About Us' },
     { to: '/contact', label: 'Contact' },
   ];
 
-  const allNavLinks = [...navLinksLeft, ...navLinksRight];
-
   const isActive = (path) => location.pathname === path;
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-[#0f0f0f] relative">
+    <div className="min-h-screen bg-[#0f0f0f]">
       <CustomCursor />
 
-      {/* ── TOP UTILITY BAR ── */}
-      <AnimatePresence>
-        {!scrolled && (
-          <motion.div
-            initial={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-[#0a0a0a] border-b border-[#D4AF37]/10 overflow-hidden"
-          >
-            <div className="container mx-auto px-6 py-2 flex items-center justify-between">
-              {/* Gold rates */}
-              <div className="hidden lg:flex items-center gap-6 text-[10px] tracking-widest uppercase text-[#D4AF37]/60">
-                {goldRates && (
-                  <>
-                    <span>24K ₹{goldRates.k24_rate?.toLocaleString('en-IN')}/g</span>
-                    <span className="text-[#D4AF37]/20">|</span>
-                    <span>22K ₹{goldRates.k22_rate?.toLocaleString('en-IN')}/g</span>
-                    <span className="text-[#D4AF37]/20">|</span>
-                    <span>18K ₹{goldRates.k18_rate?.toLocaleString('en-IN')}/g</span>
-                    {goldRates.last_updated && (
-                      <>
-                        <span className="text-[#D4AF37]/20">|</span>
-                        <span className="text-white/30">
-                          Updated: {new Date(goldRates.last_updated).toLocaleDateString('en-IN', {
-                            day: '2-digit', month: 'short', year: 'numeric'
-                          })}
-                        </span>
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-              {/* Right utility links */}
-              <div className="flex items-center gap-6 text-[10px] tracking-widest uppercase text-white/40 ml-auto">
-                <a
-                  href={`https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi!`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5"
-                >
-                  <MessageCircle size={11} />
-                  WhatsApp
-                </a>
-                <span className="text-white/20">|</span>
-                <a href={`tel:${settings?.phone}`} className="hover:text-[#D4AF37] transition-colors flex items-center gap-1.5">
-                  <Phone size={11} />
-                  {settings?.phone || '+91 7019539776'}
-                </a>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── MAIN HEADER ── */}
+      {/* ════════════════════════════════════
+          HEADER
+      ════════════════════════════════════ */}
       <header
-        className="fixed left-0 right-0 z-50 transition-all duration-500"
         style={{
+          position: 'fixed',
           top: 0,
-          background: scrolled
-            ? 'rgba(8, 8, 8, 0.96)'
-            : 'transparent',
-          backdropFilter: scrolled ? 'blur(20px)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(212,175,55,0.12)' : 'none',
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          transform: navVisible ? 'translateY(0)' : 'translateY(-100%)',
+          transition: 'transform 0.35s ease, background 0.35s ease, box-shadow 0.35s ease',
+          background: scrolled ? 'rgba(8,8,8,0.97)' : 'transparent',
+          boxShadow: scrolled ? '0 1px 0 rgba(212,175,55,0.12)' : 'none',
+          backdropFilter: scrolled ? 'blur(16px)' : 'none',
         }}
       >
-        {/* ── HERO NAVBAR (before scroll) ── */}
-        <AnimatePresence>
-          {!scrolled && (
-            <motion.div
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="container mx-auto px-6"
-            >
-              {/* Full logo centered */}
-              <div className="flex flex-col items-center pt-8 pb-2">
-                <Link to="/" className="block mb-5">
-                  <motion.img
-                    src={LOGO_URL}
-                    alt="MBJ Jewellers"
-                    className="h-28 w-auto object-contain"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                  />
-                </Link>
 
-                {/* Nav links in single row below logo */}
-                <nav className="hidden lg:flex items-center gap-10 pb-5">
-                  {allNavLinks.map((link) => (
-                    <Link
-                      key={link.to}
-                      to={link.to}
-                      className={`text-[11px] tracking-[0.2em] uppercase font-medium transition-all duration-200 relative group ${
-                        isActive(link.to)
-                          ? 'text-[#D4AF37]'
-                          : 'text-white/70 hover:text-white'
-                      }`}
-                    >
-                      {link.label}
-                      <span className={`absolute -bottom-1 left-0 h-px bg-[#D4AF37] transition-all duration-300 ${
-                        isActive(link.to) ? 'w-full' : 'w-0 group-hover:w-full'
-                      }`} />
-                    </Link>
-                  ))}
-                  <button
-                    onClick={() => setShowContactModal(true)}
-                    className="text-[11px] tracking-[0.2em] uppercase font-medium border border-[#D4AF37]/50 hover:border-[#D4AF37] text-[#D4AF37] px-5 py-1.5 transition-all duration-200 hover:bg-[#D4AF37]/10"
-                  >
-                    Get in Touch
-                  </button>
-                </nav>
-
-                {/* Mobile hamburger */}
-                <button
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="lg:hidden absolute right-6 top-8 text-white"
-                >
-                  {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ── COMPACT SCROLLED NAVBAR ── */}
-        <AnimatePresence>
-          {scrolled && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="container mx-auto px-6"
-            >
-              <div className="flex items-center justify-between py-3">
-
-                {/* Small logo icon — left */}
-                <Link to="/" className="flex-shrink-0">
-                  <motion.img
-                    src={LOGO_URL}
-                    alt="MBJ Jewellers"
-                    className="h-12 w-auto object-contain"
-                    layoutId="logo"
-                  />
-                </Link>
-
-                {/* Nav links — right */}
-                <nav className="hidden lg:flex items-center gap-8">
-                  {allNavLinks.map((link) => (
-                    <Link
-                      key={link.to}
-                      to={link.to}
-                      className={`text-[10px] tracking-[0.2em] uppercase font-medium transition-all duration-200 relative group ${
-                        isActive(link.to)
-                          ? 'text-[#D4AF37]'
-                          : 'text-white/70 hover:text-white'
-                      }`}
-                    >
-                      {link.label}
-                      <span className={`absolute -bottom-1 left-0 h-px bg-[#D4AF37] transition-all duration-300 ${
-                        isActive(link.to) ? 'w-full' : 'w-0 group-hover:w-full'
-                      }`} />
-                    </Link>
-                  ))}
-                  <button
-                    onClick={() => setShowContactModal(true)}
-                    className="text-[10px] tracking-[0.2em] uppercase border border-[#D4AF37]/50 hover:border-[#D4AF37] text-[#D4AF37] px-4 py-1.5 transition-all duration-200 hover:bg-[#D4AF37]/10"
-                  >
-                    Get in Touch
-                  </button>
-                </nav>
-
-                {/* Mobile hamburger when scrolled */}
-                <button
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="lg:hidden text-white"
-                >
-                  {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
-
-      {/* ── MOBILE MENU ── */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'tween', duration: 0.3 }}
-            className="fixed inset-y-0 right-0 w-72 bg-[#0a0a0a] z-40 border-l border-[#D4AF37]/15"
-          >
-            <div className="flex flex-col p-8 mt-24 gap-6">
-              <img src={LOGO_URL} alt="MBJ Jewellers" className="h-16 w-auto object-contain mb-4" />
-              {allNavLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`text-sm tracking-[0.2em] uppercase transition-colors ${
-                    isActive(link.to) ? 'text-[#D4AF37]' : 'text-white/70 hover:text-white'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setShowContactModal(true);
-                }}
-                className="border border-[#D4AF37]/50 text-[#D4AF37] px-6 py-3 text-xs tracking-widest uppercase mt-4 hover:bg-[#D4AF37]/10 transition-all"
-              >
-                Get in Touch
-              </button>
-
-              {/* Gold rates in mobile menu */}
-              {goldRates && (
-                <div className="mt-6 pt-6 border-t border-[#D4AF37]/10 space-y-2 text-xs text-white/40 tracking-wider">
-                  <p>24K — ₹{goldRates.k24_rate?.toLocaleString('en-IN')}/g</p>
-                  <p>22K — ₹{goldRates.k22_rate?.toLocaleString('en-IN')}/g</p>
-                  <p>18K — ₹{goldRates.k18_rate?.toLocaleString('en-IN')}/g</p>
+        {/* ── UTILITY BAR (gold rates + contact) ── */}
+        <div
+          style={{
+            maxHeight: scrolled ? '0' : '36px',
+            overflow: 'hidden',
+            transition: 'max-height 0.35s ease',
+            borderBottom: scrolled ? 'none' : '1px solid rgba(212,175,55,0.08)',
+          }}
+        >
+          <div className="max-w-7xl mx-auto px-8 flex items-center justify-between h-9">
+            {/* Gold rates */}
+            <div className="flex items-center gap-5 text-[10px] tracking-widest uppercase text-[#D4AF37]/55">
+              {goldRates ? (
+                <>
+                  <span>24K &nbsp;₹{Number(goldRates.k24_rate).toLocaleString('en-IN')}/g</span>
+                  <span className="text-white/15">|</span>
+                  <span>22K &nbsp;₹{Number(goldRates.k22_rate).toLocaleString('en-IN')}/g</span>
+                  <span className="text-white/15">|</span>
+                  <span>18K &nbsp;₹{Number(goldRates.k18_rate).toLocaleString('en-IN')}/g</span>
                   {goldRates.last_updated && (
-                    <p className="text-white/25">
-                      Updated: {new Date(goldRates.last_updated).toLocaleDateString('en-IN', {
-                        day: '2-digit', month: 'short', year: 'numeric'
-                      })}
-                    </p>
+                    <>
+                      <span className="text-white/15">|</span>
+                      <span className="text-white/25">as of {formatDate(goldRates.last_updated)}</span>
+                    </>
                   )}
-                </div>
+                </>
+              ) : (
+                <span className="text-white/20">Loading gold rates...</span>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {/* Right side */}
+            <div className="flex items-center gap-5 text-[10px] tracking-widest uppercase text-white/35">
+              <a
+                href={`https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi!`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#D4AF37] transition-colors duration-200 flex items-center gap-1.5"
+              >
+                <MessageCircle size={10} />
+                WhatsApp
+              </a>
+              <span className="text-white/15">|</span>
+              <a
+                href={`tel:${settings?.phone}`}
+                className="hover:text-[#D4AF37] transition-colors duration-200 flex items-center gap-1.5"
+              >
+                <Phone size={10} />
+                {settings?.phone || '+91 7019539776'}
+              </a>
+            </div>
+          </div>
+        </div>
 
-      {/* Mobile menu overlay */}
+        {/* ── MAIN NAV ── */}
+        <div className="max-w-7xl mx-auto px-8">
+
+          {/* HOMEPAGE HERO STATE — logo centered, links below */}
+          {isHomePage && !scrolled && (
+            <div className="flex flex-col items-center py-6">
+              <Link to="/">
+                <img
+                  src={LOGO_URL}
+                  alt="MBJ Jewellers"
+                  style={{ height: '110px', width: 'auto', objectFit: 'contain' }}
+                />
+              </Link>
+              <nav className="hidden lg:flex items-center gap-9 mt-4">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    style={{
+                      fontSize: '11px',
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      fontWeight: 500,
+                      color: isActive(link.to) ? '#D4AF37' : 'rgba(255,255,255,0.7)',
+                      textDecoration: 'none',
+                      transition: 'color 0.2s',
+                      paddingBottom: '2px',
+                      borderBottom: isActive(link.to) ? '1px solid #D4AF37' : '1px solid transparent',
+                    }}
+                    onMouseEnter={e => { if (!isActive(link.to)) e.target.style.color = '#fff'; }}
+                    onMouseLeave={e => { if (!isActive(link.to)) e.target.style.color = 'rgba(255,255,255,0.7)'; }}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <button
+                  onClick={() => setShowContactModal(true)}
+                  style={{
+                    fontSize: '10px',
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: '#D4AF37',
+                    border: '1px solid rgba(212,175,55,0.45)',
+                    background: 'transparent',
+                    padding: '6px 18px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  Get in Touch
+                </button>
+              </nav>
+              {/* Mobile hamburger */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden absolute right-8 top-8 text-white"
+              >
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
+          )}
+
+          {/* SCROLLED STATE (homepage) or ALL OTHER PAGES — logo left, links right */}
+          {(!isHomePage || scrolled) && (
+            <div className="flex items-center justify-between py-3">
+              {/* Logo icon only — left */}
+              <Link to="/" style={{ flexShrink: 0 }}>
+                <img
+                  src={LOGO_URL}
+                  alt="MBJ Jewellers"
+                  style={{ height: '48px', width: 'auto', objectFit: 'contain' }}
+                />
+              </Link>
+
+              {/* Nav links — right */}
+              <nav className="hidden lg:flex items-center gap-8">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    style={{
+                      fontSize: '10px',
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      fontWeight: 500,
+                      color: isActive(link.to) ? '#D4AF37' : 'rgba(255,255,255,0.65)',
+                      textDecoration: 'none',
+                      transition: 'color 0.2s',
+                      paddingBottom: '2px',
+                      borderBottom: isActive(link.to) ? '1px solid #D4AF37' : '1px solid transparent',
+                    }}
+                    onMouseEnter={e => { if (!isActive(link.to)) e.target.style.color = '#fff'; }}
+                    onMouseLeave={e => { if (!isActive(link.to)) e.target.style.color = 'rgba(255,255,255,0.65)'; }}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <button
+                  onClick={() => setShowContactModal(true)}
+                  style={{
+                    fontSize: '10px',
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: '#D4AF37',
+                    border: '1px solid rgba(212,175,55,0.45)',
+                    background: 'transparent',
+                    padding: '5px 16px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  Get in Touch
+                </button>
+              </nav>
+
+              {/* Mobile hamburger */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden text-white"
+              >
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* ════════════════════════════════════
+          MOBILE MENU
+      ════════════════════════════════════ */}
       {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-30 lg:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        />
+        <>
+          <div
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(0,0,0,0.6)',
+              zIndex: 40,
+            }}
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: 0, right: 0, bottom: 0,
+              width: '280px',
+              background: '#080808',
+              borderLeft: '1px solid rgba(212,175,55,0.12)',
+              zIndex: 45,
+              padding: '80px 32px 32px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '24px',
+            }}
+          >
+            <img src={LOGO_URL} alt="MBJ" style={{ height: '60px', width: 'auto', objectFit: 'contain', marginBottom: '8px' }} />
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                style={{
+                  fontSize: '11px',
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: isActive(link.to) ? '#D4AF37' : 'rgba(255,255,255,0.6)',
+                  textDecoration: 'none',
+                }}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <button
+              onClick={() => { setMobileMenuOpen(false); setShowContactModal(true); }}
+              style={{
+                fontSize: '10px',
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: '#D4AF37',
+                border: '1px solid rgba(212,175,55,0.4)',
+                background: 'transparent',
+                padding: '10px 20px',
+                cursor: 'pointer',
+                marginTop: '8px',
+              }}
+            >
+              Get in Touch
+            </button>
+          </div>
+        </>
       )}
 
-      {/* ── MAIN CONTENT ── */}
-      <main>
+      {/* ════════════════════════════════════
+          MAIN CONTENT
+      ════════════════════════════════════ */}
+      <main style={{ paddingTop: isHomePage ? '0' : '72px' }}>
         <Outlet />
       </main>
 
-      {/* ── FOOTER ── */}
-      <footer className="bg-[#080808] border-t border-[#D4AF37]/10 mt-20">
-        {/* Top footer */}
-        <div className="container mx-auto px-6 py-16">
-          <div className="flex flex-col items-center mb-12">
-            <img src={LOGO_URL} alt="MBJ Jewellers" className="h-24 w-auto object-contain mb-6 opacity-90" />
-            <p className="text-[#D4AF37]/50 tracking-[0.4em] uppercase text-xs text-center">
-              Nakshi & Antique Jewellery · Mysore, Karnataka
+      {/* ════════════════════════════════════
+          FOOTER
+      ════════════════════════════════════ */}
+      <footer style={{ background: '#080808', borderTop: '1px solid rgba(212,175,55,0.1)', marginTop: '80px' }}>
+        <div className="max-w-7xl mx-auto px-8 py-16">
+
+          {/* Logo + tagline */}
+          <div className="flex flex-col items-center mb-14">
+            <img src={LOGO_URL} alt="MBJ Jewellers" style={{ height: '80px', width: 'auto', objectFit: 'contain', marginBottom: '16px', opacity: 0.85 }} />
+            <p style={{ fontSize: '10px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', textAlign: 'center' }}>
+              Nakshi &amp; Antique Jewellery · Mysore, Karnataka
             </p>
           </div>
 
+          {/* Three columns — uniform alignment */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-            {/* About */}
+
+            {/* Col 1: About */}
             <div>
-              <h4 className="text-[#D4AF37] tracking-widest uppercase text-xs mb-5 pb-2 border-b border-[#D4AF37]/15">About Us</h4>
-              <p className="text-white/40 text-sm leading-relaxed">
-                Specialists in exquisite South Indian Nakshi & Antique jewellery.
-                Crafting heritage pieces — Necklaces, Harams, Jhumkas and Bridal sets
-                with timeless craftsmanship in Mysore.
+              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>
+                About Us
+              </h4>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', lineHeight: '1.8' }}>
+                Specialists in South Indian Nakshi &amp; Antique jewellery —
+                Necklaces, Harams, Jhumkas and Bridal Sets, crafted with
+                timeless artistry in Mysore, Karnataka.
               </p>
             </div>
 
-            {/* Quick Links */}
+            {/* Col 2: Quick Links */}
             <div>
-              <h4 className="text-[#D4AF37] tracking-widest uppercase text-xs mb-5 pb-2 border-b border-[#D4AF37]/15">Quick Links</h4>
-              <ul className="space-y-3">
-                {allNavLinks.map(link => (
+              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>
+                Quick Links
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {navLinks.map(link => (
                   <li key={link.to}>
                     <Link
                       to={link.to}
-                      className="text-white/40 hover:text-[#D4AF37] transition-colors text-xs tracking-wider uppercase"
+                      style={{ fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', textDecoration: 'none', transition: 'color 0.2s' }}
+                      onMouseEnter={e => e.target.style.color = '#D4AF37'}
+                      onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.38)'}
                     >
                       {link.label}
                     </Link>
@@ -358,23 +400,29 @@ const Layout = () => {
               </ul>
             </div>
 
-            {/* Contact */}
+            {/* Col 3: Contact */}
             <div>
-              <h4 className="text-[#D4AF37] tracking-widest uppercase text-xs mb-5 pb-2 border-b border-[#D4AF37]/15">Contact Us</h4>
-              <ul className="space-y-4 text-sm text-white/40">
+              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>
+                Contact Us
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {settings?.phone && (
                   <li>
-                    <a href={`tel:${settings.phone}`} className="hover:text-[#D4AF37] transition-colors flex items-center gap-2">
-                      <Phone size={13} />
-                      {settings.phone}
+                    <a href={`tel:${settings.phone}`} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.38)'}
+                    >
+                      <Phone size={12} /> {settings.phone}
                     </a>
                   </li>
                 )}
                 {settings?.email && (
                   <li>
-                    <a href={`mailto:${settings.email}`} className="hover:text-[#D4AF37] transition-colors flex items-center gap-2">
-                      <Mail size={13} />
-                      {settings.email}
+                    <a href={`mailto:${settings.email}`} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.38)'}
+                    >
+                      <Mail size={12} /> {settings.email}
                     </a>
                   </li>
                 )}
@@ -382,12 +430,12 @@ const Layout = () => {
                   <li>
                     <a
                       href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}?text=Hi!`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"
+                      target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.38)'}
                     >
-                      <MessageCircle size={13} />
-                      WhatsApp Us
+                      <MessageCircle size={12} /> WhatsApp Us
                     </a>
                   </li>
                 )}
@@ -395,130 +443,119 @@ const Layout = () => {
                   <li>
                     <a
                       href={`https://instagram.com/${settings.instagram.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-[#D4AF37] transition-colors"
+                      target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', textDecoration: 'none', transition: 'color 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.38)'}
                     >
                       {settings.instagram}
                     </a>
                   </li>
                 )}
               </ul>
-
-              {/* Gold Rates in footer */}
-              {goldRates && (
-                <div className="mt-6 pt-5 border-t border-[#D4AF37]/10">
-                  <p className="text-[#D4AF37]/50 text-[10px] tracking-widest uppercase mb-3">Today's Gold Rate</p>
-                  <div className="space-y-1.5 text-xs text-white/35">
-                    <p>24K — ₹{goldRates.k24_rate?.toLocaleString('en-IN')}/g</p>
-                    <p>22K — ₹{goldRates.k22_rate?.toLocaleString('en-IN')}/g</p>
-                    <p>18K — ₹{goldRates.k18_rate?.toLocaleString('en-IN')}/g</p>
-                    {goldRates.last_updated && (
-                      <p className="text-white/20 text-[10px] mt-1">
-                        Updated: {new Date(goldRates.last_updated).toLocaleDateString('en-IN', {
-                          day: '2-digit', month: 'short', year: 'numeric'
-                        })}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
-          <div className="border-t border-[#D4AF37]/10 pt-8 text-center">
-            <p className="text-xs text-white/20 tracking-widest uppercase">
+          {/* Bottom bar */}
+          <div style={{ borderTop: '1px solid rgba(212,175,55,0.08)', paddingTop: '24px', textAlign: 'center' }}>
+            <p style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.18)' }}>
               © {new Date().getFullYear()} MBJ Jewellers · Mysore · All Rights Reserved
             </p>
           </div>
         </div>
       </footer>
 
-      {/* ── CONTACT MODAL ── */}
-      <AnimatePresence>
-        {showContactModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowContactModal(false)}
+      {/* ════════════════════════════════════
+          CONTACT MODAL
+      ════════════════════════════════════ */}
+      {showContactModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+          onClick={() => setShowContactModal(false)}
+        >
+          <div
+            style={{ background: '#0f0f0f', border: '1px solid rgba(212,175,55,0.22)', padding: '40px', maxWidth: '420px', width: '100%' }}
+            onClick={e => e.stopPropagation()}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-              className="bg-[#0f0f0f] border border-[#D4AF37]/25 p-8 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img src={LOGO_URL} alt="MBJ" className="h-16 w-auto object-contain mx-auto mb-6" />
-              <h3 className="font-serif text-xl tracking-[0.2em] uppercase text-[#D4AF37] mb-6 text-center">
-                Get in Touch
-              </h3>
-              <div className="space-y-3">
-                <a
-                  href={`https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi!`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 border border-green-500/20 hover:border-green-500/50 hover:bg-green-500/5 transition-all"
-                >
-                  <div className="w-10 h-10 bg-green-500 flex items-center justify-center flex-shrink-0">
-                    <MessageCircle size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <div className="text-white text-sm tracking-wider">WhatsApp</div>
-                    <div className="text-white/40 text-xs">{settings?.whatsapp || '+91 7019539776'}</div>
-                  </div>
-                </a>
-
-                <a
-                  href={`mailto:${settings?.email || 'jewellersmb786@gmail.com'}`}
-                  className="flex items-center gap-4 p-4 border border-[#D4AF37]/20 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 transition-all"
-                >
-                  <div className="w-10 h-10 bg-[#D4AF37] flex items-center justify-center flex-shrink-0">
-                    <Mail size={20} className="text-black" />
-                  </div>
-                  <div>
-                    <div className="text-white text-sm tracking-wider">Email</div>
-                    <div className="text-white/40 text-xs">{settings?.email || 'jewellersmb786@gmail.com'}</div>
-                  </div>
-                </a>
-
-                <a
-                  href={`tel:${settings?.phone || '+917019539776'}`}
-                  className="flex items-center gap-4 p-4 border border-blue-500/20 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all"
-                >
-                  <div className="w-10 h-10 bg-blue-500 flex items-center justify-center flex-shrink-0">
-                    <Phone size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <div className="text-white text-sm tracking-wider">Call Us</div>
-                    <div className="text-white/40 text-xs">{settings?.phone || '+91 7019539776'}</div>
-                  </div>
-                </a>
-              </div>
-
-              <button
-                onClick={() => setShowContactModal(false)}
-                className="mt-6 w-full py-3 border border-white/10 hover:border-white/25 text-white/40 text-xs tracking-widest uppercase transition-all"
+            <img src={LOGO_URL} alt="MBJ" style={{ height: '60px', width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto 24px' }} />
+            <h3 style={{ fontSize: '12px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', textAlign: 'center', marginBottom: '24px' }}>
+              Get in Touch
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <a
+                href={`https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi!`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 16px', border: '1px solid rgba(34,197,94,0.2)', textDecoration: 'none', transition: 'all 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(34,197,94,0.5)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(34,197,94,0.2)'}
               >
-                Close
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <div style={{ width: '38px', height: '38px', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <MessageCircle size={18} color="white" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', color: '#fff', letterSpacing: '0.1em' }}>WhatsApp</div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)' }}>{settings?.whatsapp || '+91 7019539776'}</div>
+                </div>
+              </a>
+              <a
+                href={`mailto:${settings?.email || 'jewellersmb786@gmail.com'}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 16px', border: '1px solid rgba(212,175,55,0.2)', textDecoration: 'none', transition: 'all 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(212,175,55,0.5)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(212,175,55,0.2)'}
+              >
+                <div style={{ width: '38px', height: '38px', background: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Mail size={18} color="black" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', color: '#fff', letterSpacing: '0.1em' }}>Email</div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)' }}>{settings?.email || 'jewellersmb786@gmail.com'}</div>
+                </div>
+              </a>
+              <a
+                href={`tel:${settings?.phone || '+917019539776'}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 16px', border: '1px solid rgba(59,130,246,0.2)', textDecoration: 'none', transition: 'all 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(59,130,246,0.5)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(59,130,246,0.2)'}
+              >
+                <div style={{ width: '38px', height: '38px', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Phone size={18} color="white" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', color: '#fff', letterSpacing: '0.1em' }}>Call Us</div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)' }}>{settings?.phone || '+91 7019539776'}</div>
+                </div>
+              </a>
+            </div>
+            <button
+              onClick={() => setShowContactModal(false)}
+              style={{ marginTop: '20px', width: '100%', padding: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.35)', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* ── FLOATING WHATSAPP BUTTON ── */}
+      {/* ════════════════════════════════════
+          FLOATING WHATSAPP
+      ════════════════════════════════════ */}
       <a
         href={`https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi! I'm interested in your jewellery.`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-green-500 hover:bg-green-400 flex items-center justify-center shadow-2xl transition-all hover:scale-110"
-        style={{ borderRadius: '50%' }}
+        target="_blank" rel="noopener noreferrer"
+        style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 40,
+          width: '52px', height: '52px', borderRadius: '50%',
+          background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 4px 20px rgba(34,197,94,0.35)',
+          transition: 'transform 0.2s, box-shadow 0.2s',
+          textDecoration: 'none',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(34,197,94,0.5)'; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(34,197,94,0.35)'; }}
       >
-        <MessageCircle size={26} className="text-white" />
+        <MessageCircle size={24} color="white" />
       </a>
     </div>
   );
