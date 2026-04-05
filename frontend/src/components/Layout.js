@@ -6,20 +6,43 @@ import CustomCursor from './CustomCursor';
 
 const LOGO_URL = 'https://i.ibb.co/DHmMcnm9/openart-image-rw2-Sfjg-1736872346359-raw-removebg-preview-1.png';
 
+// Social media SVG icons
+const FacebookIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+  </svg>
+);
+const YouTubeIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.4a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/>
+    <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#000"/>
+  </svg>
+);
+const TwitterIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M4 4l16 16M4 20L20 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"/>
+  </svg>
+);
+const InstagramIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+    <circle cx="12" cy="12" r="4"/>
+    <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+  </svg>
+);
+
 const Layout = () => {
-  const [goldRates, setGoldRates] = useState(null);
   const [settings, setSettings] = useState(null);
+  const [goldRates, setGoldRates] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [navVisible, setNavVisible] = useState(true);
   const [showContactModal, setShowContactModal] = useState(false);
-  const lastScrollY = useRef(0);
   const location = useLocation();
-  const isHomePage = location.pathname === '/';
+  const isHome = location.pathname === '/';
 
   useEffect(() => {
-    fetchGoldRates();
-    fetchSettings();
+    settingsAPI.getPublic().then(r => setSettings(r.data)).catch(() => {});
+    goldAPI.getRates().then(r => setGoldRates(r.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -27,251 +50,208 @@ const Layout = () => {
   }, [location]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      setScrolled(currentY > 100);
-      // Hide on scroll down, show on scroll up
-      if (currentY > lastScrollY.current && currentY > 150) {
-        setNavVisible(false);
-      } else {
-        setNavVisible(true);
-      }
-      lastScrollY.current = currentY;
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const fetchGoldRates = async () => {
-    try {
-      const res = await goldAPI.getRates();
-      setGoldRates(res.data);
-    } catch (e) {}
-  };
+  const isActive = (p) => location.pathname === p;
 
-  const fetchSettings = async () => {
-    try {
-      const res = await settingsAPI.getPublic();
-      setSettings(res.data);
-    } catch (e) {}
-  };
-
-  const navLinks = [
+  const navLeft = [
     { to: '/', label: 'Home' },
     { to: '/collections', label: 'Collections' },
+    { to: '/schemes', label: 'Schemes' },
+    { to: '/spiritual', label: 'Spiritual' },
+  ];
+
+  const navRight = [
     { to: '/calculator', label: 'Gold Calculator' },
     { to: '/custom-order', label: 'Custom Orders' },
     { to: '/about', label: 'About Us' },
     { to: '/contact', label: 'Contact' },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const allLinks = [...navLeft, ...navRight];
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric'
-    });
-  };
+  const navLinkStyle = (active) => ({
+    fontSize: '11px',
+    letterSpacing: '0.15em',
+    textTransform: 'uppercase',
+    fontWeight: 500,
+    color: active ? '#D4AF37' : 'rgba(255,255,255,0.7)',
+    textDecoration: 'none',
+    paddingBottom: '2px',
+    borderBottom: active ? '1px solid #D4AF37' : '1px solid transparent',
+    transition: 'color 0.2s, border-color 0.2s',
+    whiteSpace: 'nowrap',
+  });
+
+  const socialLinks = [
+    { key: 'facebook', icon: <FacebookIcon />, label: 'Facebook' },
+    { key: 'youtube', icon: <YouTubeIcon />, label: 'YouTube' },
+    { key: 'twitter', icon: <TwitterIcon />, label: 'Twitter' },
+    { key: 'instagram', icon: <InstagramIcon />, label: 'Instagram' },
+  ];
+
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
+    <div style={{ minHeight: '100vh', background: '#0f0f0f' }}>
       <CustomCursor />
 
-      {/* ════════════════════════════════════
+      {/* ════════════════════════════
           HEADER
-      ════════════════════════════════════ */}
-      <header
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          transform: navVisible ? 'translateY(0)' : 'translateY(-100%)',
-          transition: 'transform 0.35s ease, background 0.35s ease, box-shadow 0.35s ease',
-          background: scrolled ? 'rgba(8,8,8,0.97)' : 'transparent',
-          boxShadow: scrolled ? '0 1px 0 rgba(212,175,55,0.12)' : 'none',
-          backdropFilter: scrolled ? 'blur(16px)' : 'none',
-        }}
-      >
+      ════════════════════════════ */}
+      <header style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+        background: scrolled ? 'rgba(8,8,8,0.97)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(16px)' : 'none',
+        boxShadow: scrolled ? '0 1px 0 rgba(212,175,55,0.12)' : 'none',
+        transition: 'background 0.3s, box-shadow 0.3s, backdrop-filter 0.3s',
+      }}>
 
-        {/* ── UTILITY BAR (gold rates + contact) ── */}
-        <div
-          style={{
-            maxHeight: scrolled ? '0' : '36px',
-            overflow: 'hidden',
-            transition: 'max-height 0.35s ease',
-            borderBottom: scrolled ? 'none' : '1px solid rgba(212,175,55,0.08)',
-          }}
-        >
-          <div className="max-w-7xl mx-auto px-8 flex items-center justify-between h-9">
-            {/* Gold rates */}
-            <div className="flex items-center gap-5 text-[10px] tracking-widest uppercase text-[#D4AF37]/55">
+        {/* ── UTILITY BAR ── */}
+        <div style={{
+          background: 'rgba(0,0,0,0.6)',
+          borderBottom: '1px solid rgba(212,175,55,0.08)',
+          overflow: 'hidden',
+          maxHeight: scrolled ? '0' : '36px',
+          transition: 'max-height 0.3s ease',
+        }}>
+          <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 32px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Gold rates left */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.6)' }}>
               {goldRates ? (
                 <>
-                  <span>24K &nbsp;₹{Number(goldRates.k24_rate).toLocaleString('en-IN')}/g</span>
-                  <span className="text-white/15">|</span>
-                  <span>22K &nbsp;₹{Number(goldRates.k22_rate).toLocaleString('en-IN')}/g</span>
-                  <span className="text-white/15">|</span>
-                  <span>18K &nbsp;₹{Number(goldRates.k18_rate).toLocaleString('en-IN')}/g</span>
+                  <span>24K ₹{Number(goldRates.k24_rate).toLocaleString('en-IN')}/g</span>
+                  <span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>
+                  <span>22K ₹{Number(goldRates.k22_rate).toLocaleString('en-IN')}/g</span>
+                  <span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>
+                  <span>18K ₹{Number(goldRates.k18_rate).toLocaleString('en-IN')}/g</span>
                   {goldRates.last_updated && (
-                    <>
-                      <span className="text-white/15">|</span>
-                      <span className="text-white/25">as of {formatDate(goldRates.last_updated)}</span>
-                    </>
+                    <span style={{ color: 'rgba(255,255,255,0.2)' }}>| as of {formatDate(goldRates.last_updated)}</span>
                   )}
                 </>
-              ) : (
-                <span className="text-white/20">Loading gold rates...</span>
-              )}
+              ) : <span style={{ color: 'rgba(255,255,255,0.2)' }}>Loading rates...</span>}
             </div>
-            {/* Right side */}
-            <div className="flex items-center gap-5 text-[10px] tracking-widest uppercase text-white/35">
-              <a
-                href={`https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi!`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-[#D4AF37] transition-colors duration-200 flex items-center gap-1.5"
+
+            {/* Right — social icons + Get in Touch */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Social icons */}
+              {socialLinks.map(({ key, icon, label }) => {
+                const url = settings?.[key];
+                return url ? (
+                  <a key={key} href={url} target="_blank" rel="noopener noreferrer"
+                    title={label}
+                    style={{ color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', transition: 'color 0.2s', textDecoration: 'none' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                  >
+                    {icon}
+                  </a>
+                ) : (
+                  <span key={key} title={`${label} (not set)`}
+                    style={{ color: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', cursor: 'default' }}
+                  >
+                    {icon}
+                  </span>
+                );
+              })}
+              <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 4px' }}>|</span>
+              {/* Get in Touch */}
+              <button
+                onClick={() => setShowContactModal(true)}
+                style={{
+                  fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase',
+                  color: '#D4AF37', border: '1px solid rgba(212,175,55,0.4)',
+                  background: 'transparent', padding: '4px 14px', cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.08)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <MessageCircle size={10} />
-                WhatsApp
-              </a>
-              <span className="text-white/15">|</span>
-              <a
-                href={`tel:${settings?.phone}`}
-                className="hover:text-[#D4AF37] transition-colors duration-200 flex items-center gap-1.5"
-              >
-                <Phone size={10} />
-                {settings?.phone || '+91 7019539776'}
-              </a>
+                Get in Touch
+              </button>
             </div>
           </div>
         </div>
 
         {/* ── MAIN NAV ── */}
-        <div className="max-w-7xl mx-auto px-8">
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 32px' }}>
 
-          {/* HOMEPAGE HERO STATE — logo centered, links below */}
-          {isHomePage && !scrolled && (
-            <div className="flex flex-col items-center py-6">
-              <Link to="/">
-                <img
-                  src={LOGO_URL}
-                  alt="MBJ Jewellers"
-                  style={{ height: '110px', width: 'auto', objectFit: 'contain' }}
-                />
-              </Link>
-              <nav className="hidden lg:flex items-center gap-9 mt-4">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    style={{
-                      fontSize: '11px',
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      fontWeight: 500,
-                      color: isActive(link.to) ? '#D4AF37' : 'rgba(255,255,255,0.7)',
-                      textDecoration: 'none',
-                      transition: 'color 0.2s',
-                      paddingBottom: '2px',
-                      borderBottom: isActive(link.to) ? '1px solid #D4AF37' : '1px solid transparent',
-                    }}
+          {/* HOMEPAGE HERO STATE — logo center, links split left/right */}
+          {isHome && !scrolled && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 0' }}>
+              {/* Left nav */}
+              <nav style={{ display: 'flex', alignItems: 'center', gap: '28px', flex: 1 }} className="hidden-mobile">
+                {navLeft.map(link => (
+                  <Link key={link.to} to={link.to}
+                    style={navLinkStyle(isActive(link.to))}
                     onMouseEnter={e => { if (!isActive(link.to)) e.target.style.color = '#fff'; }}
                     onMouseLeave={e => { if (!isActive(link.to)) e.target.style.color = 'rgba(255,255,255,0.7)'; }}
                   >
                     {link.label}
                   </Link>
                 ))}
-                <button
-                  onClick={() => setShowContactModal(true)}
-                  style={{
-                    fontSize: '10px',
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    color: '#D4AF37',
-                    border: '1px solid rgba(212,175,55,0.45)',
-                    background: 'transparent',
-                    padding: '6px 18px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.08)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  Get in Touch
-                </button>
               </nav>
+
+              {/* Center logo */}
+              <Link to="/" style={{ flexShrink: 0, margin: '0 32px', display: 'block' }}>
+                <img src={LOGO_URL} alt="MBJ Jewellers"
+                  style={{ height: '90px', width: 'auto', objectFit: 'contain', display: 'block' }}
+                />
+              </Link>
+
+              {/* Right nav */}
+              <nav style={{ display: 'flex', alignItems: 'center', gap: '28px', flex: 1, justifyContent: 'flex-end' }} className="hidden-mobile">
+                {navRight.map(link => (
+                  <Link key={link.to} to={link.to}
+                    style={navLinkStyle(isActive(link.to))}
+                    onMouseEnter={e => { if (!isActive(link.to)) e.target.style.color = '#fff'; }}
+                    onMouseLeave={e => { if (!isActive(link.to)) e.target.style.color = 'rgba(255,255,255,0.7)'; }}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+
               {/* Mobile hamburger */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden absolute right-8 top-8 text-white"
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                style={{ display: 'none', color: '#fff', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                className="show-mobile"
               >
                 {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
             </div>
           )}
 
-          {/* SCROLLED STATE (homepage) or ALL OTHER PAGES — logo left, links right */}
-          {(!isHomePage || scrolled) && (
-            <div className="flex items-center justify-between py-3">
-              {/* Logo icon only — left */}
+          {/* SCROLLED STATE or INNER PAGES — logo left, all links right */}
+          {(!isHome || scrolled) && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
+              {/* Logo icon — left */}
               <Link to="/" style={{ flexShrink: 0 }}>
-                <img
-                  src={LOGO_URL}
-                  alt="MBJ Jewellers"
-                  style={{ height: '48px', width: 'auto', objectFit: 'contain' }}
+                <img src={LOGO_URL} alt="MBJ Jewellers"
+                  style={{ height: '44px', width: 'auto', objectFit: 'contain', display: 'block' }}
                 />
               </Link>
 
-              {/* Nav links — right */}
-              <nav className="hidden lg:flex items-center gap-8">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    style={{
-                      fontSize: '10px',
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      fontWeight: 500,
-                      color: isActive(link.to) ? '#D4AF37' : 'rgba(255,255,255,0.65)',
-                      textDecoration: 'none',
-                      transition: 'color 0.2s',
-                      paddingBottom: '2px',
-                      borderBottom: isActive(link.to) ? '1px solid #D4AF37' : '1px solid transparent',
-                    }}
+              {/* All nav links — right */}
+              <nav style={{ display: 'flex', alignItems: 'center', gap: '24px' }} className="hidden-mobile">
+                {allLinks.map(link => (
+                  <Link key={link.to} to={link.to}
+                    style={{ ...navLinkStyle(isActive(link.to)), fontSize: '10px' }}
                     onMouseEnter={e => { if (!isActive(link.to)) e.target.style.color = '#fff'; }}
-                    onMouseLeave={e => { if (!isActive(link.to)) e.target.style.color = 'rgba(255,255,255,0.65)'; }}
+                    onMouseLeave={e => { if (!isActive(link.to)) e.target.style.color = 'rgba(255,255,255,0.7)'; }}
                   >
                     {link.label}
                   </Link>
                 ))}
-                <button
-                  onClick={() => setShowContactModal(true)}
-                  style={{
-                    fontSize: '10px',
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    color: '#D4AF37',
-                    border: '1px solid rgba(212,175,55,0.45)',
-                    background: 'transparent',
-                    padding: '5px 16px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.08)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  Get in Touch
-                </button>
               </nav>
 
               {/* Mobile hamburger */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden text-white"
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                className="show-mobile"
               >
                 {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -280,62 +260,27 @@ const Layout = () => {
         </div>
       </header>
 
-      {/* ════════════════════════════════════
-          MOBILE MENU
-      ════════════════════════════════════ */}
+      {/* ── MOBILE MENU ── */}
       {mobileMenuOpen && (
         <>
-          <div
-            style={{
-              position: 'fixed', inset: 0,
-              background: 'rgba(0,0,0,0.6)',
-              zIndex: 40,
-            }}
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <div
-            style={{
-              position: 'fixed',
-              top: 0, right: 0, bottom: 0,
-              width: '280px',
-              background: '#080808',
-              borderLeft: '1px solid rgba(212,175,55,0.12)',
-              zIndex: 45,
-              padding: '80px 32px 32px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '24px',
-            }}
-          >
-            <img src={LOGO_URL} alt="MBJ" style={{ height: '60px', width: 'auto', objectFit: 'contain', marginBottom: '8px' }} />
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                style={{
-                  fontSize: '11px',
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: isActive(link.to) ? '#D4AF37' : 'rgba(255,255,255,0.6)',
-                  textDecoration: 'none',
-                }}
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 40 }}
+            onClick={() => setMobileMenuOpen(false)} />
+          <div style={{
+            position: 'fixed', top: 0, right: 0, bottom: 0, width: '280px',
+            background: '#0a0a0a', borderLeft: '1px solid rgba(212,175,55,0.15)',
+            zIndex: 45, padding: '80px 32px 32px',
+            display: 'flex', flexDirection: 'column', gap: '22px',
+          }}>
+            <img src={LOGO_URL} alt="MBJ" style={{ height: '56px', width: 'auto', objectFit: 'contain', marginBottom: '8px' }} />
+            {allLinks.map(link => (
+              <Link key={link.to} to={link.to}
+                style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: isActive(link.to) ? '#D4AF37' : 'rgba(255,255,255,0.6)', textDecoration: 'none' }}
               >
                 {link.label}
               </Link>
             ))}
-            <button
-              onClick={() => { setMobileMenuOpen(false); setShowContactModal(true); }}
-              style={{
-                fontSize: '10px',
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: '#D4AF37',
-                border: '1px solid rgba(212,175,55,0.4)',
-                background: 'transparent',
-                padding: '10px 20px',
-                cursor: 'pointer',
-                marginTop: '8px',
-              }}
+            <button onClick={() => { setMobileMenuOpen(false); setShowContactModal(true); }}
+              style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.4)', background: 'transparent', padding: '10px', cursor: 'pointer', marginTop: '8px' }}
             >
               Get in Touch
             </button>
@@ -343,220 +288,154 @@ const Layout = () => {
         </>
       )}
 
-      {/* ════════════════════════════════════
-          MAIN CONTENT
-      ════════════════════════════════════ */}
-      <main style={{ paddingTop: isHomePage ? '0' : '72px' }}>
+      {/* ── MAIN CONTENT ── */}
+      <main style={{ paddingTop: isHome ? '0' : '72px' }}>
         <Outlet />
       </main>
 
-      {/* ════════════════════════════════════
-          FOOTER
-      ════════════════════════════════════ */}
+      {/* ── FOOTER ── */}
       <footer style={{ background: '#080808', borderTop: '1px solid rgba(212,175,55,0.1)', marginTop: '80px' }}>
-        <div className="max-w-7xl mx-auto px-8 py-16">
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '60px 32px 32px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px', marginBottom: '48px' }}>
 
-          {/* Logo + tagline */}
-          <div className="flex flex-col items-center mb-14">
-            <img src={LOGO_URL} alt="MBJ Jewellers" style={{ height: '80px', width: 'auto', objectFit: 'contain', marginBottom: '16px', opacity: 0.85 }} />
-            <p style={{ fontSize: '10px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.45)', textAlign: 'center' }}>
-              Nakshi &amp; Antique Jewellery · Mysore, Karnataka
-            </p>
-          </div>
-
-          {/* Three columns — uniform alignment */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-
-            {/* Col 1: About */}
+            {/* Contact */}
             <div>
-              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>
-                About Us
-              </h4>
+              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '20px' }}>Contact Us</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {settings?.phone && (
+                  <a href={`tel:${settings.phone}`} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                  >
+                    <Phone size={12} /> {settings.phone}
+                  </a>
+                )}
+                {settings?.email && (
+                  <a href={`mailto:${settings.email}`} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                  >
+                    <Mail size={12} /> {settings.email}
+                  </a>
+                )}
+                {settings?.whatsapp && (
+                  <a href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}?text=Hi!`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                  >
+                    <MessageCircle size={12} /> WhatsApp Us
+                  </a>
+                )}
+                {/* Social icons in footer */}
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                  {socialLinks.map(({ key, icon, label }) => {
+                    const url = settings?.[key];
+                    return url ? (
+                      <a key={key} href={url} target="_blank" rel="noopener noreferrer" title={label}
+                        style={{ color: 'rgba(255,255,255,0.3)', transition: 'color 0.2s', textDecoration: 'none' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}
+                      >
+                        {icon}
+                      </a>
+                    ) : (
+                      <span key={key} style={{ color: 'rgba(255,255,255,0.15)' }}>{icon}</span>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* About Us */}
+            <div>
+              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '20px' }}>About Us</h4>
               <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', lineHeight: '1.8' }}>
-                Specialists in South Indian Nakshi &amp; Antique jewellery —
-                Necklaces, Harams, Jhumkas and Bridal Sets, crafted with
-                timeless artistry in Mysore, Karnataka.
+                {settings?.tagline || 'Specialists in South Indian Nakshi & Antique jewellery — Necklaces, Harams, Jhumkas and Bridal Sets, crafted with timeless artistry.'}
               </p>
             </div>
 
-            {/* Col 2: Quick Links */}
+            {/* Store Location */}
             <div>
-              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>
-                Quick Links
-              </h4>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {navLinks.map(link => (
-                  <li key={link.to}>
-                    <Link
-                      to={link.to}
-                      style={{ fontSize: '12px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', textDecoration: 'none', transition: 'color 0.2s' }}
-                      onMouseEnter={e => e.target.style.color = '#D4AF37'}
-                      onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.38)'}
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Col 3: Contact */}
-            <div>
-              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>
-                Contact Us
-              </h4>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {settings?.phone && (
-                  <li>
-                    <a href={`tel:${settings.phone}`} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.38)'}
-                    >
-                      <Phone size={12} /> {settings.phone}
-                    </a>
-                  </li>
-                )}
-                {settings?.email && (
-                  <li>
-                    <a href={`mailto:${settings.email}`} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.38)'}
-                    >
-                      <Mail size={12} /> {settings.email}
-                    </a>
-                  </li>
-                )}
-                {settings?.whatsapp && (
-                  <li>
-                    <a
-                      href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}?text=Hi!`}
-                      target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.38)'}
-                    >
-                      <MessageCircle size={12} /> WhatsApp Us
-                    </a>
-                  </li>
-                )}
-                {settings?.instagram && (
-                  <li>
-                    <a
-                      href={`https://instagram.com/${settings.instagram.replace('@', '')}`}
-                      target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', textDecoration: 'none', transition: 'color 0.2s' }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.38)'}
-                    >
-                      {settings.instagram}
-                    </a>
-                  </li>
-                )}
-              </ul>
+              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '20px' }}>Store Location</h4>
+              {settings?.store_location ? (
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', lineHeight: '1.8' }}>
+                  {settings.store_location}
+                </p>
+              ) : (
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>
+                  Add store location from admin settings
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Bottom bar */}
           <div style={{ borderTop: '1px solid rgba(212,175,55,0.08)', paddingTop: '24px', textAlign: 'center' }}>
             <p style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.18)' }}>
-              © {new Date().getFullYear()} MBJ Jewellers · Mysore · All Rights Reserved
+              © {new Date().getFullYear()} MBJ Jewellers · All Rights Reserved
             </p>
           </div>
         </div>
       </footer>
 
-      {/* ════════════════════════════════════
-          CONTACT MODAL
-      ════════════════════════════════════ */}
+      {/* ── CONTACT MODAL ── */}
       {showContactModal && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
           onClick={() => setShowContactModal(false)}
         >
-          <div
-            style={{ background: '#0f0f0f', border: '1px solid rgba(212,175,55,0.22)', padding: '40px', maxWidth: '420px', width: '100%' }}
+          <div style={{ background: '#0f0f0f', border: '1px solid rgba(212,175,55,0.22)', padding: '40px', maxWidth: '400px', width: '100%' }}
             onClick={e => e.stopPropagation()}
           >
-            <img src={LOGO_URL} alt="MBJ" style={{ height: '60px', width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto 24px' }} />
-            <h3 style={{ fontSize: '12px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', textAlign: 'center', marginBottom: '24px' }}>
-              Get in Touch
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <a
-                href={`https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi!`}
-                target="_blank" rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 16px', border: '1px solid rgba(34,197,94,0.2)', textDecoration: 'none', transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(34,197,94,0.5)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(34,197,94,0.2)'}
-              >
-                <div style={{ width: '38px', height: '38px', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <MessageCircle size={18} color="white" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#fff', letterSpacing: '0.1em' }}>WhatsApp</div>
-                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)' }}>{settings?.whatsapp || '+91 7019539776'}</div>
-                </div>
-              </a>
-              <a
-                href={`mailto:${settings?.email || 'jewellersmb786@gmail.com'}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 16px', border: '1px solid rgba(212,175,55,0.2)', textDecoration: 'none', transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(212,175,55,0.5)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(212,175,55,0.2)'}
-              >
-                <div style={{ width: '38px', height: '38px', background: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Mail size={18} color="black" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#fff', letterSpacing: '0.1em' }}>Email</div>
-                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)' }}>{settings?.email || 'jewellersmb786@gmail.com'}</div>
-                </div>
-              </a>
-              <a
-                href={`tel:${settings?.phone || '+917019539776'}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 16px', border: '1px solid rgba(59,130,246,0.2)', textDecoration: 'none', transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(59,130,246,0.5)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(59,130,246,0.2)'}
-              >
-                <div style={{ width: '38px', height: '38px', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Phone size={18} color="white" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#fff', letterSpacing: '0.1em' }}>Call Us</div>
-                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)' }}>{settings?.phone || '+91 7019539776'}</div>
-                </div>
-              </a>
+            <img src={LOGO_URL} alt="MBJ" style={{ height: '56px', width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto 20px' }} />
+            <h3 style={{ fontSize: '12px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', textAlign: 'center', marginBottom: '24px' }}>Get in Touch</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {[
+                { href: `https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g,'')}?text=Hi!`, icon: <MessageCircle size={17} />, bg: '#22c55e', label: 'WhatsApp', sub: settings?.whatsapp || '+91 7019539776', target: '_blank' },
+                { href: `mailto:${settings?.email||'jewellersmb786@gmail.com'}`, icon: <Mail size={17} />, bg: '#D4AF37', iconColor: '#000', label: 'Email', sub: settings?.email || 'jewellersmb786@gmail.com', target: '_self' },
+                { href: `tel:${settings?.phone||'+917019539776'}`, icon: <Phone size={17} />, bg: '#3b82f6', label: 'Call Us', sub: settings?.phone || '+91 7019539776', target: '_self' },
+              ].map(({ href, icon, bg, iconColor, label, sub, target }) => (
+                <a key={label} href={href} target={target} rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 14px', border: '1px solid rgba(255,255,255,0.08)', textDecoration: 'none', transition: 'border-color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+                >
+                  <div style={{ width: '36px', height: '36px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: iconColor || '#fff' }}>
+                    {icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', color: '#fff', letterSpacing: '0.08em' }}>{label}</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.38)' }}>{sub}</div>
+                  </div>
+                </a>
+              ))}
             </div>
-            <button
-              onClick={() => setShowContactModal(false)}
-              style={{ marginTop: '20px', width: '100%', padding: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.35)', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
-            >
-              Close
-            </button>
+            <button onClick={() => setShowContactModal(false)}
+              style={{ marginTop: '16px', width: '100%', padding: '11px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.35)', fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer' }}
+            >Close</button>
           </div>
         </div>
       )}
 
-      {/* ════════════════════════════════════
-          FLOATING WHATSAPP
-      ════════════════════════════════════ */}
-      <a
-        href={`https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g, '')}?text=Hi! I'm interested in your jewellery.`}
+      {/* ── FLOATING WHATSAPP ── */}
+      <a href={`https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g,'')||'917019539776'}?text=Hi!`}
         target="_blank" rel="noopener noreferrer"
-        style={{
-          position: 'fixed', bottom: '24px', right: '24px', zIndex: 40,
-          width: '52px', height: '52px', borderRadius: '50%',
-          background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 20px rgba(34,197,94,0.35)',
-          transition: 'transform 0.2s, box-shadow 0.2s',
-          textDecoration: 'none',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(34,197,94,0.5)'; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(34,197,94,0.35)'; }}
+        style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 40, width: '50px', height: '50px', borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(34,197,94,0.4)', textDecoration: 'none', transition: 'transform 0.2s' }}
+        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
       >
-        <MessageCircle size={24} color="white" />
+        <MessageCircle size={22} color="white" />
       </a>
+
+      <style>{`
+        @media (max-width: 1024px) {
+          .hidden-mobile { display: none !important; }
+          .show-mobile { display: flex !important; }
+        }
+        @media (min-width: 1025px) {
+          .show-mobile { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 };
