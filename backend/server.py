@@ -307,17 +307,22 @@ async def get_public_settings():
     # Return only public fields including all gold rates
     return {
         "logo_url": settings.get("logo_url"),
+        "hero_image_url": settings.get("hero_image_url"),
         "business_name": settings.get("business_name"),
         "tagline": settings.get("tagline"),
         "email": settings.get("email"),
         "phone": settings.get("phone"),
         "whatsapp": settings.get("whatsapp"),
         "instagram": settings.get("instagram"),
+        "facebook": settings.get("facebook"),
+        "youtube": settings.get("youtube"),
+        "twitter": settings.get("twitter"),
         "address": settings.get("address"),
-        "k24_rate": settings.get("k24_rate", 7200.0),
-        "k22_rate": settings.get("k22_rate", 6600.0),
-        "k18_rate": settings.get("k18_rate", 5400.0),
-        "current_gold_rate": settings.get("k22_rate", 6600.0),  # Use 22K as default
+        "store_location": settings.get("store_location"),
+        "k24_rate": settings.get("k24_rate", 15093.0),
+        "k22_rate": settings.get("k22_rate", 13835.0),
+        "k18_rate": settings.get("k18_rate", 11320.0),
+        "current_gold_rate": settings.get("k22_rate", 13835.0),
         "rates_updated_at": settings.get("rates_updated_at", settings.get("updated_at"))
     }
 
