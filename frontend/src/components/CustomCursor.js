@@ -1,116 +1,97 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
 
 const CustomCursor = () => {
   const cursorRef = useRef(null);
-  const cursorDotRef = useRef(null);
-  const [isHovering, setIsHovering] = useState(false);
-  const [isZoom, setIsZoom] = useState(false);
+  const dotRef = useRef(null);
 
   useEffect(() => {
-    const cursor = cursorRef.current;
-    const cursorDot = cursorDotRef.current;
-    let mouseX = 0;
-    let mouseY = 0;
-    let cursorX = 0;
-    let cursorY = 0;
+    let mouseX = 0, mouseY = 0;
+    let cursorX = 0, cursorY = 0;
+    let animating = true;
 
-    const handleMouseMove = (e) => {
+    const onMouseMove = (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-    };
-
-    const handleMouseOver = (e) => {
-      const target = e.target;
-      
-      // Check if hovering over clickable elements
-      if (target.tagName === 'A' || target.tagName === 'BUTTON' || target.closest('a') || target.closest('button')) {
-        setIsHovering(true);
-      }
-      
-      // Check if hovering over images for zoom effect
-      if (target.tagName === 'IMG' || target.closest('.zoom-image')) {
-        setIsZoom(true);
+      if (dotRef.current) {
+        dotRef.current.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
       }
     };
 
-    const handleMouseOut = (e) => {
-      const target = e.target;
-      if (target.tagName === 'A' || target.tagName === 'BUTTON' || target.closest('a') || target.closest('button')) {
-        setIsHovering(false);
-      }
-      if (target.tagName === 'IMG' || target.closest('.zoom-image')) {
-        setIsZoom(false);
+    const onMouseOver = (e) => {
+      const t = e.target;
+      if (t.closest('a') || t.closest('button') || t.tagName === 'A' || t.tagName === 'BUTTON') {
+        if (cursorRef.current) cursorRef.current.style.transform += ' scale(1.6)';
       }
     };
 
-    // Smooth cursor follow with lerp
+    const onMouseOut = (e) => {
+      const t = e.target;
+      if (t.closest('a') || t.closest('button') || t.tagName === 'A' || t.tagName === 'BUTTON') {
+        if (cursorRef.current) {
+          cursorRef.current.style.width = '36px';
+          cursorRef.current.style.height = '36px';
+        }
+      }
+    };
+
     const animate = () => {
-      const speed = 0.15;
-      cursorX += (mouseX - cursorX) * speed;
-      cursorY += (mouseY - cursorY) * speed;
-
-      if (cursor) {
-        cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
+      if (!animating) return;
+      cursorX += (mouseX - cursorX) * 0.12;
+      cursorY += (mouseY - cursorY) * 0.12;
+      if (cursorRef.current) {
+        cursorRef.current.style.transform = `translate(${cursorX}px, ${cursorY}px)`;
       }
-      if (cursorDot) {
-        cursorDot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
-      }
-
       requestAnimationFrame(animate);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseover', handleMouseOver);
-    document.addEventListener('mouseout', handleMouseOut);
+    window.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseover', onMouseOver);
+    document.addEventListener('mouseout', onMouseOut);
     animate();
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseover', handleMouseOver);
-      document.removeEventListener('mouseout', handleMouseOut);
+      animating = false;
+      window.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseover', onMouseOver);
+      document.removeEventListener('mouseout', onMouseOut);
     };
   }, []);
 
   return (
     <>
-      {/* Main Cursor Ring */}
-      <motion.div
+      {/* Outer ring - follows with lag */}
+      <div
         ref={cursorRef}
-        className="fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference"
-        style={{ translateX: '-50%', translateY: '-50%' }}
-        animate={{
-          width: isZoom ? 120 : isHovering ? 60 : 40,
-          height: isZoom ? 120 : isHovering ? 60 : 40,
-          opacity: isZoom ? 0.8 : 1,
+        style={{
+          position: 'fixed',
+          top: '-18px',
+          left: '-18px',
+          width: '36px',
+          height: '36px',
+          borderRadius: '50%',
+          border: '1px solid rgba(212,175,55,0.6)',
+          pointerEvents: 'none',
+          zIndex: 9999,
+          transition: 'width 0.2s, height 0.2s',
+          willChange: 'transform',
         }}
-        transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-      >
-        <div className="w-full h-full rounded-full border-2 border-gold" 
-          style={{
-            background: isZoom ? 'radial-gradient(circle, transparent 30%, rgba(212, 175, 55, 0.1) 100%)' : 'transparent'
-          }}
-        >
-          {isZoom && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-gold text-xs font-semibold">ZOOM</span>
-            </div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Cursor Dot */}
-      <motion.div
-        ref={cursorDotRef}
-        className="fixed top-0 left-0 pointer-events-none z-[9999]"
-        style={{ translateX: '-50%', translateY: '-50%' }}
-        animate={{
-          scale: isHovering ? 0 : 1,
+      />
+      {/* Inner dot - follows instantly */}
+      <div
+        ref={dotRef}
+        style={{
+          position: 'fixed',
+          top: '-3px',
+          left: '-3px',
+          width: '6px',
+          height: '6px',
+          borderRadius: '50%',
+          background: '#D4AF37',
+          pointerEvents: 'none',
+          zIndex: 9999,
+          willChange: 'transform',
         }}
-        transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-      >
-        <div className="w-2 h-2 rounded-full bg-gold"></div>
-      </motion.div>
+      />
     </>
   );
 };
