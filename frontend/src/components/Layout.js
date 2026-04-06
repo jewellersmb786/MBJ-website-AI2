@@ -4,16 +4,10 @@ import { goldAPI, settingsAPI } from '../api';
 import { Phone, Menu, X, Mail, MessageCircle } from 'lucide-react';
 import CustomCursor from './CustomCursor';
 
-const LOGO_FULL = 'https://i.ibb.co/DHmMcnm9/openart-image-rw2-Sfjg-1736872346359-raw-removebg-preview-1.png';
-
-// Diamond icon only — cropped top portion of logo
-// We use the same image but clip it to show only the diamond part
-const LOGO_ICON = 'https://i.ibb.co/DHmMcnm9/openart-image-rw2-Sfjg-1736872346359-raw-removebg-preview-1.png';
+const LOGO_URL = 'https://i.ibb.co/DHmMcnm9/openart-image-rw2-Sfjg-1736872346359-raw-removebg-preview-1.png';
 
 const FacebookIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-  </svg>
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
 );
 const YouTubeIcon = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
@@ -34,6 +28,24 @@ const InstagramIcon = () => (
   </svg>
 );
 
+const NAV_LINKS = [
+  { to: '/', label: 'Home' },
+  { to: '/collections', label: 'Collections' },
+  { to: '/schemes', label: 'Schemes' },
+  { to: '/spiritual', label: 'Spiritual' },
+  { to: '/calculator', label: 'Quotation' },
+  { to: '/custom-order', label: 'Customisation' },
+  { to: '/about', label: 'About Us' },
+  { to: '/contact', label: 'Contact' },
+];
+
+const SOCIAL = [
+  { key: 'facebook', icon: <FacebookIcon /> },
+  { key: 'youtube', icon: <YouTubeIcon /> },
+  { key: 'twitter', icon: <TwitterIcon /> },
+  { key: 'instagram', icon: <InstagramIcon /> },
+];
+
 const Layout = () => {
   const [settings, setSettings] = useState(null);
   const [goldRates, setGoldRates] = useState(null);
@@ -51,128 +63,66 @@ const Layout = () => {
   useEffect(() => { setMobileMenuOpen(false); }, [location]);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 80);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const fn = () => setScrolled(window.scrollY > 80);
+    window.addEventListener('scroll', fn, { passive: true });
+    return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const isActive = (p) => location.pathname === p;
+  const active = (p) => location.pathname === p;
+  const fmt = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
 
-  const navLinks = [
-    { to: '/', label: 'Home' },
-    { to: '/collections', label: 'Collections' },
-    { to: '/schemes', label: 'Schemes' },
-    { to: '/spiritual', label: 'Spiritual' },
-    { to: '/calculator', label: 'Gold Calculator' },
-    { to: '/custom-order', label: 'Custom Orders' },
-    { to: '/about', label: 'About Us' },
-    { to: '/contact', label: 'Contact' },
-  ];
-
-  const socialLinks = [
-    { key: 'facebook', icon: <FacebookIcon />, label: 'Facebook' },
-    { key: 'youtube', icon: <YouTubeIcon />, label: 'YouTube' },
-    { key: 'twitter', icon: <TwitterIcon />, label: 'Twitter' },
-    { key: 'instagram', icon: <InstagramIcon />, label: 'Instagram' },
-  ];
-
-  const formatDate = (d) => d
-    ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-    : '';
-
-  // Nav link box — equal width, text centered
-  const NavLink = ({ to, label, small }) => {
-    const active = isActive(to);
-    return (
-      <Link
-        to={to}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: small ? '100px' : '120px',
-          height: small ? '40px' : '52px',
-          fontSize: small ? '9.5px' : '10.5px',
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          fontWeight: 500,
-          color: active ? '#D4AF37' : 'rgba(255,255,255,0.7)',
-          textDecoration: 'none',
-          borderBottom: active ? '2px solid #D4AF37' : '2px solid transparent',
-          transition: 'color 0.2s, border-color 0.2s',
-          textAlign: 'center',
-          whiteSpace: 'nowrap',
-          flexShrink: 0,
-        }}
-        onMouseEnter={e => { if (!active) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderBottomColor = 'rgba(212,175,55,0.3)'; }}}
-        onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.borderBottomColor = 'transparent'; }}}
-      >
-        {label}
-      </Link>
-    );
-  };
+  // LOGO sizes
+  // Large: ~2 inches = ~144px on screen (96dpi × 1.5 scale typical)
+  const logoW = scrolled ? 42 : (isHome ? 144 : 72);
+  // When scrolled, clip bottom 38% to hide JEWELLERS text
+  const logoClip = scrolled ? 'inset(0 0 38% 0)' : 'none';
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f0f' }}>
       <CustomCursor />
 
-      {/* ════════════════════════════
-          HEADER
-      ════════════════════════════ */}
       <header style={{
-        position: 'fixed',
-        top: 0, left: 0, right: 0,
-        zIndex: 50,
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
         background: scrolled ? 'rgba(8,8,8,0.97)' : 'transparent',
         backdropFilter: scrolled ? 'blur(16px)' : 'none',
         boxShadow: scrolled ? '0 1px 0 rgba(212,175,55,0.12)' : 'none',
-        transition: 'background 0.4s ease, box-shadow 0.4s ease',
+        transition: 'background 0.4s, box-shadow 0.4s',
       }}>
 
         {/* ── UTILITY BAR ── */}
         <div style={{
-          background: 'rgba(0,0,0,0.55)',
-          borderBottom: '1px solid rgba(212,175,55,0.08)',
-          overflow: 'hidden',
+          background: 'rgba(0,0,0,0.5)',
+          borderBottom: '1px solid rgba(212,175,55,0.07)',
           maxHeight: scrolled ? '0' : '34px',
           opacity: scrolled ? 0 : 1,
+          overflow: 'hidden',
           transition: 'max-height 0.4s ease, opacity 0.3s ease',
         }}>
-          <div style={{
-            maxWidth: '1400px', margin: '0 auto', padding: '0 40px',
-            height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            {/* Gold rates */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.55)' }}>
+          <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 32px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Rates */}
+            <div style={{ display: 'flex', gap: '12px', fontSize: '10px', letterSpacing: '0.13em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.55)', alignItems: 'center' }}>
               {goldRates ? (
                 <>
                   <span>24K ₹{Number(goldRates.k24_rate).toLocaleString('en-IN')}/g</span>
-                  <span style={{ color: 'rgba(255,255,255,0.12)' }}>|</span>
+                  <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
                   <span>22K ₹{Number(goldRates.k22_rate).toLocaleString('en-IN')}/g</span>
-                  <span style={{ color: 'rgba(255,255,255,0.12)' }}>|</span>
+                  <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
                   <span>18K ₹{Number(goldRates.k18_rate).toLocaleString('en-IN')}/g</span>
-                  {goldRates.last_updated && (
-                    <span style={{ color: 'rgba(255,255,255,0.2)' }}>| as of {formatDate(goldRates.last_updated)}</span>
-                  )}
+                  {goldRates.last_updated && <><span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span><span style={{ color: 'rgba(255,255,255,0.22)' }}>as of {fmt(goldRates.last_updated)}</span></>}
                 </>
-              ) : <span style={{ color: 'rgba(255,255,255,0.18)' }}>Loading rates...</span>}
+              ) : <span style={{ color: 'rgba(255,255,255,0.15)' }}>Loading rates...</span>}
             </div>
-            {/* Right — social + Get in Touch */}
+            {/* Social + Get in Touch */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {socialLinks.map(({ key, icon, label }) => {
+              {SOCIAL.map(({ key, icon }) => {
                 const url = settings?.[key];
-                const style = { color: url ? 'rgba(255,255,255,0.38)' : 'rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', transition: 'color 0.2s', textDecoration: 'none', cursor: url ? 'pointer' : 'default' };
-                return url ? (
-                  <a key={key} href={url} target="_blank" rel="noopener noreferrer" title={label} style={style}
-                    onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.38)'}
-                  >{icon}</a>
-                ) : <span key={key} style={style} title={`Add ${label} in Settings`}>{icon}</span>;
+                return url
+                  ? <a key={key} href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.35)', display: 'flex', transition: 'color 0.2s', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}>{icon}</a>
+                  : <span key={key} style={{ color: 'rgba(255,255,255,0.15)', display: 'flex' }}>{icon}</span>;
               })}
-              <span style={{ color: 'rgba(255,255,255,0.12)', margin: '0 4px' }}>|</span>
-              <button
-                onClick={() => setShowContactModal(true)}
-                style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.35)', background: 'transparent', padding: '3px 14px', cursor: 'pointer', transition: 'background 0.2s' }}
+              <span style={{ color: 'rgba(255,255,255,0.1)', margin: '0 2px' }}>|</span>
+              <button onClick={() => setShowContactModal(true)}
+                style={{ fontSize: '10px', letterSpacing: '0.13em', textTransform: 'uppercase', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.35)', background: 'transparent', padding: '3px 12px', cursor: 'pointer', transition: 'background 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.08)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >Get in Touch</button>
@@ -180,55 +130,71 @@ const Layout = () => {
           </div>
         </div>
 
-        {/* ── MAIN NAV ROW ── */}
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 40px' }}>
+        {/* ── MAIN NAV ── */}
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 32px' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            // Height transitions smoothly
-            height: scrolled ? '56px' : (isHome ? '96px' : '64px'),
+            height: scrolled ? '52px' : (isHome ? '100px' : '60px'),
             transition: 'height 0.4s ease',
           }}>
 
-            {/* LOGO — transitions from large to small */}
-            <Link to="/" style={{ flexShrink: 0, marginRight: '16px', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+            {/* LOGO */}
+            <Link to="/" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', marginRight: '8px' }}>
               <img
-                src={LOGO_FULL}
+                src={LOGO_URL}
                 alt="MBJ Jewellers"
                 style={{
-                  // Width drives the transition — height follows aspect ratio
-                  width: scrolled ? '48px' : (isHome ? '130px' : '68px'),
+                  width: `${logoW}px`,
                   height: 'auto',
                   objectFit: 'contain',
-                  objectPosition: 'top center',
-                  // When small, clip to show only diamond icon (top 65% of image)
-                  maxHeight: scrolled ? '44px' : (isHome ? '130px' : '68px'),
-                  transition: 'width 0.4s ease, max-height 0.4s ease',
+                  objectPosition: 'top',
+                  clipPath: logoClip,
+                  transition: 'width 0.4s ease, clip-path 0.4s ease',
                   display: 'block',
-                  // Clip bottom "JEWELLERS" text when small
-                  clipPath: scrolled ? 'inset(0 0 35% 0)' : 'none',
                 }}
               />
             </Link>
 
-            {/* NAV LINKS — equal width boxes, centered text, desktop only */}
-            <nav style={{
-              display: 'flex',
-              alignItems: 'center',
-              flex: 1,
-              justifyContent: 'flex-end',
-              gap: '0',
-            }} className="desktop-nav">
-              {navLinks.map(link => (
-                <NavLink key={link.to} to={link.to} label={link.label} small={scrolled} />
-              ))}
+            {/* NAV LINKS — equal width boxes, centered text */}
+            <nav style={{ display: 'flex', alignItems: 'stretch', flex: 1 }} className="desktop-nav">
+              {NAV_LINKS.map(({ to, label }) => {
+                const isAct = active(to);
+                // Equal box width: divide remaining space equally
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    style={{
+                      flex: '1 1 0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      fontSize: scrolled ? '9.5px' : '10px',
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      fontWeight: 500,
+                      color: isAct ? '#D4AF37' : 'rgba(255,255,255,0.68)',
+                      textDecoration: 'none',
+                      borderBottom: isAct ? '2px solid #D4AF37' : '2px solid transparent',
+                      transition: 'color 0.2s, border-color 0.2s, font-size 0.4s',
+                      padding: '0 4px',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={e => { if (!isAct) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderBottomColor = 'rgba(212,175,55,0.25)'; }}}
+                    onMouseLeave={e => { if (!isAct) { e.currentTarget.style.color = 'rgba(255,255,255,0.68)'; e.currentTarget.style.borderBottomColor = 'transparent'; }}}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
             </nav>
 
             {/* Mobile hamburger */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="mobile-btn"
               style={{ marginLeft: 'auto', color: '#fff', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'none' }}
-              className="mobile-menu-btn"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -241,11 +207,9 @@ const Layout = () => {
         <>
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 40 }} onClick={() => setMobileMenuOpen(false)} />
           <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '280px', background: '#0a0a0a', borderLeft: '1px solid rgba(212,175,55,0.15)', zIndex: 45, padding: '80px 32px 32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <img src={LOGO_FULL} alt="MBJ" style={{ width: '60px', height: 'auto', objectFit: 'contain', marginBottom: '8px', clipPath: 'inset(0 0 35% 0)' }} />
-            {navLinks.map(link => (
-              <Link key={link.to} to={link.to}
-                style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: isActive(link.to) ? '#D4AF37' : 'rgba(255,255,255,0.6)', textDecoration: 'none' }}
-              >{link.label}</Link>
+            <img src={LOGO_URL} alt="MBJ" style={{ width: '50px', clipPath: 'inset(0 0 38% 0)', marginBottom: '8px' }} />
+            {NAV_LINKS.map(({ to, label }) => (
+              <Link key={to} to={to} style={{ fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', color: active(to) ? '#D4AF37' : 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>{label}</Link>
             ))}
             <button onClick={() => { setMobileMenuOpen(false); setShowContactModal(true); }}
               style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.4)', background: 'transparent', padding: '10px', cursor: 'pointer', marginTop: '8px' }}
@@ -254,48 +218,45 @@ const Layout = () => {
         </>
       )}
 
-      {/* ── MAIN CONTENT ── */}
-      <main style={{ paddingTop: isHome ? '0' : '72px' }}>
+      {/* ── CONTENT ── */}
+      <main style={{ paddingTop: isHome ? '0' : '68px' }}>
         <Outlet />
       </main>
 
       {/* ── FOOTER ── */}
       <footer style={{ background: '#080808', borderTop: '1px solid rgba(212,175,55,0.1)', marginTop: '80px' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '60px 40px 32px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px', marginBottom: '40px' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '56px 32px 28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '48px', marginBottom: '36px' }}>
 
-            {/* Contact */}
             <div>
-              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '18px' }}>Contact Us</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-                {settings?.phone && <a href={`tel:${settings.phone}`} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}><Phone size={12} />{settings.phone}</a>}
-                {settings?.email && <a href={`mailto:${settings.email}`} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}><Mail size={12} />{settings.email}</a>}
-                {settings?.whatsapp && <a href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g,'')}?text=Hi!`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}><MessageCircle size={12} />WhatsApp Us</a>}
+              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>Contact Us</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {settings?.phone && <a href={`tel:${settings.phone}`} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}><Phone size={12}/>{settings.phone}</a>}
+                {settings?.email && <a href={`mailto:${settings.email}`} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}><Mail size={12}/>{settings.email}</a>}
+                {settings?.whatsapp && <a href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g,'')}?text=Hi!`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}><MessageCircle size={12}/>WhatsApp Us</a>}
                 <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
-                  {socialLinks.map(({ key, icon, label }) => {
+                  {SOCIAL.map(({ key, icon }) => {
                     const url = settings?.[key];
                     return url
-                      ? <a key={key} href={url} target="_blank" rel="noopener noreferrer" title={label} style={{ color: 'rgba(255,255,255,0.3)', transition: 'color 0.2s', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}>{icon}</a>
+                      ? <a key={key} href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.3)', transition: 'color 0.2s', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.3)'}>{icon}</a>
                       : <span key={key} style={{ color: 'rgba(255,255,255,0.15)' }}>{icon}</span>;
                   })}
                 </div>
               </div>
             </div>
 
-            {/* About */}
             <div>
-              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '18px' }}>About Us</h4>
+              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>About Us</h4>
               <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', lineHeight: '1.8' }}>
                 {settings?.tagline || 'Specialists in South Indian Nakshi & Antique jewellery — Necklaces, Harams, Jhumkas and Bridal Sets, crafted with timeless artistry.'}
               </p>
             </div>
 
-            {/* Store Location */}
             <div>
-              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '18px' }}>Store Location</h4>
+              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>Store Location</h4>
               {settings?.store_location
                 ? <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', lineHeight: '1.8' }}>{settings.store_location}</p>
-                : <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Add store location from admin settings</p>
+                : <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' }}>Add from admin settings</p>
               }
             </div>
           </div>
@@ -312,7 +273,7 @@ const Layout = () => {
       {showContactModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setShowContactModal(false)}>
           <div style={{ background: '#0f0f0f', border: '1px solid rgba(212,175,55,0.22)', padding: '40px', maxWidth: '400px', width: '100%' }} onClick={e => e.stopPropagation()}>
-            <img src={LOGO_FULL} alt="MBJ" style={{ width: '60px', height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto 20px', clipPath: 'inset(0 0 35% 0)' }} />
+            <img src={LOGO_URL} alt="MBJ" style={{ width: '52px', clipPath: 'inset(0 0 38% 0)', display: 'block', margin: '0 auto 20px' }} />
             <h3 style={{ fontSize: '12px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', textAlign: 'center', marginBottom: '24px' }}>Get in Touch</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
@@ -353,10 +314,10 @@ const Layout = () => {
       <style>{`
         @media (max-width: 1100px) {
           .desktop-nav { display: none !important; }
-          .mobile-menu-btn { display: flex !important; }
+          .mobile-btn { display: flex !important; }
         }
         @media (min-width: 1101px) {
-          .mobile-menu-btn { display: none !important; }
+          .mobile-btn { display: none !important; }
         }
       `}</style>
     </div>
