@@ -135,15 +135,15 @@ const CalculatorPage = () => {
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-sm text-gray-400 mb-1">24K</p>
-                <p className="text-2xl font-playfair font-bold text-[#D4AF37]">₹{goldRates.k24_rate}</p>
+                <p className="text-2xl font-bold text-[#D4AF37]" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", fontVariantNumeric: 'tabular-nums' }}>₹{goldRates.k24_rate}</p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-400 mb-1">22K</p>
-                <p className="text-2xl font-playfair font-bold text-[#D4AF37]">₹{goldRates.k22_rate}</p>
+                <p className="text-2xl font-bold text-[#D4AF37]" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", fontVariantNumeric: 'tabular-nums' }}>₹{goldRates.k22_rate}</p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-400 mb-1">18K</p>
-                <p className="text-2xl font-playfair font-bold text-[#D4AF37]">₹{goldRates.k18_rate}</p>
+                <p className="text-2xl font-bold text-[#D4AF37]" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", fontVariantNumeric: 'tabular-nums' }}>₹{goldRates.k18_rate}</p>
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-4 text-center">Updated by Admin • Select purity below</p>

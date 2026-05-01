@@ -116,7 +116,8 @@ const Layout = () => {
             {/* Gold rates — from settings (same source as calculator) */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: '12px',
-              fontFamily: 'Georgia, serif',
+              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+              fontVariantNumeric: 'tabular-nums',
               fontSize: '11px', letterSpacing: '0.06em',
               color: 'rgba(212,175,55,0.7)',
             }}>

@@ -8,10 +8,10 @@ const PARALLAX_IMAGE = 'https://customer-assets.emergentagent.com/job_planning-p
 const CTA_IMAGE = 'https://images.unsplash.com/photo-1723879580148-517048db5bd9';
 
 const SPECIALITIES = [
-  { name: 'Necklaces', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ljp2cik2_Lucid_Realism_artistic_portrait_photography_of_Take_reference__1.jpg', desc: 'Handcrafted Nakshi & Antique necklaces' },
-  { name: 'Haaram', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/9dnccvp8_Lucid_Realism_Take_reference_from_the_images_which_I_have_shar_1.jpg', desc: 'Traditional long gold haaram designs' },
-  { name: 'Bridal Sets', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ok2l7fm8_Lucid_Realism_artistic_portrait_photography_of_Take_reference__2.jpg', desc: 'Complete bridal jewellery collections' },
-  { name: 'Jhumkas', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/bujmhehh_bridal2.jpg', desc: 'Statement Nakshi & Antique jhumkas' },
+  { name: 'Necklaces', category_match: 'Necklaces', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ljp2cik2_Lucid_Realism_artistic_portrait_photography_of_Take_reference__1.jpg', desc: 'Handcrafted Nakshi & Antique necklaces' },
+  { name: 'Haaram', category_match: 'Haram', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/9dnccvp8_Lucid_Realism_Take_reference_from_the_images_which_I_have_shar_1.jpg', desc: 'Traditional long gold haaram designs' },
+  { name: 'Bridal Sets', category_match: 'Bridal Collections', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ok2l7fm8_Lucid_Realism_artistic_portrait_photography_of_Take_reference__2.jpg', desc: 'Complete bridal jewellery collections' },
+  { name: 'Jhumkas', category_match: 'Earrings', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/bujmhehh_bridal2.jpg', desc: 'Statement Nakshi & Antique jhumkas' },
 ];
 
 const SECTIONS = [
@@ -28,9 +28,11 @@ const sectionHeaderStyle = {
 
 const HomePage = () => {
   const [settings, setSettings] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     settingsAPI.getPublic().then(r => setSettings(r.data)).catch(() => {});
+    categoriesAPI.getAll().then(r => setCategories(r.data)).catch(() => {});
   }, []);
 
   const heroImage = settings?.hero_image_url || FALLBACK_HERO;
@@ -65,8 +67,11 @@ const HomePage = () => {
             <div style={{ width: '40px', height: '1px', background: '#D4AF37', margin: '0 auto' }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-            {SPECIALITIES.map((item, i) => (
-              <Link key={i} to="/collections" style={{ textDecoration: 'none', display: 'block' }}>
+            {SPECIALITIES.map((item, i) => {
+              const matched = categories.find(c => c.name.toLowerCase() === item.category_match.toLowerCase());
+              const to = matched ? `/collections?category=${matched.id}` : '/collections';
+              return (
+              <Link key={i} to={to} style={{ textDecoration: 'none', display: 'block' }}>
                 <div
                   style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
                   onMouseEnter={e => e.currentTarget.querySelector('img').style.transform = 'scale(1.06)'}
@@ -84,7 +89,8 @@ const HomePage = () => {
                   </div>
                 </div>
               </Link>
-            ))}
+              ); })}
+
           </div>
         </div>
       </section>
