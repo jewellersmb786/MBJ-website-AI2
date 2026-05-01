@@ -319,6 +319,8 @@ async def get_public_settings():
         "twitter": settings.get("twitter"),
         "address": settings.get("address"),
         "store_location": settings.get("store_location"),
+        "about_heading": settings.get("about_heading"),
+        "about_body": settings.get("about_body"),
         "k24_rate": settings.get("k24_rate", 15093.0),
         "k22_rate": settings.get("k22_rate", 13835.0),
         "k18_rate": settings.get("k18_rate", 11320.0),

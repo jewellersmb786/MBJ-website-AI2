@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../../api';
-import { Save, TrendingUp, Store, Share2, Image } from 'lucide-react';
+import { Save, TrendingUp, Store, Share2, Image, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminSettings = () => {
@@ -23,6 +23,8 @@ const AdminSettings = () => {
     k18_rate: 11320,
     gst_percent: 3.0,
     advance_payment_percent: 30.0,
+    about_heading: '',
+    about_body: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -213,6 +215,34 @@ const AdminSettings = () => {
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '12px' }}>
             Icons appear in the top bar. They become clickable links once you save a URL here.
           </p>
+        </div>
+
+        {/* ── ABOUT PAGE CONTENT ── */}
+        <div style={sectionStyle}>
+          {sectionTitle(<FileText size={20} />, 'About Page Content', 'Controls the heading and text shown on the public About page')}
+          <div style={{ display: 'grid', gap: '16px' }}>
+            <div>
+              <label style={labelStyle}>About Page Heading</label>
+              <input
+                type="text" name="about_heading"
+                value={settings.about_heading || ''}
+                onChange={handleChange}
+                placeholder="About Jewellers MB"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>About Page Body (one paragraph per line)</label>
+              <textarea
+                name="about_body"
+                value={settings.about_body || ''}
+                onChange={handleChange}
+                rows={6}
+                placeholder="At Jewellers MB, we celebrate..."
+                style={{ ...inputStyle, resize: 'vertical', lineHeight: '1.6' }}
+              />
+            </div>
+          </div>
         </div>
 
         {/* ── SAVE BUTTON ── */}

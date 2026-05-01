@@ -247,6 +247,8 @@ class Settings(BaseModel):
     twitter: Optional[str] = None
     address: Optional[str] = None
     store_location: Optional[str] = None
+    about_heading: Optional[str] = None
+    about_body: Optional[str] = None
     gold_rate_url: str = "https://www.goodreturns.in/gold-rates/mysore.html"
     k24_rate: float = 15093.0
     k22_rate: float = 13835.0
@@ -274,6 +276,8 @@ class SettingsUpdate(BaseModel):
     twitter: Optional[str] = None
     address: Optional[str] = None
     store_location: Optional[str] = None
+    about_heading: Optional[str] = None
+    about_body: Optional[str] = None
     gold_rate_url: Optional[str] = None
     k24_rate: Optional[float] = None
     k22_rate: Optional[float] = None
