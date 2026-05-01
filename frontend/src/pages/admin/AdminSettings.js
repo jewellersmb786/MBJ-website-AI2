@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../../api';
-import { Save, TrendingUp, Store, Share2, Image, FileText } from 'lucide-react';
+import { Save, TrendingUp, Store, Share2, Image, FileText, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminSettings = () => {
@@ -46,6 +46,14 @@ const AdminSettings = () => {
     const { name, value } = e.target;
     const isNum = ['k24_rate','k22_rate','k18_rate','gst_percent','advance_payment_percent'].includes(name);
     setSettings(prev => ({ ...prev, [name]: isNum ? parseFloat(value) || 0 : value }));
+  };
+
+  const handleHeroImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setSettings(prev => ({ ...prev, hero_image_url: reader.result }));
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async (e) => {
@@ -133,23 +141,39 @@ const AdminSettings = () => {
         <div style={sectionStyle}>
           {sectionTitle(<Image size={20} />, 'Hero Image', 'The main banner image on the homepage')}
           <div>
-            <label style={labelStyle}>Hero Image URL</label>
-            <input
-              type="url" name="hero_image_url"
-              value={settings.hero_image_url || ''}
-              onChange={handleChange}
-              placeholder="https://i.ibb.co/... paste your image URL here"
-              style={inputStyle}
-            />
-            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '6px' }}>
-              Upload your image to imgbb.com and paste the direct link here
-            </p>
-            {settings.hero_image_url && (
-              <img
-                src={settings.hero_image_url}
-                alt="Hero preview"
-                style={{ marginTop: '12px', height: '120px', width: 'auto', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(212,175,55,0.2)' }}
-              />
+            <label style={labelStyle}>Hero Image</label>
+            {settings.hero_image_url ? (
+              <div>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src={settings.hero_image_url}
+                    alt="Hero preview"
+                    style={{ height: '140px', width: 'auto', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(212,175,55,0.25)', display: 'block' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSettings(prev => ({ ...prev, hero_image_url: '' }))}
+                    style={{ position: 'absolute', top: '-8px', right: '-8px', width: '22px', height: '22px', borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '10px', fontSize: '12px', color: 'rgba(212,175,55,0.7)', cursor: 'pointer', textDecoration: 'underline' }}>
+                  <Upload size={13} /> Replace image
+                  <input type="file" accept="image/*" onChange={handleHeroImageUpload} style={{ display: 'none' }} />
+                </label>
+              </div>
+            ) : (
+              <label
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '120px', border: '2px dashed rgba(212,175,55,0.3)', borderRadius: '8px', cursor: 'pointer', background: 'rgba(212,175,55,0.02)', transition: 'border-color 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(212,175,55,0.6)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(212,175,55,0.3)'}
+              >
+                <Upload size={22} color="rgba(212,175,55,0.45)" style={{ marginBottom: '8px' }} />
+                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Click to upload hero image</span>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', marginTop: '3px' }}>JPG, PNG, WEBP · recommended 1920×1080</span>
+                <input type="file" accept="image/*" onChange={handleHeroImageUpload} style={{ display: 'none' }} />
+              </label>
             )}
           </div>
         </div>
