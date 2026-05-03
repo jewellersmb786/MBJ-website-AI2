@@ -325,7 +325,8 @@ async def get_public_settings():
         "k22_rate": settings.get("k22_rate", 13835.0),
         "k18_rate": settings.get("k18_rate", 11320.0),
         "current_gold_rate": settings.get("k22_rate", 13835.0),
-        "rates_updated_at": settings.get("rates_updated_at", settings.get("updated_at"))
+        "rates_updated_at": settings.get("rates_updated_at", settings.get("updated_at")),
+        "featured_category_ids": settings.get("featured_category_ids", [])
     }
 
 # ============================================================================

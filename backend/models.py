@@ -259,6 +259,7 @@ class Settings(BaseModel):
     advance_payment_percent: float = 30.0
     gst_percent: float = 3.0
     card_payment_charges_percent: float = 2.0
+    featured_category_ids: List[str] = []
     rates_updated_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -288,6 +289,7 @@ class SettingsUpdate(BaseModel):
     advance_payment_percent: Optional[float] = None
     gst_percent: Optional[float] = None
     card_payment_charges_percent: Optional[float] = None
+    featured_category_ids: Optional[List[str]] = None
 
 # Admin Models
 class AdminUser(BaseModel):

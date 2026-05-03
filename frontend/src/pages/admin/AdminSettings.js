@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { adminAPI } from '../../api';
+import { adminAPI, categoriesAPI } from '../../api';
 import { Save, TrendingUp, Store, Share2, Image, FileText, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -25,11 +25,16 @@ const AdminSettings = () => {
     advance_payment_percent: 30.0,
     about_heading: '',
     about_body: '',
+    featured_category_ids: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState([]);
 
-  useEffect(() => { fetchSettings(); }, []);
+  useEffect(() => {
+    fetchSettings();
+    categoriesAPI.getAll().then(r => setCategories(r.data)).catch(() => {});
+  }, []);
 
   const fetchSettings = async () => {
     try {
@@ -176,6 +181,60 @@ const AdminSettings = () => {
               </label>
             )}
           </div>
+        </div>
+
+        {/* ── FEATURED CATEGORIES ── */}
+        <div style={sectionStyle}>
+          {sectionTitle(<Store size={20} />, 'Featured on Homepage', 'Up to 4 categories shown as Specialities tiles on the homepage')}
+          {categories.length === 0 ? (
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>
+              No categories yet — create categories first in Manage Categories.
+            </p>
+          ) : (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                {categories.map(cat => {
+                  const selected = (settings.featured_category_ids || []).includes(cat.id);
+                  const atMax = (settings.featured_category_ids || []).length >= 4 && !selected;
+                  const position = (settings.featured_category_ids || []).indexOf(cat.id);
+                  return (
+                    <label
+                      key={cat.id}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: selected ? 'rgba(212,175,55,0.08)' : 'rgba(255,255,255,0.02)', border: `1px solid ${selected ? 'rgba(212,175,55,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius: '8px', cursor: atMax ? 'not-allowed' : 'pointer', opacity: atMax ? 0.45 : 1, transition: 'all 0.2s' }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        disabled={atMax}
+                        onChange={() => {
+                          const current = settings.featured_category_ids || [];
+                          const updated = selected
+                            ? current.filter(id => id !== cat.id)
+                            : [...current, cat.id];
+                          setSettings(prev => ({ ...prev, featured_category_ids: updated }));
+                        }}
+                        style={{ accentColor: '#D4AF37', width: '15px', height: '15px', flexShrink: 0 }}
+                      />
+                      {cat.display_image ? (
+                        <img src={cat.display_image} alt={cat.name} style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: '36px', height: '36px', background: 'rgba(212,175,55,0.08)', borderRadius: '4px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: '14px', color: 'rgba(212,175,55,0.4)', fontFamily: 'Georgia, serif' }}>{cat.name.charAt(0)}</span>
+                        </div>
+                      )}
+                      <span style={{ fontSize: '13px', color: '#fff', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
+                      {selected && (
+                        <span style={{ fontSize: '11px', color: '#D4AF37', fontWeight: 600, flexShrink: 0 }}>#{position + 1}</span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.28)', margin: 0 }}>
+                {(settings.featured_category_ids || []).length}/4 selected · tiles appear in the order selected above
+              </p>
+            </>
+          )}
         </div>
 
         {/* ── BUSINESS INFO ── */}

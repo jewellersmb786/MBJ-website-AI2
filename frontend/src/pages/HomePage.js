@@ -7,12 +7,6 @@ const FALLBACK_HERO = 'https://customer-assets.emergentagent.com/job_planning-ph
 const PARALLAX_IMAGE = 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/p6odm8yi_bridal%203.jpg';
 const CTA_IMAGE = 'https://images.unsplash.com/photo-1723879580148-517048db5bd9';
 
-const SPECIALITIES = [
-  { name: 'Necklaces', category_match: 'Necklaces', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ljp2cik2_Lucid_Realism_artistic_portrait_photography_of_Take_reference__1.jpg', desc: 'Handcrafted Nakshi & Antique necklaces' },
-  { name: 'Haaram', category_match: 'Haram', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/9dnccvp8_Lucid_Realism_Take_reference_from_the_images_which_I_have_shar_1.jpg', desc: 'Traditional long gold haaram designs' },
-  { name: 'Bridal Sets', category_match: 'Bridal Collections', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ok2l7fm8_Lucid_Realism_artistic_portrait_photography_of_Take_reference__2.jpg', desc: 'Complete bridal jewellery collections' },
-  { name: 'Jhumkas', category_match: 'Earrings', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/bujmhehh_bridal2.jpg', desc: 'Statement Nakshi & Antique jhumkas' },
-];
 
 const SECTIONS = [
   { title: 'Our Collections', desc: 'Explore our full range of handcrafted Nakshi and Antique jewellery — from everyday elegance to grand bridal sets.', link: '/collections', cta: 'Explore Collections', image: 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/19hqhtrt_jewellery.jpg' },
@@ -67,30 +61,40 @@ const HomePage = () => {
             <div style={{ width: '40px', height: '1px', background: '#D4AF37', margin: '0 auto' }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-            {SPECIALITIES.map((item, i) => {
-              const matched = categories.find(c => c.name.toLowerCase() === item.category_match.toLowerCase());
-              const to = matched ? `/collections?category=${matched.id}` : '/collections';
-              return (
-              <Link key={i} to={to} style={{ textDecoration: 'none', display: 'block' }}>
-                <div
-                  style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
-                  onMouseEnter={e => e.currentTarget.querySelector('img').style.transform = 'scale(1.06)'}
-                  onMouseLeave={e => e.currentTarget.querySelector('img').style.transform = 'scale(1)'}
-                >
-                  <div style={{ aspectRatio: '3/4', overflow: 'hidden' }}>
-                    <img src={item.image} alt={item.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.75)', transition: 'transform 0.5s ease' }}
-                    />
+            {(() => {
+              const ids = settings?.featured_category_ids || [];
+              let featured = ids.map(id => categories.find(c => c.id === id)).filter(Boolean).slice(0, 4);
+              if (featured.length === 0) {
+                featured = categories.filter(c => c.display_image).slice(0, 4);
+              }
+              return featured.map((cat, i) => (
+                <Link key={cat.id} to={`/collections?category=${cat.id}`} style={{ textDecoration: 'none', display: 'block' }} className="spec-tile">
+                  <div style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}>
+                    <div style={{ aspectRatio: '3/4', overflow: 'hidden' }}>
+                      {cat.display_image ? (
+                        <img
+                          className="spec-img"
+                          src={cat.display_image}
+                          alt={cat.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.75)', transition: 'transform 0.5s ease', display: 'block' }}
+                        />
+                      ) : (
+                        <div
+                          className="spec-img"
+                          style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(61,8,21,0.3) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.5s ease' }}
+                        >
+                          <span style={{ fontFamily: 'Georgia, serif', fontSize: '56px', color: 'rgba(212,175,55,0.25)' }}>{cat.name.charAt(0)}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 50%)' }} />
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px' }}>
+                      <h3 style={{ fontSize: '17px', fontFamily: 'Georgia, serif', color: '#D4AF37', margin: 0 }}>{cat.name}</h3>
+                    </div>
                   </div>
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 50%)' }} />
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px' }}>
-                    <h3 style={{ fontSize: '17px', fontFamily: 'Georgia, serif', color: '#D4AF37', marginBottom: '4px' }}>{item.name}</h3>
-                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)' }}>{item.desc}</p>
-                  </div>
-                </div>
-              </Link>
-              ); })}
-
+                </Link>
+              ));
+            })()}
           </div>
         </div>
       </section>
@@ -204,6 +208,7 @@ const HomePage = () => {
       </section>
 
       <style>{`
+        .spec-tile:hover .spec-img { transform: scale(1.06); }
         @keyframes bounce {
           0%, 100% { transform: translateX(-50%) translateY(0); }
           50% { transform: translateX(-50%) translateY(8px); }

@@ -259,37 +259,52 @@ const CollectionsPage = () => {
                   >
                     <Link to={`/product/${product.id}`} style={{ textDecoration: 'none', display: 'block' }} data-testid={`product-card-${product.id}`}>
                       <div
-                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.12)', borderRadius: '8px', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.25s' }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(212,175,55,0.12)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                        className="pcard"
+                        style={{ background: '#1a0f12', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '12px', overflow: 'hidden', transition: 'border-color 0.25s, transform 0.25s, box-shadow 0.25s' }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.borderColor = 'rgba(212,175,55,0.5)';
+                          e.currentTarget.style.transform = 'translateY(-4px)';
+                          e.currentTarget.style.boxShadow = '0 16px 40px rgba(61,8,21,0.55)';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.borderColor = 'rgba(212,175,55,0.15)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                       >
-                        <div style={{ aspectRatio: '1', overflow: 'hidden', background: 'rgba(212,175,55,0.06)' }}>
+                        {/* Image */}
+                        <div style={{ aspectRatio: '4/5', overflow: 'hidden', position: 'relative', background: '#120808' }}>
                           {product.images?.[0] ? (
                             <img
+                              className="pcard-img"
                               src={product.images[0]}
                               alt={product.name}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease', display: 'block' }}
-                              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
-                              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.45s ease' }}
                             />
                           ) : (
                             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <span style={{ fontSize: '40px', fontFamily: 'Georgia, serif', color: 'rgba(212,175,55,0.22)' }}>{product.name.charAt(0)}</span>
+                              <span style={{ fontFamily: 'Georgia, serif', fontSize: '52px', color: 'rgba(212,175,55,0.18)' }}>{product.name.charAt(0)}</span>
                             </div>
                           )}
-                        </div>
-                        <div style={{ padding: '14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
-                            <h3 style={{ fontSize: '14px', color: '#fff', fontWeight: 500, margin: 0, lineHeight: 1.3 }}>{product.name}</h3>
-                            <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '20px', flexShrink: 0, whiteSpace: 'nowrap', background: product.stock_status === 'in_stock' ? 'rgba(34,197,94,0.15)' : 'rgba(251,146,60,0.15)', color: product.stock_status === 'in_stock' ? '#4ade80' : '#fb923c' }}>
+                          {/* Bottom gradient blending into card */}
+                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '45%', background: 'linear-gradient(to top, #1a0f12 0%, transparent 100%)', pointerEvents: 'none' }} />
+                          {/* Stock badge */}
+                          <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
+                            <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '20px', backdropFilter: 'blur(6px)', background: product.stock_status === 'in_stock' ? 'rgba(34,197,94,0.2)' : 'rgba(251,146,60,0.2)', color: product.stock_status === 'in_stock' ? '#4ade80' : '#fb923c' }}>
                               {product.stock_status === 'in_stock' ? 'In Stock' : 'MTO'}
                             </span>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'rgba(255,255,255,0.38)' }}>
-                            <span>{product.weight}g</span>
+                        </div>
+
+                        {/* Info */}
+                        <div style={{ padding: '14px 16px 18px' }}>
+                          <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '17px', fontWeight: 400, color: '#D4AF37', margin: '0 0 7px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {product.name}
+                          </h3>
+                          <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: 'rgba(212,175,55,0.52)', letterSpacing: '0.04em' }}>
+                            <span>{product.weight} g</span>
                             <span>{product.purity?.toUpperCase()}</span>
                           </div>
-                          <div style={{ marginTop: '10px', fontSize: '12px', color: '#D4AF37', letterSpacing: '0.04em' }}>View Details →</div>
                         </div>
                       </div>
                     </Link>
@@ -304,6 +319,7 @@ const CollectionsPage = () => {
       <style>{`
         .cat-skeleton { animation: skelPulse 1.5s ease-in-out infinite; }
         @keyframes skelPulse { 0%,100% { opacity:1; } 50% { opacity:0.45; } }
+        .pcard:hover .pcard-img { transform: scale(1.05); }
         @media (max-width: 768px) {
           .collections-layout { flex-direction: column !important; }
         }
