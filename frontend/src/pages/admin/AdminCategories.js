@@ -93,8 +93,9 @@ const AdminCategories = () => {
       await adminAPI.categories.delete(id);
       toast.success('Category deleted!');
       fetchCategories();
-    } catch {
-      toast.error('Error deleting category');
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Error deleting category';
+      toast.error(msg, { duration: 7000 });
     }
   };
 

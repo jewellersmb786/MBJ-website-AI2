@@ -1,4 +1,3 @@
-import re
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, File, UploadFile
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
@@ -14,7 +13,6 @@ import base64
 
 # Import models and utilities
 from models import *
-from pdf_generator import generate_catalogue_pdf
 from utils import (
     verify_password, get_password_hash, create_access_token, verify_token,
     scrape_gold_rates, calculate_price, generate_order_number, generate_uuid
@@ -420,13 +418,17 @@ async def update_category(category_id: str, updates: dict, admin = Depends(get_c
 
 @api_router.delete("/admin/categories/{category_id}")
 async def delete_category(category_id: str, admin = Depends(get_current_admin)):
-    """Delete category"""
-    result = await db.categories.update_one(
-        {"id": category_id},
-        {"$set": {"is_active": False}}
-    )
-    if result.matched_count == 0:
+    """Hard-delete category after checking no products reference it."""
+    exists = await db.categories.find_one({"id": category_id})
+    if not exists:
         raise HTTPException(status_code=404, detail="Category not found")
+    product_count = await db.products.count_documents({"category_id": category_id})
+    if product_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delete category — {product_count} product{'s' if product_count != 1 else ''} still reference it. Delete or reassign those products first."
+        )
+    await db.categories.delete_one({"id": category_id})
     return {"message": "Category deleted successfully"}
 
 # ============================================================================
@@ -461,12 +463,9 @@ async def update_product(product_id: str, updates: ProductUpdate, admin = Depend
 
 @api_router.delete("/admin/products/{product_id}")
 async def delete_product(product_id: str, admin = Depends(get_current_admin)):
-    """Delete product (soft delete)"""
-    result = await db.products.update_one(
-        {"id": product_id},
-        {"$set": {"is_active": False, "updated_at": datetime.utcnow()}}
-    )
-    if result.matched_count == 0:
+    """Hard-delete product."""
+    result = await db.products.delete_one({"id": product_id})
+    if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted successfully"}
 
@@ -636,169 +635,6 @@ async def refresh_gold_rates(admin = Depends(get_current_admin)):
     await update_gold_rates()
     rates = await db.gold_rates.find_one({}, {"_id": 0})
     return {"message": "Gold rates refreshed successfully", "rates": rates}
-
-# ============================================================================
-# CATALOGUE SHARE APIs
-# ============================================================================
-
-@api_router.post("/catalogue/generate")
-async def generate_catalogue(data: CatalogueShareCreate):
-    """Generate a watermarked PDF catalogue and return a shareable link."""
-    digits = re.sub(r"\D", "", data.customer_phone)
-    if len(digits) < 10:
-        raise HTTPException(status_code=400, detail="Please enter a valid 10-digit phone number")
-
-    if not data.product_ids:
-        raise HTTPException(status_code=400, detail="No products selected")
-
-    # Fetch products
-    products = []
-    for pid in data.product_ids:
-        p = await db.products.find_one({"id": pid, "is_active": True}, {"_id": 0})
-        if p:
-            products.append(p)
-
-    if not products:
-        raise HTTPException(status_code=400, detail="None of the selected products are available")
-
-    settings = await db.settings.find_one({"id": "site_settings"}, {"_id": 0}) or {}
-
-    share_id = generate_uuid()
-    now = datetime.utcnow()
-    expires_at = now + timedelta(days=7)
-
-    try:
-        pdf_data = generate_catalogue_pdf(
-            products, data.customer_name, data.customer_phone,
-            share_id, settings, expires_at
-        )
-    except Exception as e:
-        logger.error(f"PDF generation failed: {e}")
-        pdf_data = ""
-
-    share_doc = {
-        "id": share_id,
-        "customer_name": data.customer_name,
-        "customer_phone": data.customer_phone,
-        "product_ids": data.product_ids,
-        "filters_applied": data.filters_applied or {},
-        "created_at": now,
-        "expires_at": expires_at,
-        "view_count": 0,
-        "is_revoked": False,
-        "pdf_data": pdf_data,
-    }
-    await db.catalogue_shares.insert_one(share_doc)
-
-    return {"id": share_id, "view_url": f"/catalogue/{share_id}"}
-
-
-@api_router.get("/catalogue/{share_id}")
-async def view_catalogue(share_id: str):
-    """Public endpoint — returns catalogue data for the viewer page."""
-    share = await db.catalogue_shares.find_one({"id": share_id}, {"_id": 0})
-    if not share:
-        raise HTTPException(status_code=404, detail="Catalogue not found")
-    if share.get("is_revoked"):
-        raise HTTPException(status_code=410, detail="This catalogue has been revoked")
-    if datetime.utcnow() > share.get("expires_at", datetime.utcnow()):
-        raise HTTPException(status_code=410, detail="This catalogue link has expired")
-
-    await db.catalogue_shares.update_one({"id": share_id}, {"$inc": {"view_count": 1}})
-
-    products = []
-    for pid in share.get("product_ids", []):
-        p = await db.products.find_one({"id": pid}, {"_id": 0})
-        if p:
-            products.append(p)
-
-    settings = await db.settings.find_one({"id": "site_settings"}, {"_id": 0}) or {}
-
-    expires_at = share.get("expires_at")
-    expires_str = expires_at.isoformat() if hasattr(expires_at, "isoformat") else str(expires_at)
-
-    return {
-        "share_id": share_id,
-        "customer_name": share["customer_name"],
-        "customer_phone": share["customer_phone"],
-        "expires_at": expires_str,
-        "view_count": share.get("view_count", 0) + 1,
-        "products": products,
-        "settings": {
-            "whatsapp": settings.get("whatsapp", ""),
-            "business_name": settings.get("business_name", "Jewellers MB"),
-            "k22_rate": settings.get("k22_rate", 13835),
-        },
-    }
-
-
-@api_router.get("/admin/catalogue-shares")
-async def list_catalogue_shares(admin=Depends(get_current_admin)):
-    """Admin: list all catalogue shares (excludes pdf_data)."""
-    shares = await db.catalogue_shares.find(
-        {}, {"_id": 0, "pdf_data": 0}
-    ).sort("created_at", -1).to_list(200)
-    result = []
-    for s in shares:
-        expires_at = s.get("expires_at")
-        expires_str = expires_at.isoformat() if hasattr(expires_at, "isoformat") else str(expires_at)
-        created_at = s.get("created_at")
-        created_str = created_at.isoformat() if hasattr(created_at, "isoformat") else str(created_at)
-        result.append({
-            "id": s["id"],
-            "customer_name": s.get("customer_name", ""),
-            "customer_phone": s.get("customer_phone", ""),
-            "product_count": len(s.get("product_ids", [])),
-            "created_at": created_str,
-            "expires_at": expires_str,
-            "view_count": s.get("view_count", 0),
-            "is_revoked": s.get("is_revoked", False),
-        })
-    return result
-
-
-@api_router.put("/admin/catalogue-shares/{share_id}/revoke")
-async def revoke_catalogue(share_id: str, admin=Depends(get_current_admin)):
-    """Admin: revoke a catalogue link."""
-    result = await db.catalogue_shares.update_one(
-        {"id": share_id}, {"$set": {"is_revoked": True}}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Catalogue not found")
-    return {"message": "Catalogue revoked"}
-
-
-@api_router.post("/admin/catalogue-shares/{share_id}/regenerate")
-async def regenerate_catalogue(share_id: str, admin=Depends(get_current_admin)):
-    """Admin: regenerate PDF and reset expiry for an existing catalogue."""
-    share = await db.catalogue_shares.find_one({"id": share_id}, {"_id": 0})
-    if not share:
-        raise HTTPException(status_code=404, detail="Catalogue not found")
-
-    products = []
-    for pid in share.get("product_ids", []):
-        p = await db.products.find_one({"id": pid}, {"_id": 0})
-        if p:
-            products.append(p)
-
-    settings = await db.settings.find_one({"id": "site_settings"}, {"_id": 0}) or {}
-    new_expires = datetime.utcnow() + timedelta(days=7)
-
-    try:
-        pdf_data = generate_catalogue_pdf(
-            products, share["customer_name"], share["customer_phone"],
-            share_id, settings, new_expires
-        )
-    except Exception as e:
-        logger.error(f"PDF regeneration failed: {e}")
-        pdf_data = share.get("pdf_data", "")
-
-    await db.catalogue_shares.update_one(
-        {"id": share_id},
-        {"$set": {"pdf_data": pdf_data, "expires_at": new_expires, "is_revoked": False}},
-    )
-    return {"id": share_id, "view_url": f"/catalogue/{share_id}"}
-
 
 # ============================================================================
 # Include router and setup

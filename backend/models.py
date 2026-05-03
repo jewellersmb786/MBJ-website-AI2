@@ -291,27 +291,6 @@ class SettingsUpdate(BaseModel):
     card_payment_charges_percent: Optional[float] = None
     featured_category_ids: Optional[List[str]] = None
 
-# Catalogue Share Models
-class CatalogueShare(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    id: str
-    customer_name: str
-    customer_phone: str
-    product_ids: List[str]
-    filters_applied: dict = {}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    expires_at: datetime
-    view_count: int = 0
-    is_revoked: bool = False
-    pdf_data: str = ""  # base64 of the rendered PDF
-
-class CatalogueShareCreate(BaseModel):
-    customer_name: str
-    customer_phone: str
-    product_ids: List[str]
-    filters_applied: Optional[dict] = {}
-
 # Admin Models
 class AdminUser(BaseModel):
     model_config = ConfigDict(extra="ignore")

@@ -57,29 +57,40 @@ const AdminProducts = () => {
     }
   };
 
+  const IMAGE_LIMIT = 8;
+
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    const readers = files.map(file => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
-    });
-
+    const available = IMAGE_LIMIT - formData.images.length;
+    if (available <= 0) {
+      toast.error(`Maximum ${IMAGE_LIMIT} images allowed. Remove some before adding more.`);
+      return;
+    }
+    const toAdd = files.slice(0, available);
+    if (files.length > available) {
+      toast(`Only ${available} more image${available !== 1 ? 's' : ''} allowed — first ${available} selected.`, { icon: 'ℹ️' });
+    }
+    const readers = toAdd.map(file => new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+    }));
     Promise.all(readers).then(images => {
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...images]
-      }));
+      setFormData(prev => ({ ...prev, images: [...prev.images, ...images] }));
     });
   };
 
   const removeImage = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
+    setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
+  };
+
+  const setAsPrimary = (index) => {
+    if (index === 0) return;
+    setFormData(prev => {
+      const imgs = [...prev.images];
+      const [primary] = imgs.splice(index, 1);
+      return { ...prev, images: [primary, ...imgs] };
+    });
   };
 
   const openAddModal = () => {
@@ -439,37 +450,54 @@ const AdminProducts = () => {
 
                 {/* Image Upload */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Product Images</label>
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#D4AF37]/30 rounded-xl cursor-pointer hover:border-[#D4AF37]/50 transition-colors">
-                    <div className="flex flex-col items-center">
-                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-400">Click to upload images (multiple)</p>
-                    </div>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-gray-300">
+                      Product Images
+                    </label>
+                    <span className="text-xs text-gray-500">{formData.images.length}/{IMAGE_LIMIT} · First image is primary</span>
+                  </div>
+
+                  {formData.images.length < IMAGE_LIMIT && (
+                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-[#D4AF37]/30 rounded-xl cursor-pointer hover:border-[#D4AF37]/50 transition-colors mb-3">
+                      <Upload className="w-7 h-7 text-gray-400 mb-1" />
+                      <p className="text-sm text-gray-400">Click to upload (multiple)</p>
+                      <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
+                    </label>
+                  )}
+                  {formData.images.length >= IMAGE_LIMIT && (
+                    <p className="text-xs text-amber-400 mb-3 text-center">Maximum {IMAGE_LIMIT} images reached — remove one to add more.</p>
+                  )}
 
                   {formData.images.length > 0 && (
-                    <div className="grid grid-cols-4 gap-3 mt-4">
+                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '6px' }}>
                       {formData.images.map((image, index) => (
-                        <div key={index} className="relative aspect-square">
-                          <img
-                            src={image}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                          >
-                            <X size={16} />
-                          </button>
+                        <div key={index} style={{ position: 'relative', flexShrink: 0, width: '96px' }}>
+                          <div style={{ position: 'relative', width: '96px', height: '96px' }}>
+                            <img
+                              src={image}
+                              alt={`Preview ${index + 1}`}
+                              style={{ width: '96px', height: '96px', objectFit: 'cover', borderRadius: '8px', border: index === 0 ? '2px solid #D4AF37' : '2px solid rgba(255,255,255,0.1)', display: 'block' }}
+                            />
+                            {index === 0 && (
+                              <div style={{ position: 'absolute', top: '4px', left: '4px', background: '#D4AF37', color: '#000', fontSize: '9px', fontWeight: 700, padding: '2px 5px', borderRadius: '4px', letterSpacing: '0.05em' }}>PRIMARY</div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                          {index !== 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setAsPrimary(index)}
+                              style={{ marginTop: '4px', width: '100%', fontSize: '10px', padding: '3px 0', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)', color: 'rgba(212,175,55,0.8)', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              Set primary
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>

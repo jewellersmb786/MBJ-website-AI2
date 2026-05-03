@@ -24,8 +24,6 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminCustomOrders from './pages/admin/AdminCustomOrders';
 import AdminSettings from './pages/admin/AdminSettings';
-import AdminCatalogues from './pages/admin/AdminCatalogues';
-import CataloguePage from './pages/CataloguePage';
 
 // Layout
 import Layout from './components/Layout';
@@ -51,9 +49,6 @@ function App() {
             <Route path="spiritual" element={<SpiritualPage />} />
           </Route>
 
-          {/* Catalogue viewer — standalone, no site nav */}
-          <Route path="/catalogue/:id" element={<CataloguePage />} />
-
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminLayout />}>
@@ -63,7 +58,6 @@ function App() {
             <Route path="orders" element={<AdminOrders />} />
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="custom-orders" element={<AdminCustomOrders />} />
-            <Route path="catalogues" element={<AdminCatalogues />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
         </Routes>
