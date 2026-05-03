@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAdmin } from '../AdminContext';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, FolderTree } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, FolderTree, BookOpen } from 'lucide-react';
 
 const AdminLayout = () => {
   const { admin, loading, logout } = useAdmin();
@@ -34,6 +34,7 @@ const AdminLayout = () => {
     { to: '/admin/orders', label: 'Orders', icon: <ShoppingCart size={20} /> },
     { to: '/admin/customers', label: 'Customers', icon: <Users size={20} /> },
     { to: '/admin/custom-orders', label: 'Custom Orders', icon: <Package size={20} /> },
+    { to: '/admin/catalogues', label: 'Catalogues', icon: <BookOpen size={20} /> },
     { to: '/admin/settings', label: 'Settings', icon: <Settings size={20} /> },
   ];
 

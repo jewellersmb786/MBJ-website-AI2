@@ -53,6 +53,14 @@ export const settingsAPI = {
   getPublic: () => api.get('/settings/public'),
 };
 
+export const catalogueAPI = {
+  generate: (data) => api.post('/catalogue/generate', data),
+  view: (shareId) => api.get(`/catalogue/${shareId}`),
+  listShares: () => api.get('/admin/catalogue-shares'),
+  revoke: (id) => api.put(`/admin/catalogue-shares/${id}/revoke`),
+  regenerate: (id) => api.post(`/admin/catalogue-shares/${id}/regenerate`),
+};
+
 // Admin API calls
 export const adminAPI = {
   login: (credentials) => api.post('/admin/login', credentials),
