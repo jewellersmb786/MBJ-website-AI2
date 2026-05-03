@@ -21,7 +21,10 @@ const AdminProducts = () => {
     stone_charges: '',
     stock_status: 'in_stock',
     is_featured: false,
-    images: []
+    image_dummy: '',
+    image_model: '',
+    item_code: '',
+    instagram_url: '',
   });
 
   useEffect(() => {
@@ -57,40 +60,12 @@ const AdminProducts = () => {
     }
   };
 
-  const IMAGE_LIMIT = 8;
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const available = IMAGE_LIMIT - formData.images.length;
-    if (available <= 0) {
-      toast.error(`Maximum ${IMAGE_LIMIT} images allowed. Remove some before adding more.`);
-      return;
-    }
-    const toAdd = files.slice(0, available);
-    if (files.length > available) {
-      toast(`Only ${available} more image${available !== 1 ? 's' : ''} allowed — first ${available} selected.`, { icon: 'ℹ️' });
-    }
-    const readers = toAdd.map(file => new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(file);
-    }));
-    Promise.all(readers).then(images => {
-      setFormData(prev => ({ ...prev, images: [...prev.images, ...images] }));
-    });
-  };
-
-  const removeImage = (index) => {
-    setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
-  };
-
-  const setAsPrimary = (index) => {
-    if (index === 0) return;
-    setFormData(prev => {
-      const imgs = [...prev.images];
-      const [primary] = imgs.splice(index, 1);
-      return { ...prev, images: [primary, ...imgs] };
-    });
+  const handleSingleImageUpload = (field) => (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setFormData(prev => ({ ...prev, [field]: reader.result }));
+    reader.readAsDataURL(file);
   };
 
   const openAddModal = () => {
@@ -105,7 +80,10 @@ const AdminProducts = () => {
       stone_charges: '',
       stock_status: 'in_stock',
       is_featured: false,
-      images: []
+      image_dummy: '',
+      image_model: '',
+      item_code: '',
+      instagram_url: '',
     });
     setShowProductModal(true);
   };
@@ -122,7 +100,10 @@ const AdminProducts = () => {
       stone_charges: product.stone_charges,
       stock_status: product.stock_status,
       is_featured: product.is_featured,
-      images: product.images || []
+      image_dummy: product.image_dummy || '',
+      image_model: product.image_model || '',
+      item_code: product.item_code || '',
+      instagram_url: product.instagram_url || '',
     });
     setShowProductModal(true);
   };
@@ -245,9 +226,9 @@ const AdminProducts = () => {
                 >
                   {/* Product Image */}
                   <div className="aspect-square bg-gradient-to-br from-[#D4AF37]/10 to-[#800020]/10 relative">
-                    {product.images && product.images[0] ? (
+                    {(product.image_dummy || (product.images && product.images[0])) ? (
                       <img
-                        src={product.images[0]}
+                        src={product.image_dummy || product.images[0]}
                         alt={product.name}
                         className="w-full h-full object-cover"
                       />
@@ -265,7 +246,12 @@ const AdminProducts = () => {
 
                   {/* Product Details */}
                   <div className="p-4">
-                    <h3 className="text-lg font-bold text-white mb-2 truncate">{product.name}</h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-bold text-white truncate">{product.name}</h3>
+                      {product.item_code && (
+                        <span style={{ fontSize: '11px', padding: '2px 7px', background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '4px', color: '#D4AF37', fontWeight: 600, flexShrink: 0 }}>{product.item_code}</span>
+                      )}
+                    </div>
                     <div className="grid grid-cols-2 gap-2 text-sm text-gray-400 mb-4">
                       <div>Weight: <span className="text-white">{product.weight}g</span></div>
                       <div>Purity: <span className="text-white">{product.purity.toUpperCase()}</span></div>
@@ -448,60 +434,71 @@ const AdminProducts = () => {
                   </label>
                 </div>
 
-                {/* Image Upload */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-semibold text-gray-300">
-                      Product Images
+                {/* Item Code + Instagram URL */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      Item Code
                     </label>
-                    <span className="text-xs text-gray-500">{formData.images.length}/{IMAGE_LIMIT} · First image is primary</span>
+                    <input
+                      type="text"
+                      value={formData.item_code}
+                      onChange={(e) => setFormData({ ...formData, item_code: e.target.value })}
+                      className="w-full px-4 py-3 bg-black/50 border border-[#D4AF37]/30 rounded-xl text-white focus:ring-2 focus:ring-[#D4AF37]"
+                      placeholder="Auto-generated if blank"
+                    />
                   </div>
-
-                  {formData.images.length < IMAGE_LIMIT && (
-                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-[#D4AF37]/30 rounded-xl cursor-pointer hover:border-[#D4AF37]/50 transition-colors mb-3">
-                      <Upload className="w-7 h-7 text-gray-400 mb-1" />
-                      <p className="text-sm text-gray-400">Click to upload (multiple)</p>
-                      <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      Instagram URL <span className="text-gray-500 text-xs">(Optional)</span>
                     </label>
-                  )}
-                  {formData.images.length >= IMAGE_LIMIT && (
-                    <p className="text-xs text-amber-400 mb-3 text-center">Maximum {IMAGE_LIMIT} images reached — remove one to add more.</p>
-                  )}
+                    <input
+                      type="url"
+                      value={formData.instagram_url}
+                      onChange={(e) => setFormData({ ...formData, instagram_url: e.target.value })}
+                      className="w-full px-4 py-3 bg-black/50 border border-[#D4AF37]/30 rounded-xl text-white focus:ring-2 focus:ring-[#D4AF37]"
+                      placeholder="Paste Instagram reel/post URL"
+                    />
+                  </div>
+                </div>
 
-                  {formData.images.length > 0 && (
-                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '6px' }}>
-                      {formData.images.map((image, index) => (
-                        <div key={index} style={{ position: 'relative', flexShrink: 0, width: '96px' }}>
-                          <div style={{ position: 'relative', width: '96px', height: '96px' }}>
-                            <img
-                              src={image}
-                              alt={`Preview ${index + 1}`}
-                              style={{ width: '96px', height: '96px', objectFit: 'cover', borderRadius: '8px', border: index === 0 ? '2px solid #D4AF37' : '2px solid rgba(255,255,255,0.1)', display: 'block' }}
-                            />
-                            {index === 0 && (
-                              <div style={{ position: 'absolute', top: '4px', left: '4px', background: '#D4AF37', color: '#000', fontSize: '9px', fontWeight: 700, padding: '2px 5px', borderRadius: '4px', letterSpacing: '0.05em' }}>PRIMARY</div>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => removeImage(index)}
-                              style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                          {index !== 0 && (
-                            <button
-                              type="button"
-                              onClick={() => setAsPrimary(index)}
-                              style={{ marginTop: '4px', width: '100%', fontSize: '10px', padding: '3px 0', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)', color: 'rgba(212,175,55,0.8)', borderRadius: '4px', cursor: 'pointer' }}
-                            >
-                              Set primary
-                            </button>
-                          )}
+                {/* Image Uploads: Dummy + Model */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    { field: 'image_dummy', label: 'Dummy view', sub: 'Item on stand / bust' },
+                    { field: 'image_model', label: 'Model view', sub: 'Item on a person' },
+                  ].map(({ field, label, sub }) => (
+                    <div key={field}>
+                      <label className="block text-sm font-semibold text-gray-300 mb-1">{label}</label>
+                      <p className="text-xs text-gray-500 mb-2">{sub}</p>
+                      {formData[field] ? (
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                          <img
+                            src={formData[field]}
+                            alt={label}
+                            style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '2px solid rgba(212,175,55,0.3)', display: 'block' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, [field]: '' })}
+                            style={{ position: 'absolute', top: '-6px', right: '-6px', width: '22px', height: '22px', borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                          >
+                            <X size={13} />
+                          </button>
+                          <label style={{ display: 'block', marginTop: '6px', fontSize: '11px', color: 'rgba(212,175,55,0.7)', cursor: 'pointer', textDecoration: 'underline' }}>
+                            Replace
+                            <input type="file" accept="image/*" onChange={handleSingleImageUpload(field)} style={{ display: 'none' }} />
+                          </label>
                         </div>
-                      ))}
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-[#D4AF37]/30 rounded-xl cursor-pointer hover:border-[#D4AF37]/50 transition-colors">
+                          <Upload className="w-7 h-7 text-gray-400 mb-1" />
+                          <p className="text-sm text-gray-400">Click to upload</p>
+                          <input type="file" accept="image/*" onChange={handleSingleImageUpload(field)} className="hidden" />
+                        </label>
+                      )}
                     </div>
-                  )}
+                  ))}
                 </div>
 
                 {/* Submit Buttons */}

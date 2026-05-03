@@ -55,14 +55,17 @@ class CategoryCreate(BaseModel):
 # Product Models
 class Product(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     id: str
     name: str
     category_id: str
-    subcategory: Optional[str] = None  # "men" or "women" or None
-    images: List[str] = []
+    subcategory: Optional[str] = None
+    image_dummy: Optional[str] = None   # item on stand/bust
+    image_model: Optional[str] = None   # item on a person
+    item_code: Optional[str] = None     # e.g. "N142"
+    instagram_url: Optional[str] = None
     description: Optional[str] = None
-    weight: float  # in grams
+    weight: float
     wastage_percent: float = 0.0
     making_charges: float = 0.0
     stone_charges: float = 0.0
@@ -77,7 +80,10 @@ class ProductCreate(BaseModel):
     name: str
     category_id: str
     subcategory: Optional[str] = None
-    images: List[str] = []
+    image_dummy: Optional[str] = None
+    image_model: Optional[str] = None
+    item_code: Optional[str] = None
+    instagram_url: Optional[str] = None
     description: Optional[str] = None
     weight: float
     wastage_percent: float = 0.0
@@ -91,7 +97,10 @@ class ProductUpdate(BaseModel):
     name: Optional[str] = None
     category_id: Optional[str] = None
     subcategory: Optional[str] = None
-    images: Optional[List[str]] = None
+    image_dummy: Optional[str] = None
+    image_model: Optional[str] = None
+    item_code: Optional[str] = None
+    instagram_url: Optional[str] = None
     description: Optional[str] = None
     weight: Optional[float] = None
     wastage_percent: Optional[float] = None

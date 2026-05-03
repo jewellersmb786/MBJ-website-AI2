@@ -229,6 +229,16 @@ async def get_category(category_id: str):
     return category
 
 # Products
+def _adapt_product(doc: dict) -> dict:
+    """Read-time adapter: products with old `images` list get image_dummy/image_model set."""
+    if doc.get("image_dummy") is None:
+        imgs = doc.get("images") or []
+        if imgs:
+            doc["image_dummy"] = imgs[0]
+            doc["image_model"] = imgs[1] if len(imgs) > 1 else None
+    return doc
+
+
 @api_router.get("/products", response_model=List[Product])
 async def get_products(
     category_id: Optional[str] = None,
@@ -250,9 +260,10 @@ async def get_products(
         query["stock_status"] = stock_status
     if featured_only:
         query["is_featured"] = True
-    
+
     products = await db.products.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
-    return products
+    return [_adapt_product(p) for p in products]
+
 
 @api_router.get("/products/{product_id}", response_model=Product)
 async def get_product(product_id: str):
@@ -260,7 +271,7 @@ async def get_product(product_id: str):
     product = await db.products.find_one({"id": product_id}, {"_id": 0})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return product
+    return _adapt_product(product)
 
 # Custom Order Inquiry
 @api_router.post("/custom-order")
@@ -443,14 +454,32 @@ async def create_product(product: ProductCreate, admin = Depends(get_current_adm
     product_data['is_active'] = True
     product_data['created_at'] = datetime.utcnow()
     product_data['updated_at'] = datetime.utcnow()
-    
+
+    # Auto-generate item_code if not provided
+    if not product_data.get('item_code'):
+        cat = await db.categories.find_one({"id": product_data['category_id']}, {"name": 1})
+        letter = (cat['name'][0].upper() if cat and cat.get('name') else 'X')
+        existing = await db.products.find(
+            {"category_id": product_data['category_id']},
+            {"item_code": 1}
+        ).to_list(1000)
+        max_num = 0
+        for doc in existing:
+            code = doc.get('item_code') or ''
+            if code and code[0].upper() == letter:
+                try:
+                    max_num = max(max_num, int(code[1:]))
+                except ValueError:
+                    pass
+        product_data['item_code'] = f"{letter}{max_num + 1}"
+
     await db.products.insert_one(product_data)
     return {"message": "Product created successfully", "id": product_data['id']}
 
 @api_router.put("/admin/products/{product_id}")
 async def update_product(product_id: str, updates: ProductUpdate, admin = Depends(get_current_admin)):
     """Update product"""
-    update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
+    update_data = dict(updates.model_dump(exclude_unset=True))
     update_data['updated_at'] = datetime.utcnow()
     
     result = await db.products.update_one(
