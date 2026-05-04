@@ -47,6 +47,7 @@ export const customOrderAPI = {
 
 export const orderAPI = {
   track: (orderId) => api.get(`/track/${orderId}`),
+  trackByPhone: (phone) => api.get('/track', { params: { phone } }),
 };
 
 export const settingsAPI = {
@@ -82,6 +83,7 @@ export const adminAPI = {
     getAll: () => api.get('/admin/orders'),
     create: (data) => api.post('/admin/orders', data),
     update: (id, data) => api.put(`/admin/orders/${id}`, data),
+    updateStatus: (id, status, extra = {}) => api.put(`/admin/orders/${id}`, { order_status: status, ...extra }),
   },
   
   customers: {
@@ -92,6 +94,7 @@ export const adminAPI = {
   customOrders: {
     getAll: () => api.get('/admin/custom-orders'),
     updateStatus: (id, status) => api.put(`/admin/custom-orders/${id}`, null, { params: { status } }),
+    update: (id, data) => api.put(`/admin/custom-orders/${id}`, null, { params: data }),
   },
   
   settings: {

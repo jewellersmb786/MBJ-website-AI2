@@ -18,8 +18,8 @@ const CollectionsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [selectedSubcategory, setSelectedSubcategory] = useState(searchParams.get('subcategory') || '');
   const [weightRange, setWeightRange] = useState([
-    Math.max(0, parseInt(searchParams.get('weight_min') || '0')),
-    Math.min(200, parseInt(searchParams.get('weight_max') || '200')),
+    Math.max(0, parseFloat(searchParams.get('weight_min') || '0')),
+    Math.min(200, parseFloat(searchParams.get('weight_max') || '200')),
   ]);
   const [selectedPurities, setSelectedPurities] = useState(() => {
     const p = searchParams.get('purity');
@@ -277,14 +277,53 @@ const CollectionsPage = () => {
               {/* Weight */}
               <div style={{ marginBottom: '20px' }}>
                 <p style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', margin: '0 0 10px' }}>Weight (grams)</p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#D4AF37', marginBottom: '8px' }}>
-                  <span>{weightRange[0]}g</span><span>{weightRange[1]}g</span>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '9px', color: 'rgba(255,255,255,0.3)', marginBottom: '3px', letterSpacing: '0.08em' }}>MIN</label>
+                    <input
+                      type="number" step="0.5" min="0" max="200"
+                      value={weightRange[0]}
+                      onChange={e => {
+                        const v = parseFloat(e.target.value) || 0;
+                        setWeightRange([Math.min(v, weightRange[1]), weightRange[1]]);
+                      }}
+                      onBlur={e => {
+                        const v = parseFloat(e.target.value) || 0;
+                        const clamped = Math.max(0, Math.min(v, weightRange[1]));
+                        setWeightRange([clamped, weightRange[1]]);
+                      }}
+                      style={{ width: '100%', padding: '6px 8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '6px', color: '#D4AF37', fontSize: '13px', outline: 'none', boxSizing: 'border-box', fontVariantNumeric: 'tabular-nums' }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '9px', color: 'rgba(255,255,255,0.3)', marginBottom: '3px', letterSpacing: '0.08em' }}>MAX</label>
+                    <input
+                      type="number" step="0.5" min="0" max="200"
+                      value={weightRange[1]}
+                      onChange={e => {
+                        const v = parseFloat(e.target.value) || 0;
+                        setWeightRange([weightRange[0], Math.max(v, weightRange[0])]);
+                      }}
+                      onBlur={e => {
+                        const v = parseFloat(e.target.value) || 0;
+                        const clamped = Math.min(200, Math.max(v, weightRange[0]));
+                        setWeightRange([weightRange[0], clamped]);
+                      }}
+                      style={{ width: '100%', padding: '6px 8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '6px', color: '#D4AF37', fontSize: '13px', outline: 'none', boxSizing: 'border-box', fontVariantNumeric: 'tabular-nums' }}
+                    />
+                  </div>
                 </div>
-                <input type="range" min="0" max="200" step="1" value={weightRange[0]}
-                  onChange={e => setWeightRange([parseInt(e.target.value), weightRange[1]])}
-                  style={{ width: '100%', accentColor: '#D4AF37', marginBottom: '6px', display: 'block' }} />
-                <input type="range" min="0" max="200" step="1" value={weightRange[1]}
-                  onChange={e => setWeightRange([weightRange[0], parseInt(e.target.value)])}
+                <input type="range" min="0" max="200" step="0.5" value={weightRange[0]}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value);
+                    setWeightRange([Math.min(v, weightRange[1]), weightRange[1]]);
+                  }}
+                  style={{ width: '100%', accentColor: '#D4AF37', marginBottom: '4px', display: 'block' }} />
+                <input type="range" min="0" max="200" step="0.5" value={weightRange[1]}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value);
+                    setWeightRange([weightRange[0], Math.max(v, weightRange[0])]);
+                  }}
                   style={{ width: '100%', accentColor: '#D4AF37', display: 'block' }} />
               </div>
 
@@ -420,7 +459,7 @@ const CollectionsPage = () => {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <a
-                  href={`https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`Hi, here are some items from our collection that match your requirements: ${window.location.href}`)}`}
+                  href={`https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`Hi, here are some items from our collection that match your requirements: ${window.location.href}\n\nClick any item to see full details and prices.`)}`}
                   target="_blank" rel="noopener noreferrer"
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: '#22c55e', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}
                 >

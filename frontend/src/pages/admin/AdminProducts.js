@@ -326,14 +326,13 @@ const AdminProducts = () => {
                 </div>
 
                 {/* Description */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Description</label>
+                <div style={{ display: 'block' }}>
+                  <label className="block text-sm font-semibold text-gray-300" style={{ marginBottom: '8px' }}>Description</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows="3"
-                    className="w-full px-4 py-3 bg-black/50 border border-[#D4AF37]/30 rounded-xl text-white focus:ring-2 focus:ring-[#D4AF37]"
                     placeholder="Product description..."
+                    style={{ width: '100%', minHeight: '120px', padding: '12px', lineHeight: 1.5, boxSizing: 'border-box', resize: 'vertical', overflowY: 'auto', flexShrink: 0, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '12px', color: '#fff', fontSize: '14px', outline: 'none', display: 'block' }}
                   />
                 </div>
 

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
 
 # Enums
@@ -191,8 +191,9 @@ class OrderUpdate(BaseModel):
 # Custom Order Inquiry
 class CustomOrderInquiry(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     id: str
+    reference_code: Optional[str] = None
     name: str
     phone: str
     email: Optional[str] = None
@@ -201,7 +202,12 @@ class CustomOrderInquiry(BaseModel):
     approximate_weight: Optional[float] = None
     estimated_price: Optional[float] = None
     reference_images: List[str] = []
-    status: str = "new"  # new, contacted, converted, closed
+    budget_range: Optional[str] = None
+    preferred_metal: Optional[str] = None
+    occasion: Optional[str] = None
+    preferred_completion_date: Optional[date] = None
+    status: str = "new"
+    status_history: List[dict] = []
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class CustomOrderInquiryCreate(BaseModel):
@@ -213,6 +219,10 @@ class CustomOrderInquiryCreate(BaseModel):
     approximate_weight: Optional[float] = None
     estimated_price: Optional[float] = None
     reference_images: List[str] = []
+    budget_range: Optional[str] = None
+    preferred_metal: Optional[str] = None
+    occasion: Optional[str] = None
+    preferred_completion_date: Optional[date] = None
 
 # Gold Rate Models
 class GoldRate(BaseModel):

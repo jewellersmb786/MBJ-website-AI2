@@ -71,27 +71,37 @@ const ProductDetailPage = () => {
 
   const calcPrice = () => {
     if (!product || !settings) return null;
-    const rate = settings.k22_rate || 13835;
+    const purity = (product.purity || '22k').toLowerCase();
+    const rate = purity.includes('24') ? (settings.k24_rate || 15093)
+               : purity.includes('18') ? (settings.k18_rate || 11320)
+               : (settings.k22_rate || 13835);
+    const gstPct = settings.gst_percent || 3;
     const weight = parseFloat(product.weight || 0);
     const wastage = parseFloat(product.wastage_percent || 0);
     const making = parseFloat(product.making_charges || 0);
     const stone = parseFloat(product.stone_charges || 0);
-    const goldValue = weight * (1 + wastage / 100) * rate;
-    const makingTotal = weight * making;
-    const subtotal = goldValue + makingTotal + stone;
-    const gst = subtotal * 0.03;
-    return { rate, weight, wastage, goldValue, makingTotal, stone, subtotal, gst, total: subtotal + gst };
+    const metalValue = weight * rate;
+    const wastageValue = metalValue * (wastage / 100);
+    const makingValue = weight * making;
+    const stoneValue = stone;
+    const subtotal = metalValue + wastageValue + makingValue + stoneValue;
+    const gstValue = subtotal * (gstPct / 100);
+    const total = subtotal + gstValue;
+    return { rate, weight, wastage, gstPct, metalValue, wastageValue, makingValue, stoneValue, subtotal, gstValue, total };
   };
+
+  const fmtINR = (n) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(n));
 
   const waLink = () => {
     if (!product || !settings) return '#';
+    const price = calcPrice();
     const digits = (settings.whatsapp || '').replace(/\D/g, '');
-    const code = product.item_code ? ` (Code: ${product.item_code},` : ' (';
-    const msg = `Hi, I'm interested in ${product.name}${code} Weight: ${product.weight}g, Purity: ${(product.purity || '').toUpperCase()}). Could you share more details?`;
+    const purity = (product.purity || '').toUpperCase();
+    const code = product.item_code ? `Code: ${product.item_code}, ` : '';
+    const priceStr = price ? `₹${fmtINR(price.total)}` : 'Price on request';
+    const msg = `Hi, I'm interested in buying ${product.name} (${code}Weight: ${product.weight}g | Purity: ${purity})\nEstimated Price: ${priceStr}\n\nCould you confirm availability and final pricing?`;
     return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`;
   };
-
-  const fmtINR = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
@@ -274,27 +284,26 @@ const ProductDetailPage = () => {
                 <div style={{ padding: '10px 16px', background: 'rgba(212,175,55,0.06)', borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
                   <p style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.7)', margin: 0 }}>Indicative Price</p>
                 </div>
-                <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '9px' }}>
                   {[
-                    { label: `Gold (${price.weight}g${price.wastage ? ` + ${price.wastage}% VA` : ''} × ₹${price.rate.toLocaleString('en-IN')}/g)`, val: price.goldValue },
-                    price.makingTotal > 0 && { label: 'Making charges', val: price.makingTotal },
-                    price.stone > 0 && { label: 'Stone / beads', val: price.stone },
-                    { label: 'Subtotal', val: price.subtotal, sep: true },
-                    { label: 'GST (3%)', val: price.gst },
+                    { label: `Metal Value (${price.weight}g × ₹${fmtINR(price.rate)}/g)`, val: price.metalValue },
+                    price.wastage > 0 && { label: `Wastage (${price.wastage}% on metal)`, val: price.wastageValue },
+                    price.makingValue > 0 && { label: 'Making Charges', val: price.makingValue },
+                    price.stoneValue > 0 && { label: 'Stone Charges', val: price.stoneValue },
                   ].filter(Boolean).map((row, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', paddingTop: row.sep ? '6px' : 0, borderTop: row.sep ? '1px solid rgba(212,175,55,0.12)' : 'none' }}>
-                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.48)' }}>{row.label}</span>
-                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontVariantNumeric: 'tabular-nums' }}>{fmtINR(row.val)}</span>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>{row.label}</span>
+                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', fontVariantNumeric: 'tabular-nums' }}>₹{fmtINR(row.val)}</span>
                     </div>
                   ))}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', marginTop: '2px', borderTop: '1px solid rgba(212,175,55,0.2)' }}>
-                    <span style={{ fontSize: '14px', color: '#D4AF37', fontWeight: 700 }}>Total (indicative)</span>
-                    <span style={{ fontSize: '18px', color: '#D4AF37', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtINR(price.total)}</span>
+                  <div style={{ borderTop: '1px solid rgba(212,175,55,0.2)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '14px', color: '#D4AF37', fontWeight: 700 }}>Total (incl. all charges & GST)</span>
+                    <span style={{ fontSize: '20px', color: '#D4AF37', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>₹{fmtINR(price.total)}</span>
                   </div>
                 </div>
                 <div style={{ padding: '8px 16px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.28)', margin: 0, lineHeight: 1.5 }}>
-                    * Indicative only. Actual price depends on gold rate at time of purchase, exact making charges, and applicable taxes.
+                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.28)', margin: 0, lineHeight: 1.5, fontStyle: 'italic' }}>
+                    *Indicative price based on today's gold rate. Final price confirmed at billing.
                   </p>
                 </div>
               </div>
@@ -322,11 +331,11 @@ const ProductDetailPage = () => {
               {product.instagram_url && (
                 <a href={product.instagram_url} target="_blank" rel="noopener noreferrer"
                   title="View on Instagram"
-                  style={{ width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', transition: 'all 0.2s', flexShrink: 0 }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(225,48,108,0.15)'; e.currentTarget.style.borderColor = 'rgba(225,48,108,0.4)'; e.currentTarget.style.color = '#E1306C'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+                  style={{ width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', border: 'none', borderRadius: '10px', color: '#fff', textDecoration: 'none', transition: 'transform 0.2s, box-shadow 0.2s', flexShrink: 0, boxShadow: '0 4px 12px rgba(220,39,67,0.35)' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(220,39,67,0.5)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(220,39,67,0.35)'; }}
                 >
-                  <Instagram size={20} />
+                  <Instagram size={22} />
                 </a>
               )}
             </div>

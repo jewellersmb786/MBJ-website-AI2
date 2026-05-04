@@ -1,3 +1,4 @@
+import re
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, File, UploadFile
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
@@ -278,14 +279,36 @@ async def get_product(product_id: str):
 async def create_custom_order_inquiry(inquiry: CustomOrderInquiryCreate):
     """Submit custom order inquiry"""
     inquiry_data = inquiry.model_dump()
-    inquiry_data['id'] = generate_uuid()
+    uid = generate_uuid()
+    inquiry_data['id'] = uid
+    inquiry_data['reference_code'] = f"CUSTOM-{uid[:6].upper()}"
     inquiry_data['status'] = 'new'
+    inquiry_data['status_history'] = [{"status": "new", "timestamp": datetime.utcnow().isoformat()}]
     inquiry_data['created_at'] = datetime.utcnow()
-    
-    await db.custom_orders.insert_one(inquiry_data)
-    return {"message": "Custom order inquiry submitted successfully", "id": inquiry_data['id']}
 
-# Order Tracking (Public)
+    await db.custom_orders.insert_one(inquiry_data)
+    return {
+        "message": "Custom order inquiry submitted successfully",
+        "id": inquiry_data['id'],
+        "reference_code": inquiry_data['reference_code']
+    }
+
+# Order Tracking (Public) — by phone
+@api_router.get("/track")
+async def track_by_phone(phone: Optional[str] = None):
+    """Track all orders for a phone number"""
+    if not phone:
+        raise HTTPException(status_code=400, detail="Phone number required")
+    digits = re.sub(r'\D', '', phone)
+    if len(digits) < 6:
+        raise HTTPException(status_code=400, detail="Invalid phone number")
+    orders = await db.orders.find(
+        {"customer_phone": {"$regex": digits[-10:]}},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(20)
+    return orders
+
+# Order Tracking (Public) — by order ID
 @api_router.get("/track/{order_id}")
 async def track_order(order_id: str):
     """Track order by ID"""
@@ -610,9 +633,13 @@ async def get_custom_orders(admin = Depends(get_current_admin)):
 @api_router.put("/admin/custom-orders/{inquiry_id}")
 async def update_custom_order_status(inquiry_id: str, status: str, admin = Depends(get_current_admin)):
     """Update custom order inquiry status"""
+    history_entry = {"status": status, "timestamp": datetime.utcnow().isoformat()}
     result = await db.custom_orders.update_one(
         {"id": inquiry_id},
-        {"$set": {"status": status}}
+        {
+            "$set": {"status": status},
+            "$push": {"status_history": history_entry}
+        }
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Inquiry not found")
