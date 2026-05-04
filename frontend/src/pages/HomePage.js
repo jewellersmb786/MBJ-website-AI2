@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { settingsAPI, categoriesAPI } from '../api';
-import { ArrowRight, Calculator, Sparkles, Award, Shield, ChevronDown } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 
 const FALLBACK_HERO = 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ui57govy_Lucid_Realism_Take_reference_from_the_images_which_I_have_shar_0.jpg';
-const PARALLAX_IMAGE = 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/p6odm8yi_bridal%203.jpg';
-const CTA_IMAGE = 'https://images.unsplash.com/photo-1723879580148-517048db5bd9';
+const FALLBACK_PARALLAX = 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/p6odm8yi_bridal%203.jpg';
+const FALLBACK_CTA = 'https://images.unsplash.com/photo-1723879580148-517048db5bd9';
+
+const DynamicIcon = ({ name, size = 30, color = '#D4AF37' }) => {
+  try {
+    const Icon = LucideIcons[name];
+    if (Icon) return <Icon size={size} color={color} />;
+  } catch {}
+  return <LucideIcons.Star size={size} color={color} />;
+};
 
 
 const SECTIONS = [
@@ -137,20 +146,27 @@ const HomePage = () => {
       {/* ══════════════════════
           PARALLAX QUOTE
       ══════════════════════ */}
-      <section style={{ position: 'relative', height: '55vh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img src={PARALLAX_IMAGE} alt="Craftsmanship"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.35)' }}
-        />
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
-        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '0 32px', maxWidth: '600px' }}>
-          <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', fontFamily: 'Georgia, serif', fontWeight: 400, color: '#fff', marginBottom: '16px', lineHeight: 1.2 }}>
-            Crafted with <span style={{ color: '#D4AF37' }}>Devotion</span>
-          </h2>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.8 }}>
-            Every piece tells a story of tradition, artistry and the sacred beauty of South Indian heritage
-          </p>
-        </div>
-      </section>
+      {(() => {
+        const img = settings?.parallax_quote_image || FALLBACK_PARALLAX;
+        const heading = settings?.parallax_quote_heading || 'Crafted with Devotion';
+        const subtext = settings?.parallax_quote_subtext || 'Every piece tells a story of tradition, artistry and the sacred beauty of South Indian heritage';
+        const parts = heading.split(' ');
+        const lastWord = parts.pop();
+        return (
+          <section style={{ position: 'relative', height: '55vh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src={img} alt="Craftsmanship"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.35)' }}
+            />
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
+            <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '0 32px', maxWidth: '600px' }}>
+              <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', fontFamily: 'Georgia, serif', fontWeight: 400, color: '#fff', marginBottom: '16px', lineHeight: 1.2 }}>
+                {parts.join(' ')} <span style={{ color: '#D4AF37' }}>{lastWord}</span>
+              </h2>
+              {subtext && <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.8 }}>{subtext}</p>}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* ══════════════════════
           THE MBJ DIFFERENCE
@@ -163,17 +179,17 @@ const HomePage = () => {
             <div style={{ width: '40px', height: '1px', background: '#D4AF37', margin: '0 auto' }} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px' }}>
-            {[
-              { icon: <Sparkles size={30} color="#D4AF37" />, title: 'Authentic Nakshi Work', desc: 'Traditional handcrafted Nakshi jewellery with intricate embossed detailing' },
-              { icon: <Award size={30} color="#D4AF37" />, title: 'BIS Hallmarked Gold', desc: 'Certified purity and quality on every piece we craft' },
-              { icon: <Shield size={30} color="#D4AF37" />, title: 'Transparent Pricing', desc: 'Live gold rates with detailed price breakdown — no hidden charges' },
-            ].map((item, i) => (
+            {(settings?.mbj_difference || [
+              { icon: 'Sparkles', title: 'Authentic Nakshi Work', description: 'Traditional handcrafted Nakshi jewellery with intricate embossed detailing' },
+              { icon: 'Award', title: 'BIS Hallmarked Gold', description: 'Certified purity and quality on every piece we craft' },
+              { icon: 'Shield', title: 'Transparent Pricing', description: 'Live gold rates with detailed price breakdown — no hidden charges' },
+            ]).map((item, i) => (
               <div key={i} style={{ textAlign: 'center' }}>
                 <div style={{ width: '68px', height: '68px', border: '1px solid rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', background: 'rgba(212,175,55,0.04)' }}>
-                  {item.icon}
+                  <DynamicIcon name={item.icon} size={30} color="#D4AF37" />
                 </div>
                 <h3 style={{ fontSize: '15px', color: '#D4AF37', marginBottom: '10px' }}>{item.title}</h3>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.7 }}>{item.desc}</p>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.7 }}>{item.description || item.desc}</p>
               </div>
             ))}
           </div>
@@ -183,29 +199,38 @@ const HomePage = () => {
       {/* ══════════════════════
           CTA
       ══════════════════════ */}
-      <section style={{ position: 'relative', padding: '100px 0', overflow: 'hidden' }}>
-        <img src={CTA_IMAGE} alt="Custom Orders"
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.22)' }}
-        />
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} />
-        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '0 32px', maxWidth: '600px', margin: '0 auto' }}>
-          <p style={{ fontSize: '10px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.6)', marginBottom: '14px' }}>Made Just for You</p>
-          <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', fontFamily: 'Georgia, serif', fontWeight: 400, color: '#fff', marginBottom: '16px', lineHeight: 1.2 }}>Begin Your Journey</h2>
-          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '40px', lineHeight: 1.8 }}>Let us help you find or create the perfect piece that tells your unique story</p>
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/custom-order"
-              style={{ padding: '13px 30px', border: '1px solid rgba(212,175,55,0.6)', color: '#D4AF37', textDecoration: 'none', fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', background: 'rgba(212,175,55,0.05)', transition: 'all 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.12)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(212,175,55,0.05)'}
-            >Custom Orders</Link>
-            <Link to="/contact"
-              style={{ padding: '13px 30px', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', transition: 'all 0.2s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
-            >Contact Us</Link>
-          </div>
-        </div>
-      </section>
+      {(() => {
+        const ctaImg = settings?.cta_banner_image || FALLBACK_CTA;
+        const ctaHeading = settings?.cta_banner_heading || 'Begin Your Journey';
+        const ctaSubtext = settings?.cta_banner_subtext || 'Let us help you find or create the perfect piece that tells your unique story';
+        const ctaBtnText = settings?.cta_banner_button_text || 'Explore Collections';
+        const ctaBtnLink = settings?.cta_banner_button_link || '/collections';
+        return (
+          <section style={{ position: 'relative', padding: '100px 0', overflow: 'hidden' }}>
+            <img src={ctaImg} alt="CTA"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.22)' }}
+            />
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} />
+            <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '0 32px', maxWidth: '600px', margin: '0 auto' }}>
+              <p style={{ fontSize: '10px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.6)', marginBottom: '14px' }}>Made Just for You</p>
+              <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3.2rem)', fontFamily: 'Georgia, serif', fontWeight: 400, color: '#fff', marginBottom: '16px', lineHeight: 1.2 }}>{ctaHeading}</h2>
+              {ctaSubtext && <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', marginBottom: '40px', lineHeight: 1.8 }}>{ctaSubtext}</p>}
+              <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link to={ctaBtnLink}
+                  style={{ padding: '13px 30px', border: '1px solid rgba(212,175,55,0.6)', color: '#D4AF37', textDecoration: 'none', fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', background: 'rgba(212,175,55,0.05)', transition: 'all 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.12)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(212,175,55,0.05)'}
+                >{ctaBtnText}</Link>
+                <Link to="/contact"
+                  style={{ padding: '13px 30px', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', transition: 'all 0.2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+                >Contact Us</Link>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       <style>{`
         .spec-tile:hover .spec-img { transform: scale(1.06); }

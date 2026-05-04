@@ -289,14 +289,14 @@ const AdminProducts = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(4px)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '16px', overflowY: 'auto' }}
             onClick={() => setShowProductModal(false)}
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-[#1a1a1a] border border-[#D4AF37]/30 rounded-2xl p-8 max-w-3xl w-full my-8"
+              style={{ width: '100%', maxWidth: '800px', background: '#1a1a1a', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '16px', padding: '32px', boxSizing: 'border-box', margin: '32px 0' }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
@@ -336,7 +336,7 @@ const AdminProducts = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Weight */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-300 mb-2">Weight (grams) *</label>
@@ -434,7 +434,7 @@ const AdminProducts = () => {
                 </div>
 
                 {/* Item Code + Instagram URL */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-300 mb-2">
                       Item Code
@@ -462,7 +462,7 @@ const AdminProducts = () => {
                 </div>
 
                 {/* Image Uploads: Dummy + Model */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {[
                     { field: 'image_dummy', label: 'Dummy view', sub: 'Item on stand / bust' },
                     { field: 'image_model', label: 'Model view', sub: 'Item on a person' },

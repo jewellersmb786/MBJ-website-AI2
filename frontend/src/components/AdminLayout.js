@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAdmin } from '../AdminContext';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, FolderTree } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, FolderTree, Coins, Sparkles, MessageSquare } from 'lucide-react';
 
 const AdminLayout = () => {
   const { admin, loading, logout } = useAdmin();
@@ -33,7 +33,9 @@ const AdminLayout = () => {
     { to: '/admin/products', label: 'Products', icon: <Package size={20} /> },
     { to: '/admin/orders', label: 'Orders', icon: <ShoppingCart size={20} /> },
     { to: '/admin/customers', label: 'Customers', icon: <Users size={20} /> },
-    { to: '/admin/custom-orders', label: 'Custom Orders', icon: <Package size={20} /> },
+    { to: '/admin/custom-orders', label: 'Custom Orders', icon: <MessageSquare size={20} /> },
+    { to: '/admin/schemes', label: 'Schemes', icon: <Coins size={20} /> },
+    { to: '/admin/spiritual', label: 'Spiritual', icon: <Sparkles size={20} /> },
     { to: '/admin/settings', label: 'Settings', icon: <Settings size={20} /> },
   ];
 
@@ -81,7 +83,7 @@ const AdminLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="ml-64">
+      <div className="ml-64" style={{ minWidth: 0, overflowX: 'hidden', flex: 1 }}>
         <header className="glass border-b border-gold/10 px-8 py-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-playfair font-bold gold-text">Admin Panel</h2>

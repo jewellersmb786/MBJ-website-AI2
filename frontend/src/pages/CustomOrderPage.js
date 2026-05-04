@@ -15,8 +15,7 @@ const CustomOrderPage = () => {
     description: '',
     instagram_url: '',
     reference_images: [],
-    budget_range: '',
-    preferred_metal: '',
+    weight_requirement: '',
     occasion: '',
     preferred_completion_date: '',
   });
@@ -62,8 +61,7 @@ const CustomOrderPage = () => {
         jewellery_type: formData.jewellery_type || 'Custom Design',
         description: formData.description.trim(),
         reference_images: formData.reference_images,
-        budget_range: formData.budget_range || undefined,
-        preferred_metal: formData.preferred_metal || undefined,
+        weight_requirement: formData.weight_requirement ? parseFloat(formData.weight_requirement) : undefined,
         occasion: formData.occasion || undefined,
         preferred_completion_date: formData.preferred_completion_date || undefined,
       });
@@ -215,31 +213,18 @@ const CustomOrderPage = () => {
                   placeholder="Describe your custom jewellery requirements (min 20 characters)..." />
               </div>
 
-              {/* Budget & Metal row */}
+              {/* Weight + 22K Note */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">Budget Range</label>
-                  <select name="budget_range" value={formData.budget_range} onChange={handleChange} className={inputCls}>
-                    <option value="">Select budget</option>
-                    <option value="Below ₹50K">Below ₹50,000</option>
-                    <option value="₹50K–1L">₹50,000 – ₹1,00,000</option>
-                    <option value="₹1L–3L">₹1,00,000 – ₹3,00,000</option>
-                    <option value="₹3L–5L">₹3,00,000 – ₹5,00,000</option>
-                    <option value="₹5L+">₹5,00,000+</option>
-                  </select>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Weight Requirement (grams) <span className="text-gray-500 font-normal">(optional)</span>
+                  </label>
+                  <input type="number" name="weight_requirement" value={formData.weight_requirement}
+                    onChange={handleChange} step="0.5" min="0"
+                    className={inputCls} placeholder="e.g. 25 — leave blank if unsure" />
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-3">Preferred Metal</label>
-                  <div className="flex flex-wrap gap-3">
-                    {['Gold 22K', 'Gold 18K', 'Silver', 'Platinum'].map(metal => (
-                      <label key={metal} className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="preferred_metal" value={metal}
-                          checked={formData.preferred_metal === metal} onChange={handleChange}
-                          className="accent-[#D4AF37]" />
-                        <span className="text-sm text-gray-300">{metal}</span>
-                      </label>
-                    ))}
-                  </div>
+                <div style={{ border: '1px solid rgba(212,175,55,0.3)', borderRadius: '8px', padding: '12px 16px', alignSelf: 'flex-end', color: '#D4AF37', fontStyle: 'italic', fontSize: '13px', lineHeight: 1.5 }}>
+                  ✦ We craft customised jewellery only in 22K gold.
                 </div>
               </div>
 

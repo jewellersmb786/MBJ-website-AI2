@@ -7,11 +7,14 @@ import toast from 'react-hot-toast';
 const CalculatorPage = () => {
   const [formData, setFormData] = useState({
     weight: '',
-    wastage_percent: '',
     making_charges: '',
     stone_charges: '',
     purity: '22k'
   });
+  const [wastagePreset, setWastagePreset] = useState(null);
+  const [wastageCustom, setWastageCustom] = useState('');
+
+  const activeWastage = wastagePreset !== null ? wastagePreset : (wastageCustom !== '' ? parseFloat(wastageCustom) : null);
 
   const [result, setResult] = useState(null);
   const [calculating, setCalculating] = useState(false);
@@ -40,34 +43,22 @@ const CalculatorPage = () => {
     }
   };
 
-  const wastageOptions = [13, 12, 10, 8];
-
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const selectWastage = (value) => {
-    setFormData({
-      ...formData,
-      wastage_percent: value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleCalculate = async (e) => {
     e.preventDefault();
 
-    if (!formData.weight || !formData.wastage_percent) {
-      toast.error('Please enter weight and select wastage');
+    if (!formData.weight || activeWastage === null) {
+      toast.error('Please enter weight and pick or enter wastage %');
       return;
     }
 
     setCalculating(true);
     try {
       const weight = parseFloat(formData.weight);
-      const wastagePercent = parseFloat(formData.wastage_percent);
+      const wastagePercent = activeWastage;
       const makingChargesPerGram = parseFloat(formData.making_charges || 0);
       const stoneCharges = parseFloat(formData.stone_charges || 0);
       
@@ -197,24 +188,28 @@ const CalculatorPage = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-3">
-                  Wastage (VA) *
+                  Wastage % *
                 </label>
-                <div className="grid grid-cols-4 gap-4">
-                  {wastageOptions.map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => selectWastage(value)}
-                      className={`py-4 rounded-xl font-bold text-lg transition-all ${
-                        formData.wastage_percent === value
-                          ? 'bg-gold text-black'
-                          : 'bg-black/50 text-gray-400 border border-gold/20 hover:border-gold/50'
+                <div className="flex gap-3 mb-4">
+                  {[10, 12, 13].map(val => (
+                    <button key={val} type="button"
+                      onClick={() => { setWastagePreset(val); setWastageCustom(''); setResult(null); }}
+                      className={`flex-1 py-3 rounded-xl font-bold text-lg transition-all border ${
+                        wastagePreset === val
+                          ? 'bg-[#D4AF37] text-black border-[#D4AF37]'
+                          : 'bg-black/50 text-[#D4AF37] border-[#D4AF37]/40 hover:border-[#D4AF37]/80'
                       }`}
-                    >
-                      {value}%
-                    </button>
+                    >{val}%</button>
                   ))}
                 </div>
+                <label className="block text-xs text-gray-500 mb-2">Or enter your own:</label>
+                <input
+                  type="number" step="0.5" min="0" max="50"
+                  value={wastageCustom}
+                  onChange={e => { setWastageCustom(e.target.value); setWastagePreset(null); setResult(null); }}
+                  placeholder="e.g. 8"
+                  className="w-full px-6 py-3 bg-black/50 border border-gold/30 rounded-xl text-white text-lg focus:ring-2 focus:ring-gold focus:border-transparent"
+                />
               </div>
 
               <div>
@@ -260,6 +255,12 @@ const CalculatorPage = () => {
               </button>
             </form>
           </motion.div>
+
+          {formData.weight && activeWastage === null && (
+            <div className="text-center py-8" style={{ color: 'rgba(212,175,55,0.5)', fontStyle: 'italic', fontSize: '15px' }}>
+              Pick or enter wastage % to see estimated price
+            </div>
+          )}
 
           {result && (
             <motion.div

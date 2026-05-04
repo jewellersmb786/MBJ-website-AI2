@@ -80,6 +80,7 @@ const DetailModal = ({ order, onClose, onStatusChange }) => {
             ['Phone', order.phone],
             order.email && ['Email', order.email],
             ['Type', order.jewellery_type],
+            order.weight_requirement != null && ['Weight Req.', `${order.weight_requirement}g`],
             order.budget_range && ['Budget', order.budget_range],
             order.preferred_metal && ['Metal', order.preferred_metal],
             order.occasion && ['Occasion', order.occasion],

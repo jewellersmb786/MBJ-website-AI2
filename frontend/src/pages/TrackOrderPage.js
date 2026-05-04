@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { orderAPI, settingsAPI } from '../api';
 import { motion } from 'framer-motion';
 import { Search, Package } from 'lucide-react';
@@ -99,20 +100,28 @@ const OrderCard = ({ order, whatsapp }) => {
 };
 
 const TrackOrderPage = () => {
-  const [tab, setTab] = useState('phone');
+  const { orderId: paramOrderId } = useParams();
+  const [tab, setTab] = useState(paramOrderId ? 'id' : 'phone');
   const [phone, setPhone] = useState('');
-  const [orderId, setOrderId] = useState('');
+  const [orderId, setOrderId] = useState(paramOrderId || '');
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [whatsapp, setWhatsapp] = useState('917019539776');
 
-  React.useEffect(() => {
+  useEffect(() => {
     settingsAPI.getPublic().then(r => {
       const w = (r.data?.whatsapp || '').replace(/\D/g, '');
       if (w) setWhatsapp(w);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (paramOrderId) {
+      doSearch();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramOrderId]);
 
   const doSearch = async () => {
     setError(''); setResults(null);

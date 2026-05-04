@@ -24,6 +24,8 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminCustomOrders from './pages/admin/AdminCustomOrders';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminSchemes from './pages/admin/AdminSchemes';
+import AdminSpiritual from './pages/admin/AdminSpiritual';
 
 // Layout
 import Layout from './components/Layout';
@@ -43,6 +45,7 @@ function App() {
             <Route path="calculator" element={<CalculatorPage />} />
             <Route path="custom-order" element={<CustomOrderPage />} />
             <Route path="track/:orderId" element={<TrackOrderPage />} />
+            <Route path="track-order" element={<TrackOrderPage />} />
             <Route path="about" element={<AboutPage />} />
             <Route path="contact" element={<ContactPage />} />
             <Route path="schemes" element={<SchemesPage />} />
@@ -59,6 +62,8 @@ function App() {
             <Route path="customers" element={<AdminCustomers />} />
             <Route path="custom-orders" element={<AdminCustomOrders />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="schemes" element={<AdminSchemes />} />
+            <Route path="spiritual" element={<AdminSpiritual />} />
           </Route>
         </Routes>
       </BrowserRouter>

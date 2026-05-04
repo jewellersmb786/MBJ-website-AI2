@@ -54,6 +54,23 @@ export const settingsAPI = {
   getPublic: () => api.get('/settings/public'),
 };
 
+export const schemesAPI = {
+  getAll: () => api.get('/schemes'),
+  enroll: (data) => api.post('/scheme-enrollments', data),
+};
+
+export const gemstonesAPI = {
+  getAll: () => api.get('/gemstones'),
+};
+
+export const spiritualArticleTypesAPI = {
+  getAll: () => api.get('/spiritual-article-types'),
+};
+
+export const spiritualInquiriesAPI = {
+  create: (data) => api.post('/spiritual-inquiries', data),
+};
+
 
 // Admin API calls
 export const adminAPI = {
@@ -95,6 +112,37 @@ export const adminAPI = {
     getAll: () => api.get('/admin/custom-orders'),
     updateStatus: (id, status) => api.put(`/admin/custom-orders/${id}`, null, { params: { status } }),
     update: (id, data) => api.put(`/admin/custom-orders/${id}`, null, { params: data }),
+  },
+
+  schemes: {
+    getAll: () => api.get('/admin/schemes'),
+    create: (data) => api.post('/admin/schemes', data),
+    update: (id, data) => api.put(`/admin/schemes/${id}`, data),
+    delete: (id) => api.delete(`/admin/schemes/${id}`),
+  },
+
+  schemeEnrollments: {
+    getAll: () => api.get('/admin/scheme-enrollments'),
+    updateStatus: (id, status) => api.put(`/admin/scheme-enrollments/${id}/status`, null, { params: { status } }),
+  },
+
+  gemstones: {
+    getAll: () => api.get('/admin/gemstones'),
+    create: (data) => api.post('/admin/gemstones', data),
+    update: (id, data) => api.put(`/admin/gemstones/${id}`, data),
+    delete: (id) => api.delete(`/admin/gemstones/${id}`),
+  },
+
+  spiritualArticleTypes: {
+    getAll: () => api.get('/admin/spiritual-article-types'),
+    create: (data) => api.post('/admin/spiritual-article-types', data),
+    update: (id, data) => api.put(`/admin/spiritual-article-types/${id}`, data),
+    delete: (id) => api.delete(`/admin/spiritual-article-types/${id}`),
+  },
+
+  spiritualInquiries: {
+    getAll: () => api.get('/admin/spiritual-inquiries'),
+    updateStatus: (id, status) => api.put(`/admin/spiritual-inquiries/${id}/status`, null, { params: { status } }),
   },
   
   settings: {

@@ -309,6 +309,21 @@ const Layout = () => {
             </div>
 
             <div>
+              <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>Quick Links</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+                {[
+                  { to: '/collections', label: 'Collections' },
+                  { to: '/track-order', label: 'Track Order' },
+                  { to: '/custom-order', label: 'Custom Orders' },
+                  { to: '/schemes', label: 'Schemes' },
+                  { to: '/spiritual', label: 'Spiritual' },
+                ].map(({ to, label }) => (
+                  <Link key={to} to={to} style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', textDecoration: 'none', transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                  >{label}</Link>
+                ))}
+              </div>
               <h4 style={{ fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: '#D4AF37', marginBottom: '16px' }}>About Us</h4>
               <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', lineHeight: '1.8' }}>
                 {settings?.tagline || 'Specialists in South Indian Nakshi & Antique jewellery — Necklaces, Harams, Jhumkas and Bridal Sets.'}

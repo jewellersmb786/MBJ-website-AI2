@@ -202,6 +202,7 @@ class CustomOrderInquiry(BaseModel):
     approximate_weight: Optional[float] = None
     estimated_price: Optional[float] = None
     reference_images: List[str] = []
+    weight_requirement: Optional[float] = None
     budget_range: Optional[str] = None
     preferred_metal: Optional[str] = None
     occasion: Optional[str] = None
@@ -219,6 +220,7 @@ class CustomOrderInquiryCreate(BaseModel):
     approximate_weight: Optional[float] = None
     estimated_price: Optional[float] = None
     reference_images: List[str] = []
+    weight_requirement: Optional[float] = None
     budget_range: Optional[str] = None
     preferred_metal: Optional[str] = None
     occasion: Optional[str] = None
@@ -279,6 +281,16 @@ class Settings(BaseModel):
     gst_percent: float = 3.0
     card_payment_charges_percent: float = 2.0
     featured_category_ids: List[str] = []
+    # Homepage CMS
+    parallax_quote_image: Optional[str] = None
+    parallax_quote_heading: Optional[str] = "Crafted with Devotion"
+    parallax_quote_subtext: Optional[str] = None
+    cta_banner_image: Optional[str] = None
+    cta_banner_heading: Optional[str] = "Begin Your Journey"
+    cta_banner_subtext: Optional[str] = None
+    cta_banner_button_text: Optional[str] = "Explore Collections"
+    cta_banner_button_link: Optional[str] = "/collections"
+    mbj_difference: Optional[List[dict]] = None
     rates_updated_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -309,6 +321,141 @@ class SettingsUpdate(BaseModel):
     gst_percent: Optional[float] = None
     card_payment_charges_percent: Optional[float] = None
     featured_category_ids: Optional[List[str]] = None
+    # Homepage CMS
+    parallax_quote_image: Optional[str] = None
+    parallax_quote_heading: Optional[str] = None
+    parallax_quote_subtext: Optional[str] = None
+    cta_banner_image: Optional[str] = None
+    cta_banner_heading: Optional[str] = None
+    cta_banner_subtext: Optional[str] = None
+    cta_banner_button_text: Optional[str] = None
+    cta_banner_button_link: Optional[str] = None
+    mbj_difference: Optional[List[dict]] = None
+
+# Scheme Models
+class Scheme(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    description: str
+    duration_months: int
+    monthly_amount: float
+    benefits: Optional[str] = None
+    image: Optional[str] = None
+    is_active: bool = True
+    display_order: int = 0
+    created_at: datetime
+
+class SchemeCreate(BaseModel):
+    name: str
+    description: str
+    duration_months: int
+    monthly_amount: float
+    benefits: Optional[str] = None
+    image: Optional[str] = None
+    display_order: int = 0
+
+class SchemeUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    duration_months: Optional[int] = None
+    monthly_amount: Optional[float] = None
+    benefits: Optional[str] = None
+    image: Optional[str] = None
+    is_active: Optional[bool] = None
+    display_order: Optional[int] = None
+
+class SchemeEnrollment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    scheme_id: str
+    customer_name: str
+    customer_phone: str
+    customer_email: Optional[str] = None
+    notes: Optional[str] = None
+    status: str = "new"
+    created_at: datetime
+
+class SchemeEnrollmentCreate(BaseModel):
+    scheme_id: str
+    customer_name: str
+    customer_phone: str
+    customer_email: Optional[str] = None
+    notes: Optional[str] = None
+
+# Spiritual Models
+class Gemstone(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    birth_month: Optional[int] = None
+    color_hex: Optional[str] = None
+    properties: Optional[str] = None
+    image: Optional[str] = None
+    is_active: bool = True
+    display_order: int = 0
+    created_at: datetime
+
+class GemstoneCreate(BaseModel):
+    name: str
+    birth_month: Optional[int] = None
+    color_hex: Optional[str] = None
+    properties: Optional[str] = None
+    image: Optional[str] = None
+    display_order: int = 0
+
+class GemstoneUpdate(BaseModel):
+    name: Optional[str] = None
+    birth_month: Optional[int] = None
+    color_hex: Optional[str] = None
+    properties: Optional[str] = None
+    image: Optional[str] = None
+    is_active: Optional[bool] = None
+    display_order: Optional[int] = None
+
+class SpiritualArticleType(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    description: Optional[str] = None
+    image: Optional[str] = None
+    is_active: bool = True
+    display_order: int = 0
+    created_at: datetime
+
+class SpiritualArticleTypeCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    image: Optional[str] = None
+    display_order: int = 0
+
+class SpiritualArticleTypeUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    image: Optional[str] = None
+    is_active: Optional[bool] = None
+    display_order: Optional[int] = None
+
+class SpiritualInquiry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    reference_code: Optional[str] = None
+    customer_name: str
+    customer_phone: str
+    customer_email: Optional[str] = None
+    selected_gemstone_id: Optional[str] = None
+    selected_article_type_id: Optional[str] = None
+    notes: Optional[str] = None
+    status: str = "new"
+    created_at: datetime
+
+class SpiritualInquiryCreate(BaseModel):
+    customer_name: str
+    customer_phone: str
+    customer_email: Optional[str] = None
+    selected_gemstone_id: Optional[str] = None
+    selected_article_type_id: Optional[str] = None
+    notes: Optional[str] = None
 
 # Admin Models
 class AdminUser(BaseModel):

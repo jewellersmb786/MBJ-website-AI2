@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI, categoriesAPI } from '../../api';
-import { Save, TrendingUp, Store, Share2, Image, FileText, Upload, X } from 'lucide-react';
+import { Save, TrendingUp, Store, Share2, Image, FileText, Upload, X, Layout } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminSettings = () => {
@@ -26,6 +26,19 @@ const AdminSettings = () => {
     about_heading: '',
     about_body: '',
     featured_category_ids: [],
+    parallax_quote_image: '',
+    parallax_quote_heading: 'Crafted with Devotion',
+    parallax_quote_subtext: '',
+    cta_banner_image: '',
+    cta_banner_heading: 'Begin Your Journey',
+    cta_banner_subtext: '',
+    cta_banner_button_text: 'Explore Collections',
+    cta_banner_button_link: '/collections',
+    mbj_difference: [
+      { icon: 'Sparkles', title: 'Authentic Nakshi Work', description: 'Traditional handcrafted Nakshi jewellery with intricate embossed detailing' },
+      { icon: 'Award', title: 'BIS Hallmarked Gold', description: 'Certified purity and quality on every piece we craft' },
+      { icon: 'Shield', title: 'Transparent Pricing', description: 'Live gold rates with detailed price breakdown — no hidden charges' },
+    ],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -60,6 +73,49 @@ const AdminSettings = () => {
     reader.onloadend = () => setSettings(prev => ({ ...prev, hero_image_url: reader.result }));
     reader.readAsDataURL(file);
   };
+
+  const handleImageUpload = (field) => (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setSettings(prev => ({ ...prev, [field]: reader.result }));
+    reader.readAsDataURL(file);
+  };
+
+  const updateMbjDiff = (idx, key, val) => {
+    setSettings(prev => {
+      const arr = [...(prev.mbj_difference || [])];
+      arr[idx] = { ...arr[idx], [key]: val };
+      return { ...prev, mbj_difference: arr };
+    });
+  };
+
+  const ImageUploadField = ({ field, label }) => (
+    <div>
+      <label style={labelStyle}>{label}</label>
+      {settings[field] ? (
+        <div>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <img src={settings[field]} alt={label} style={{ height: '100px', width: 'auto', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(212,175,55,0.25)', display: 'block' }} />
+            <button type="button" onClick={() => setSettings(prev => ({ ...prev, [field]: '' }))}
+              style={{ position: 'absolute', top: '-8px', right: '-8px', width: '22px', height: '22px', borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={13} />
+            </button>
+          </div>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '12px', color: 'rgba(212,175,55,0.7)', cursor: 'pointer', textDecoration: 'underline' }}>
+            <Upload size={13} /> Replace
+            <input type="file" accept="image/*" onChange={handleImageUpload(field)} style={{ display: 'none' }} />
+          </label>
+        </div>
+      ) : (
+        <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '90px', border: '2px dashed rgba(212,175,55,0.3)', borderRadius: '8px', cursor: 'pointer', background: 'rgba(212,175,55,0.02)' }}>
+          <Upload size={18} color="rgba(212,175,55,0.45)" style={{ marginBottom: '6px' }} />
+          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Click to upload</span>
+          <input type="file" accept="image/*" onChange={handleImageUpload(field)} style={{ display: 'none' }} />
+        </label>
+      )}
+    </div>
+  );
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -324,6 +380,77 @@ const AdminSettings = () => {
                 placeholder="At Jewellers MB, we celebrate..."
                 style={{ ...inputStyle, resize: 'vertical', lineHeight: '1.6' }}
               />
+            </div>
+          </div>
+        </div>
+
+        {/* ── HOMEPAGE CONTENT ── */}
+        <div style={sectionStyle}>
+          {sectionTitle(<Layout size={20} />, 'Homepage Content', 'Parallax quote, CTA banner, and trust badges')}
+
+          {/* Parallax Quote */}
+          <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
+            <p style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(212,175,55,0.7)', marginBottom: '14px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Parallax Quote Section</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
+              <ImageUploadField field="parallax_quote_image" label="Background Image" />
+              <div>
+                <label style={labelStyle}>Heading</label>
+                <input type="text" value={settings.parallax_quote_heading || ''} onChange={e => setSettings(p => ({ ...p, parallax_quote_heading: e.target.value }))} style={inputStyle} placeholder="Crafted with Devotion" />
+              </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Subtext (optional)</label>
+              <textarea value={settings.parallax_quote_subtext || ''} onChange={e => setSettings(p => ({ ...p, parallax_quote_subtext: e.target.value }))} rows={2} style={{ ...inputStyle, resize: 'vertical', lineHeight: '1.5' }} placeholder="Every piece tells a story..." />
+            </div>
+          </div>
+
+          {/* CTA Banner */}
+          <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
+            <p style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(212,175,55,0.7)', marginBottom: '14px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>CTA Banner Section</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
+              <ImageUploadField field="cta_banner_image" label="Background Image" />
+              <div style={{ display: 'grid', gap: '12px' }}>
+                <div>
+                  <label style={labelStyle}>Heading</label>
+                  <input type="text" value={settings.cta_banner_heading || ''} onChange={e => setSettings(p => ({ ...p, cta_banner_heading: e.target.value }))} style={inputStyle} placeholder="Begin Your Journey" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Button Text</label>
+                  <input type="text" value={settings.cta_banner_button_text || ''} onChange={e => setSettings(p => ({ ...p, cta_banner_button_text: e.target.value }))} style={inputStyle} placeholder="Explore Collections" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Button Link</label>
+                  <input type="text" value={settings.cta_banner_button_link || ''} onChange={e => setSettings(p => ({ ...p, cta_banner_button_link: e.target.value }))} style={inputStyle} placeholder="/collections" />
+                </div>
+              </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Subtext (optional)</label>
+              <textarea value={settings.cta_banner_subtext || ''} onChange={e => setSettings(p => ({ ...p, cta_banner_subtext: e.target.value }))} rows={2} style={{ ...inputStyle, resize: 'vertical', lineHeight: '1.5' }} placeholder="Let us help you find the perfect piece..." />
+            </div>
+          </div>
+
+          {/* MBJ Difference */}
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(212,175,55,0.7)', marginBottom: '14px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>MBJ Difference (3 Trust Badges)</p>
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {(settings.mbj_difference || [{},{},{}]).slice(0, 3).map((item, idx) => (
+                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 2fr', gap: '10px', alignItems: 'start', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', padding: '12px' }}>
+                  <div>
+                    <label style={labelStyle}>Icon name</label>
+                    <input type="text" value={item.icon || ''} onChange={e => updateMbjDiff(idx, 'icon', e.target.value)} style={{ ...inputStyle, fontSize: '12px' }} placeholder="Sparkles" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Title</label>
+                    <input type="text" value={item.title || ''} onChange={e => updateMbjDiff(idx, 'title', e.target.value)} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Description</label>
+                    <input type="text" value={item.description || ''} onChange={e => updateMbjDiff(idx, 'description', e.target.value)} style={inputStyle} />
+                  </div>
+                </div>
+              ))}
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>Icon name must be a valid lucide-react icon (e.g. Sparkles, Award, Shield, Star, Gem)</p>
             </div>
           </div>
         </div>

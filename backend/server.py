@@ -360,7 +360,21 @@ async def get_public_settings():
         "k18_rate": settings.get("k18_rate", 11320.0),
         "current_gold_rate": settings.get("k22_rate", 13835.0),
         "rates_updated_at": settings.get("rates_updated_at", settings.get("updated_at")),
-        "featured_category_ids": settings.get("featured_category_ids", [])
+        "featured_category_ids": settings.get("featured_category_ids", []),
+        # Homepage CMS
+        "parallax_quote_image": settings.get("parallax_quote_image"),
+        "parallax_quote_heading": settings.get("parallax_quote_heading", "Crafted with Devotion"),
+        "parallax_quote_subtext": settings.get("parallax_quote_subtext"),
+        "cta_banner_image": settings.get("cta_banner_image"),
+        "cta_banner_heading": settings.get("cta_banner_heading", "Begin Your Journey"),
+        "cta_banner_subtext": settings.get("cta_banner_subtext"),
+        "cta_banner_button_text": settings.get("cta_banner_button_text", "Explore Collections"),
+        "cta_banner_button_link": settings.get("cta_banner_button_link", "/collections"),
+        "mbj_difference": settings.get("mbj_difference", [
+            {"icon": "Sparkles", "title": "Authentic Nakshi Work", "description": "Traditional handcrafted Nakshi jewellery with intricate embossed detailing"},
+            {"icon": "Award", "title": "BIS Hallmarked Gold", "description": "Certified purity and quality on every piece we craft"},
+            {"icon": "Shield", "title": "Transparent Pricing", "description": "Live gold rates with detailed price breakdown — no hidden charges"},
+        ]),
     }
 
 # ============================================================================
@@ -691,6 +705,164 @@ async def refresh_gold_rates(admin = Depends(get_current_admin)):
     await update_gold_rates()
     rates = await db.gold_rates.find_one({}, {"_id": 0})
     return {"message": "Gold rates refreshed successfully", "rates": rates}
+
+# ============================================================================
+# PUBLIC APIs - Schemes
+# ============================================================================
+
+@api_router.get("/schemes")
+async def get_schemes():
+    schemes = await db.schemes.find({"is_active": True}, {"_id": 0}).sort("display_order", 1).to_list(100)
+    return schemes
+
+@api_router.post("/scheme-enrollments")
+async def create_scheme_enrollment(enrollment: SchemeEnrollmentCreate):
+    data = enrollment.model_dump()
+    data['id'] = generate_uuid()
+    data['status'] = 'new'
+    data['created_at'] = datetime.utcnow()
+    await db.scheme_enrollments.insert_one(data)
+    return {"message": "Enrollment submitted successfully", "id": data['id']}
+
+# ============================================================================
+# ADMIN APIs - Schemes
+# ============================================================================
+
+@api_router.get("/admin/schemes")
+async def get_all_schemes(admin = Depends(get_current_admin)):
+    return await db.schemes.find({}, {"_id": 0}).sort("display_order", 1).to_list(200)
+
+@api_router.post("/admin/schemes")
+async def create_scheme(scheme: SchemeCreate, admin = Depends(get_current_admin)):
+    data = scheme.model_dump()
+    data['id'] = generate_uuid()
+    data['is_active'] = True
+    data['created_at'] = datetime.utcnow()
+    await db.schemes.insert_one(data)
+    return {"message": "Scheme created", "id": data['id']}
+
+@api_router.put("/admin/schemes/{scheme_id}")
+async def update_scheme(scheme_id: str, updates: SchemeUpdate, admin = Depends(get_current_admin)):
+    update_data = updates.model_dump(exclude_unset=True)
+    result = await db.schemes.update_one({"id": scheme_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Scheme not found")
+    return {"message": "Scheme updated"}
+
+@api_router.delete("/admin/schemes/{scheme_id}")
+async def delete_scheme(scheme_id: str, admin = Depends(get_current_admin)):
+    count = await db.scheme_enrollments.count_documents({"scheme_id": scheme_id})
+    if count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete — {count} enrollment(s) exist for this scheme.")
+    result = await db.schemes.delete_one({"id": scheme_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Scheme not found")
+    return {"message": "Scheme deleted"}
+
+@api_router.get("/admin/scheme-enrollments")
+async def get_scheme_enrollments(admin = Depends(get_current_admin)):
+    return await db.scheme_enrollments.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+@api_router.put("/admin/scheme-enrollments/{enrollment_id}/status")
+async def update_enrollment_status(enrollment_id: str, status: str, admin = Depends(get_current_admin)):
+    result = await db.scheme_enrollments.update_one({"id": enrollment_id}, {"$set": {"status": status}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    return {"message": "Status updated"}
+
+# ============================================================================
+# PUBLIC APIs - Spiritual
+# ============================================================================
+
+@api_router.get("/gemstones")
+async def get_gemstones():
+    return await db.gemstones.find({"is_active": True}, {"_id": 0}).sort("display_order", 1).to_list(100)
+
+@api_router.get("/spiritual-article-types")
+async def get_spiritual_article_types():
+    return await db.spiritual_article_types.find({"is_active": True}, {"_id": 0}).sort("display_order", 1).to_list(100)
+
+@api_router.post("/spiritual-inquiries")
+async def create_spiritual_inquiry(inquiry: SpiritualInquiryCreate):
+    data = inquiry.model_dump()
+    uid = generate_uuid()
+    data['id'] = uid
+    data['reference_code'] = f"SPIRIT-{uid[:6].upper()}"
+    data['status'] = 'new'
+    data['created_at'] = datetime.utcnow()
+    await db.spiritual_inquiries.insert_one(data)
+    return {"message": "Inquiry submitted", "id": data['id'], "reference_code": data['reference_code']}
+
+# ============================================================================
+# ADMIN APIs - Spiritual
+# ============================================================================
+
+@api_router.get("/admin/gemstones")
+async def get_all_gemstones(admin = Depends(get_current_admin)):
+    return await db.gemstones.find({}, {"_id": 0}).sort("display_order", 1).to_list(200)
+
+@api_router.post("/admin/gemstones")
+async def create_gemstone(gemstone: GemstoneCreate, admin = Depends(get_current_admin)):
+    data = gemstone.model_dump()
+    data['id'] = generate_uuid()
+    data['is_active'] = True
+    data['created_at'] = datetime.utcnow()
+    await db.gemstones.insert_one(data)
+    return {"message": "Gemstone created", "id": data['id']}
+
+@api_router.put("/admin/gemstones/{gemstone_id}")
+async def update_gemstone(gemstone_id: str, updates: GemstoneUpdate, admin = Depends(get_current_admin)):
+    update_data = updates.model_dump(exclude_unset=True)
+    result = await db.gemstones.update_one({"id": gemstone_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Gemstone not found")
+    return {"message": "Gemstone updated"}
+
+@api_router.delete("/admin/gemstones/{gemstone_id}")
+async def delete_gemstone(gemstone_id: str, admin = Depends(get_current_admin)):
+    result = await db.gemstones.delete_one({"id": gemstone_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Gemstone not found")
+    return {"message": "Gemstone deleted"}
+
+@api_router.get("/admin/spiritual-article-types")
+async def get_all_spiritual_article_types(admin = Depends(get_current_admin)):
+    return await db.spiritual_article_types.find({}, {"_id": 0}).sort("display_order", 1).to_list(200)
+
+@api_router.post("/admin/spiritual-article-types")
+async def create_spiritual_article_type(type_data: SpiritualArticleTypeCreate, admin = Depends(get_current_admin)):
+    data = type_data.model_dump()
+    data['id'] = generate_uuid()
+    data['is_active'] = True
+    data['created_at'] = datetime.utcnow()
+    await db.spiritual_article_types.insert_one(data)
+    return {"message": "Article type created", "id": data['id']}
+
+@api_router.put("/admin/spiritual-article-types/{type_id}")
+async def update_spiritual_article_type(type_id: str, updates: SpiritualArticleTypeUpdate, admin = Depends(get_current_admin)):
+    update_data = updates.model_dump(exclude_unset=True)
+    result = await db.spiritual_article_types.update_one({"id": type_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Article type not found")
+    return {"message": "Article type updated"}
+
+@api_router.delete("/admin/spiritual-article-types/{type_id}")
+async def delete_spiritual_article_type(type_id: str, admin = Depends(get_current_admin)):
+    result = await db.spiritual_article_types.delete_one({"id": type_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Article type not found")
+    return {"message": "Article type deleted"}
+
+@api_router.get("/admin/spiritual-inquiries")
+async def get_spiritual_inquiries(admin = Depends(get_current_admin)):
+    return await db.spiritual_inquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+@api_router.put("/admin/spiritual-inquiries/{inquiry_id}/status")
+async def update_spiritual_inquiry_status(inquiry_id: str, status: str, admin = Depends(get_current_admin)):
+    result = await db.spiritual_inquiries.update_one({"id": inquiry_id}, {"$set": {"status": status}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Inquiry not found")
+    return {"message": "Status updated"}
 
 # ============================================================================
 # Include router and setup
