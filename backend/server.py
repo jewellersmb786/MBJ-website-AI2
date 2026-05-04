@@ -129,6 +129,10 @@ async def startup_event():
             )
             logger.info(f"Updated settings with new rate fields: {update_fields}")
     
+    # Seed default schemes if collection is empty
+    from seed_data import seed_default_schemes
+    await seed_default_schemes(db, generate_uuid)
+
     # Scrape and cache gold rates
     await update_gold_rates()
 
@@ -714,6 +718,13 @@ async def refresh_gold_rates(admin = Depends(get_current_admin)):
 async def get_schemes():
     schemes = await db.schemes.find({"is_active": True}, {"_id": 0}).sort("display_order", 1).to_list(100)
     return schemes
+
+@api_router.get("/schemes/{scheme_id}")
+async def get_scheme(scheme_id: str):
+    scheme = await db.schemes.find_one({"id": scheme_id, "is_active": True}, {"_id": 0})
+    if not scheme:
+        raise HTTPException(status_code=404, detail="Scheme not found")
+    return scheme
 
 @api_router.post("/scheme-enrollments")
 async def create_scheme_enrollment(enrollment: SchemeEnrollmentCreate):

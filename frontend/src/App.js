@@ -13,6 +13,7 @@ import TrackOrderPage from './pages/TrackOrderPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import SchemesPage from './pages/SchemesPage';
+import SchemeDetailPage from './pages/SchemeDetailPage';
 import SpiritualPage from './pages/SpiritualPage';
 
 // Admin Pages
@@ -49,6 +50,7 @@ function App() {
             <Route path="about" element={<AboutPage />} />
             <Route path="contact" element={<ContactPage />} />
             <Route path="schemes" element={<SchemesPage />} />
+            <Route path="schemes/:id" element={<SchemeDetailPage />} />
             <Route path="spiritual" element={<SpiritualPage />} />
           </Route>
 

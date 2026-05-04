@@ -337,31 +337,34 @@ class Scheme(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
     name: str
+    tagline: Optional[str] = None
+    hero_image: Optional[str] = None
     description: str
-    duration_months: int
-    monthly_amount: float
-    benefits: Optional[str] = None
-    image: Optional[str] = None
+    highlights: List[str] = []
+    terms: Optional[str] = None
+    cta_button_text: Optional[str] = "Enroll Now"
     is_active: bool = True
     display_order: int = 0
     created_at: datetime
 
 class SchemeCreate(BaseModel):
     name: str
+    tagline: Optional[str] = None
+    hero_image: Optional[str] = None
     description: str
-    duration_months: int
-    monthly_amount: float
-    benefits: Optional[str] = None
-    image: Optional[str] = None
+    highlights: List[str] = []
+    terms: Optional[str] = None
+    cta_button_text: Optional[str] = "Enroll Now"
     display_order: int = 0
 
 class SchemeUpdate(BaseModel):
     name: Optional[str] = None
+    tagline: Optional[str] = None
+    hero_image: Optional[str] = None
     description: Optional[str] = None
-    duration_months: Optional[int] = None
-    monthly_amount: Optional[float] = None
-    benefits: Optional[str] = None
-    image: Optional[str] = None
+    highlights: Optional[List[str]] = None
+    terms: Optional[str] = None
+    cta_button_text: Optional[str] = None
     is_active: Optional[bool] = None
     display_order: Optional[int] = None
 

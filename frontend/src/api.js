@@ -56,6 +56,7 @@ export const settingsAPI = {
 
 export const schemesAPI = {
   getAll: () => api.get('/schemes'),
+  getById: (id) => api.get(`/schemes/${id}`),
   enroll: (data) => api.post('/scheme-enrollments', data),
 };
 

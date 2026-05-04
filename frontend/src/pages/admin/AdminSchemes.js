@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Coins, Plus, Edit2, Trash2, X, Save, Upload, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const fmtINR = (n) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(n || 0));
 const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return '—'; } };
 
 const ENROLL_STATUS = ['new', 'contacted', 'enrolled', 'cancelled'];
@@ -14,28 +13,51 @@ const sHead = { padding: '10px 14px', fontSize: '10px', letterSpacing: '0.18em',
 const sCell = { padding: '12px 14px', fontSize: '13px', color: 'rgba(255,255,255,0.75)', verticalAlign: 'middle' };
 const inputStyle = { width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '8px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' };
 
-const EMPTY_FORM = { name: '', description: '', duration_months: 12, monthly_amount: '', benefits: '', image: '', display_order: 0 };
+const EMPTY_FORM = { name: '', tagline: '', description: '', highlights: '', terms: '', cta_button_text: 'Enroll Now', hero_image: '', display_order: 0 };
 
 const SchemeModal = ({ scheme, onClose, onSave }) => {
-  const [form, setForm] = useState(scheme ? { name: scheme.name, description: scheme.description, duration_months: scheme.duration_months, monthly_amount: scheme.monthly_amount, benefits: scheme.benefits || '', image: scheme.image || '', display_order: scheme.display_order || 0, is_active: scheme.is_active } : EMPTY_FORM);
+  const [form, setForm] = useState(scheme ? {
+    name: scheme.name,
+    tagline: scheme.tagline || '',
+    description: scheme.description,
+    highlights: (scheme.highlights || []).join('\n'),
+    terms: scheme.terms || '',
+    cta_button_text: scheme.cta_button_text || 'Enroll Now',
+    hero_image: scheme.hero_image || '',
+    display_order: scheme.display_order || 0,
+    is_active: scheme.is_active,
+  } : EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
   const handleImg = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => setForm(p => ({ ...p, image: reader.result }));
+    reader.onloadend = () => setForm(p => ({ ...p, hero_image: reader.result }));
     reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
-    if (!form.monthly_amount) { toast.error('Monthly amount is required'); return; }
+    if (!form.description.trim()) { toast.error('Description is required'); return; }
     setSaving(true);
     try {
-      const payload = { ...form, duration_months: parseInt(form.duration_months) || 12, monthly_amount: parseFloat(form.monthly_amount) || 0, display_order: parseInt(form.display_order) || 0 };
-      if (scheme) await adminAPI.schemes.update(scheme.id, payload);
-      else await adminAPI.schemes.create(payload);
+      const highlights = form.highlights.split('\n').map(s => s.trim()).filter(Boolean);
+      const payload = {
+        name: form.name.trim(),
+        tagline: form.tagline.trim() || undefined,
+        description: form.description.trim(),
+        highlights,
+        terms: form.terms.trim() || undefined,
+        cta_button_text: form.cta_button_text.trim() || 'Enroll Now',
+        hero_image: form.hero_image || undefined,
+        display_order: parseInt(form.display_order) || 0,
+      };
+      if (scheme) {
+        await adminAPI.schemes.update(scheme.id, { ...payload, is_active: form.is_active });
+      } else {
+        await adminAPI.schemes.create(payload);
+      }
       toast.success(scheme ? 'Scheme updated' : 'Scheme created');
       onSave();
     } catch { toast.error('Error saving scheme'); }
@@ -55,41 +77,43 @@ const SchemeModal = ({ scheme, onClose, onSave }) => {
             <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} style={inputStyle} />
           </div>
           <div>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Tagline <span style={{ color: 'rgba(255,255,255,0.25)' }}>(optional)</span></label>
+            <input type="text" value={form.tagline} onChange={e => setForm(p => ({ ...p, tagline: e.target.value }))} style={inputStyle} placeholder="e.g. Save smart. Buy gold." />
+          </div>
+          <div>
             <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Description *</label>
             <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Duration (months) *</label>
-              <input type="number" min="1" value={form.duration_months} onChange={e => setForm(p => ({ ...p, duration_months: e.target.value }))} style={inputStyle} />
-            </div>
-            <div>
-              <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Monthly Amount (₹) *</label>
-              <input type="number" min="0" value={form.monthly_amount} onChange={e => setForm(p => ({ ...p, monthly_amount: e.target.value }))} style={inputStyle} />
-            </div>
+          <div>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Highlights <span style={{ color: 'rgba(255,255,255,0.25)' }}>(one per line)</span></label>
+            <textarea value={form.highlights} onChange={e => setForm(p => ({ ...p, highlights: e.target.value }))} rows={4} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }} placeholder={"No making charges on first purchase\nFlexible monthly amounts\nBonus gift on completion"} />
           </div>
           <div>
-            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Benefits / Terms (optional)</label>
-            <textarea value={form.benefits} onChange={e => setForm(p => ({ ...p, benefits: e.target.value }))} rows={2} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }} />
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Terms & Conditions <span style={{ color: 'rgba(255,255,255,0.25)' }}>(optional)</span></label>
+            <textarea value={form.terms} onChange={e => setForm(p => ({ ...p, terms: e.target.value }))} rows={2} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }} placeholder="Applicable T&C..." />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>CTA Button Text</label>
+              <input type="text" value={form.cta_button_text} onChange={e => setForm(p => ({ ...p, cta_button_text: e.target.value }))} style={inputStyle} />
+            </div>
             <div>
               <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Display Order</label>
               <input type="number" value={form.display_order} onChange={e => setForm(p => ({ ...p, display_order: e.target.value }))} style={inputStyle} />
             </div>
-            {scheme && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '22px' }}>
-                <input type="checkbox" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} style={{ accentColor: '#D4AF37', width: '15px', height: '15px' }} id="act" />
-                <label htmlFor="act" style={{ fontSize: '13px', color: '#fff', cursor: 'pointer' }}>Active</label>
-              </div>
-            )}
           </div>
+          {scheme && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <input type="checkbox" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} style={{ accentColor: '#D4AF37', width: '15px', height: '15px' }} id="act" />
+              <label htmlFor="act" style={{ fontSize: '13px', color: '#fff', cursor: 'pointer' }}>Active</label>
+            </div>
+          )}
           <div>
-            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Image</label>
-            {form.image ? (
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Hero Image</label>
+            {form.hero_image ? (
               <div style={{ position: 'relative', display: 'inline-block' }}>
-                <img src={form.image} alt="preview" style={{ height: '80px', width: 'auto', objectFit: 'cover', borderRadius: '6px' }} />
-                <button type="button" onClick={() => setForm(p => ({ ...p, image: '' }))}
+                <img src={form.hero_image} alt="preview" style={{ height: '80px', width: 'auto', objectFit: 'cover', borderRadius: '6px' }} />
+                <button type="button" onClick={() => setForm(p => ({ ...p, hero_image: '' }))}
                   style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={11} /></button>
               </div>
             ) : (
@@ -193,8 +217,8 @@ const AdminSchemes = () => {
               <thead><tr style={{ background: 'rgba(0,0,0,0.3)' }}>
                 <th style={sHead}>Image</th>
                 <th style={sHead}>Name</th>
-                <th style={sHead}>Duration</th>
-                <th style={sHead}>Monthly</th>
+                <th style={sHead}>Tagline</th>
+                <th style={sHead}>Highlights</th>
                 <th style={{ ...sHead, textAlign: 'center' }}>Status</th>
                 <th style={{ ...sHead, textAlign: 'center' }}>Order</th>
                 <th style={{ ...sHead, width: '80px' }}></th>
@@ -204,11 +228,11 @@ const AdminSchemes = () => {
                   <motion.tr key={scheme.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.04 }}
                     style={{ borderBottom: '1px solid rgba(212,175,55,0.07)' }}>
                     <td style={sCell}>
-                      {scheme.image ? <img src={scheme.image} alt={scheme.name} style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '6px' }} /> : <div style={{ width: '44px', height: '44px', background: 'rgba(212,175,55,0.08)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Coins size={18} color="rgba(212,175,55,0.4)" /></div>}
+                      {scheme.hero_image ? <img src={scheme.hero_image} alt={scheme.name} style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '6px' }} /> : <div style={{ width: '44px', height: '44px', background: 'rgba(212,175,55,0.08)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Coins size={18} color="rgba(212,175,55,0.4)" /></div>}
                     </td>
                     <td style={{ ...sCell, color: '#fff', fontWeight: 500 }}>{scheme.name}</td>
-                    <td style={sCell}>{scheme.duration_months} months</td>
-                    <td style={{ ...sCell, color: '#D4AF37', fontVariantNumeric: 'tabular-nums' }}>₹{fmtINR(scheme.monthly_amount)}</td>
+                    <td style={{ ...sCell, color: 'rgba(255,255,255,0.45)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{scheme.tagline || '—'}</td>
+                    <td style={{ ...sCell, color: 'rgba(255,255,255,0.4)' }}>{(scheme.highlights || []).length} item(s)</td>
                     <td style={{ ...sCell, textAlign: 'center' }}>
                       <span style={{ fontSize: '11px', padding: '2px 10px', borderRadius: '20px', background: scheme.is_active ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)', color: scheme.is_active ? '#4ade80' : '#9ca3af', fontWeight: 600 }}>
                         {scheme.is_active ? 'Active' : 'Inactive'}
