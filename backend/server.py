@@ -732,18 +732,25 @@ async def get_scheme(scheme_id: str):
         raise HTTPException(status_code=404, detail="Scheme not found")
     return scheme
 
-@api_router.post("/scheme-enrollments")
-async def create_scheme_enrollment(enrollment: SchemeEnrollmentCreate):
-    scheme = await db.schemes.find_one({"id": enrollment.scheme_id}, {"_id": 0})
-    if not scheme:
-        raise HTTPException(status_code=404, detail="Scheme not found")
+async def _build_enrollment(enrollment: SchemeEnrollmentCreate, scheme: dict) -> dict:
+    """Shared enrollment builder for both public and admin endpoints."""
+    scheme_type = scheme.get('scheme_type', 'flexible')
+    min_amount = scheme.get('minimum_monthly_amount') or 0
+    if scheme_type == 'fixed_monthly':
+        if not enrollment.monthly_amount:
+            raise HTTPException(status_code=400, detail="Monthly amount is required for this scheme")
+        if enrollment.monthly_amount < min_amount:
+            raise HTTPException(status_code=400, detail=f"Monthly amount must be at least ₹{min_amount:.0f}")
+        monthly_amount = enrollment.monthly_amount
+    else:
+        monthly_amount = None
     data = enrollment.model_dump()
     data['id'] = generate_uuid()
     data['status'] = 'new'
     data['created_at'] = datetime.utcnow()
     data['scheme_name'] = scheme.get('name', '')
-    data['scheme_type'] = scheme.get('scheme_type', 'flexible')
-    data['monthly_amount'] = scheme.get('monthly_amount')
+    data['scheme_type'] = scheme_type
+    data['monthly_amount'] = monthly_amount
     data['original_total_months'] = scheme.get('total_months')
     data['grace_days'] = scheme.get('grace_days')
     data['months_paid'] = 0
@@ -753,6 +760,14 @@ async def create_scheme_enrollment(enrollment: SchemeEnrollmentCreate):
     data['total_grams_accumulated'] = 0.0
     data['start_date'] = None
     data['expected_total_months'] = None
+    return data
+
+@api_router.post("/scheme-enrollments")
+async def create_scheme_enrollment(enrollment: SchemeEnrollmentCreate):
+    scheme = await db.schemes.find_one({"id": enrollment.scheme_id}, {"_id": 0})
+    if not scheme:
+        raise HTTPException(status_code=404, detail="Scheme not found")
+    data = await _build_enrollment(enrollment, scheme)
     await db.scheme_enrollments.insert_one(data)
     return {"message": "Enrollment submitted successfully", "id": data['id']}
 
@@ -824,6 +839,16 @@ async def delete_scheme(scheme_id: str, admin = Depends(get_current_admin)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Scheme not found")
     return {"message": "Scheme deleted"}
+
+@api_router.post("/admin/scheme-enrollments")
+async def admin_create_enrollment(enrollment: SchemeEnrollmentCreate, admin = Depends(get_current_admin)):
+    scheme = await db.schemes.find_one({"id": enrollment.scheme_id}, {"_id": 0})
+    if not scheme:
+        raise HTTPException(status_code=404, detail="Scheme not found")
+    data = await _build_enrollment(enrollment, scheme)
+    await db.scheme_enrollments.insert_one(data)
+    updated = await db.scheme_enrollments.find_one({"id": data['id']}, {"_id": 0})
+    return updated
 
 @api_router.get("/admin/scheme-enrollments")
 async def get_scheme_enrollments(admin = Depends(get_current_admin)):

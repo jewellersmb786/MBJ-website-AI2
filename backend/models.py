@@ -344,7 +344,7 @@ class Scheme(BaseModel):
     terms: Optional[str] = None
     cta_button_text: Optional[str] = "Enroll Now"
     scheme_type: Optional[str] = "flexible"
-    monthly_amount: Optional[float] = None
+    minimum_monthly_amount: Optional[float] = None   # floor for fixed_monthly; customer picks their own amount
     total_months: Optional[int] = None
     grace_days: Optional[int] = 5
     is_active: bool = True
@@ -360,7 +360,7 @@ class SchemeCreate(BaseModel):
     terms: Optional[str] = None
     cta_button_text: Optional[str] = "Enroll Now"
     scheme_type: Optional[str] = "flexible"
-    monthly_amount: Optional[float] = None
+    minimum_monthly_amount: Optional[float] = None
     total_months: Optional[int] = None
     grace_days: Optional[int] = 5
     display_order: int = 0
@@ -374,7 +374,7 @@ class SchemeUpdate(BaseModel):
     terms: Optional[str] = None
     cta_button_text: Optional[str] = None
     scheme_type: Optional[str] = None
-    monthly_amount: Optional[float] = None
+    minimum_monthly_amount: Optional[float] = None
     total_months: Optional[int] = None
     grace_days: Optional[int] = None
     is_active: Optional[bool] = None
@@ -423,6 +423,7 @@ class SchemeEnrollmentCreate(BaseModel):
     customer_phone: str
     customer_email: Optional[str] = None
     notes: Optional[str] = None
+    monthly_amount: Optional[float] = None   # required for fixed_monthly; ignored for flexible
 
 class SchemePaymentCreate(BaseModel):
     amount: float

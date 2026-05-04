@@ -8,7 +8,7 @@ DEFAULT_SCHEMES = [
     {
         "name": "Gold Savings Plan",
         "scheme_type": "flexible",
-        "monthly_amount": None,
+        "minimum_monthly_amount": None,
         "total_months": None,
         "grace_days": None,
         "tagline": "Save daily, lock today's rate, buy when you're ready",
@@ -42,7 +42,7 @@ DEFAULT_SCHEMES = [
     {
         "name": "Gold Harvest Scheme",
         "scheme_type": "fixed_monthly",
-        "monthly_amount": 1000.0,
+        "minimum_monthly_amount": 1000.0,
         "total_months": 12,
         "grace_days": 5,
         "tagline": "Pay 12, get 13 — our way of saying thank you",
@@ -86,19 +86,45 @@ async def seed_default_schemes(db, generate_uuid):
 
 
 async def _migrate_scheme_types(db):
-    """Idempotent: backfills scheme_type and fixed_monthly fields on pre-existing schemes."""
+    """Idempotent: backfills scheme_type and renames monthly_amount→minimum_monthly_amount on schemes."""
+    # 1. Backfill missing scheme_type
     await db.schemes.update_many(
         {"scheme_type": {"$in": [None, ""]}},
         {"$set": {"scheme_type": "flexible"}}
     )
+
+    # 2. Rename monthly_amount → minimum_monthly_amount on scheme documents (old field name)
+    old_schemes = await db.schemes.find(
+        {"monthly_amount": {"$exists": True}, "minimum_monthly_amount": {"$exists": False}},
+        {"_id": 0, "id": 1, "monthly_amount": 1}
+    ).to_list(100)
+    for s in old_schemes:
+        await db.schemes.update_one(
+            {"id": s["id"]},
+            {"$set": {"minimum_monthly_amount": s.get("monthly_amount")}, "$unset": {"monthly_amount": ""}}
+        )
+
+    # 3. Ensure Gold Harvest has correct fixed_monthly fields
     await db.schemes.update_one(
-        {"name": "Gold Harvest Scheme", "monthly_amount": {"$in": [None]}},
-        {"$set": {"scheme_type": "fixed_monthly", "monthly_amount": 1000.0, "total_months": 12, "grace_days": 5}}
+        {"name": "Gold Harvest Scheme", "minimum_monthly_amount": {"$in": [None, 0]}},
+        {"$set": {"scheme_type": "fixed_monthly", "minimum_monthly_amount": 1000.0, "total_months": 12, "grace_days": 5}}
     )
     await db.schemes.update_one(
         {"name": "Gold Harvest Scheme", "total_months": {"$in": [None]}},
-        {"$set": {"scheme_type": "fixed_monthly", "monthly_amount": 1000.0, "total_months": 12, "grace_days": 5}}
+        {"$set": {"scheme_type": "fixed_monthly", "minimum_monthly_amount": 1000.0, "total_months": 12, "grace_days": 5}}
     )
+
+    # 4. Backfill monthly_amount on existing fixed_monthly enrollments that are missing it
+    fixed_schemes = await db.schemes.find(
+        {"scheme_type": "fixed_monthly"},
+        {"_id": 0, "id": 1, "minimum_monthly_amount": 1}
+    ).to_list(50)
+    for s in fixed_schemes:
+        min_amt = s.get("minimum_monthly_amount") or 1000.0
+        await db.scheme_enrollments.update_many(
+            {"scheme_id": s["id"], "monthly_amount": {"$in": [None]}, "scheme_type": "fixed_monthly"},
+            {"$set": {"monthly_amount": min_amt}}
+        )
 
 
 # ============================================================================

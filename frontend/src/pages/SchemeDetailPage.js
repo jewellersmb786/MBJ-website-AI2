@@ -18,7 +18,9 @@ const inpStyle = {
 };
 
 const EnrollModal = ({ scheme, onClose }) => {
-  const [form, setForm] = useState({ customer_name: '', customer_phone: '', customer_email: '', notes: '' });
+  const isFixed = scheme.scheme_type === 'fixed_monthly';
+  const minAmt = scheme.minimum_monthly_amount || 0;
+  const [form, setForm] = useState({ customer_name: '', customer_phone: '', customer_email: '', notes: '', monthly_amount: minAmt ? String(minAmt) : '' });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -27,6 +29,11 @@ const EnrollModal = ({ scheme, onClose }) => {
     if (!form.customer_name.trim()) { toast.error('Name is required'); return; }
     const digits = form.customer_phone.replace(/\D/g, '');
     if (digits.length < 10) { toast.error('Please enter a valid 10-digit phone number'); return; }
+    if (isFixed) {
+      const amt = parseFloat(form.monthly_amount);
+      if (!amt || amt <= 0) { toast.error('Monthly amount is required'); return; }
+      if (minAmt && amt < minAmt) { toast.error(`Monthly amount must be at least ₹${minAmt}`); return; }
+    }
     setSubmitting(true);
     try {
       await schemesAPI.enroll({
@@ -35,9 +42,12 @@ const EnrollModal = ({ scheme, onClose }) => {
         customer_phone: form.customer_phone.trim(),
         customer_email: form.customer_email.trim() || undefined,
         notes: form.notes.trim() || undefined,
+        monthly_amount: isFixed ? (parseFloat(form.monthly_amount) || undefined) : undefined,
       });
       setDone(true);
-    } catch { toast.error('Error submitting. Please try again.'); }
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Error submitting. Please try again.');
+    }
     finally { setSubmitting(false); }
   };
 
@@ -78,6 +88,14 @@ const EnrollModal = ({ scheme, onClose }) => {
                 <label style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px' }}>Phone Number *</label>
                 <input type="tel" value={form.customer_phone} onChange={e => setForm(p => ({ ...p, customer_phone: e.target.value }))} style={inpStyle} placeholder="+91 XXXXX XXXXX" required />
               </div>
+              {isFixed && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px' }}>
+                    Monthly Amount (₹) * {minAmt > 0 && <span style={{ color: 'rgba(255,255,255,0.3)' }}>— min ₹{minAmt}</span>}
+                  </label>
+                  <input type="number" min={minAmt || 1} value={form.monthly_amount} onChange={e => setForm(p => ({ ...p, monthly_amount: e.target.value }))} style={inpStyle} placeholder={minAmt ? `Min ₹${minAmt}` : 'Enter amount'} required />
+                </div>
+              )}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px' }}>Email <span style={{ color: 'rgba(255,255,255,0.3)' }}>(optional)</span></label>
                 <input type="email" value={form.customer_email} onChange={e => setForm(p => ({ ...p, customer_email: e.target.value }))} style={inpStyle} placeholder="your@email.com" />

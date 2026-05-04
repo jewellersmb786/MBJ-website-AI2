@@ -14,7 +14,6 @@ import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import SchemesPage from './pages/SchemesPage';
 import SchemeDetailPage from './pages/SchemeDetailPage';
-import MySchemePage from './pages/MySchemePage';
 import SpiritualPage from './pages/SpiritualPage';
 
 // Admin Pages
@@ -52,8 +51,7 @@ function App() {
             <Route path="contact" element={<ContactPage />} />
             <Route path="schemes" element={<SchemesPage />} />
             <Route path="schemes/:id" element={<SchemeDetailPage />} />
-            <Route path="my-scheme" element={<MySchemePage />} />
-            <Route path="spiritual" element={<SpiritualPage />} />
+<Route path="spiritual" element={<SpiritualPage />} />
           </Route>
 
           {/* Admin Routes */}
