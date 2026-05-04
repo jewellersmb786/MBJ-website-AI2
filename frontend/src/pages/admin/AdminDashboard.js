@@ -16,8 +16,8 @@ const AdminDashboard = () => {
     try {
       const response = await adminAPI.dashboard.getStats();
       setStats(response.data);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+    } catch {
+      // silently handled — dashboard shows empty state
     } finally {
       setLoading(false);
     }

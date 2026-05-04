@@ -139,6 +139,22 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Scheme seeding/migration failed (non-fatal): {e}")
 
+    # Seed default gemstones if collection is empty
+    try:
+        from seed_data import seed_default_gemstones
+        await seed_default_gemstones(db, lambda: str(uuid.uuid4()))
+        logger.info("Gemstone seed check complete")
+    except Exception as e:
+        logger.error(f"Gemstone seeding failed (non-fatal): {e}")
+
+    # Seed default spiritual article types if collection is empty
+    try:
+        from seed_data import seed_default_article_types
+        await seed_default_article_types(db, lambda: str(uuid.uuid4()))
+        logger.info("Article type seed check complete")
+    except Exception as e:
+        logger.error(f"Article type seeding failed (non-fatal): {e}")
+
     # Scrape and cache gold rates
     await update_gold_rates()
 

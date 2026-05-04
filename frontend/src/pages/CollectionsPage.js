@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { categoriesAPI, productsAPI, settingsAPI } from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Filter, Share2, Copy, X } from 'lucide-react';
+import { ArrowLeft, Filter, Share2, Copy, X, Search } from 'lucide-react';
 
 const CollectionsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -26,6 +26,10 @@ const CollectionsPage = () => {
     return p ? p.split(',') : [];
   });
 
+  // Search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
   // View + share modal state
   const [imageView, setImageView] = useState('dummy'); // 'dummy' | 'model'
   const [showShareModal, setShowShareModal] = useState(false);
@@ -37,21 +41,27 @@ const CollectionsPage = () => {
       try {
         const [catRes, prodRes, settRes] = await Promise.all([
           categoriesAPI.getAll(),
-          productsAPI.getAll({ limit: 500 }),
+          productsAPI.getAll({ limit: 1000 }),
           settingsAPI.getPublic(),
         ]);
         setCategories(catRes.data);
         setAllProducts(prodRes.data);
         setWhatsappDigits((settRes.data?.whatsapp || '').replace(/\D/g, ''));
-      } catch (e) {
-        console.error('Error loading collections:', e);
+      } catch {
+        // silently handled — page shows empty state
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  // Sync filters → URL params (replaces history entry, no spam)
+  // Debounce search query 200ms
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 200);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // Sync filters → URL params
   useEffect(() => {
     if (!selectedCategory) return;
     const params = { category: selectedCategory };
@@ -63,6 +73,12 @@ const CollectionsPage = () => {
   }, [selectedCategory, selectedSubcategory, weightRange, selectedPurities]);
 
   // Computed values
+  const categoryMap = useMemo(() => {
+    const map = {};
+    for (const c of categories) map[c.id] = c.name;
+    return map;
+  }, [categories]);
+
   const categoryCounts = useMemo(() => {
     const counts = {};
     for (const p of allProducts) {
@@ -86,6 +102,27 @@ const CollectionsPage = () => {
     return list;
   }, [allProducts, selectedCategory, selectedSubcategory, weightRange, selectedPurities]);
 
+  // Cross-category search results (used when no category selected)
+  const searchResults = useMemo(() => {
+    if (!debouncedQuery) return [];
+    const q = debouncedQuery.toLowerCase();
+    return allProducts.filter(p =>
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.item_code || '').toLowerCase().includes(q) ||
+      (categoryMap[p.category_id] || '').toLowerCase().includes(q)
+    );
+  }, [debouncedQuery, allProducts, categoryMap]);
+
+  // Within-category search (name + item_code only)
+  const displayProducts = useMemo(() => {
+    if (!debouncedQuery) return filteredProducts;
+    const q = debouncedQuery.toLowerCase();
+    return filteredProducts.filter(p =>
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.item_code || '').toLowerCase().includes(q)
+    );
+  }, [filteredProducts, debouncedQuery]);
+
   const selectedCategoryData = categories.find(c => c.id === selectedCategory);
 
   // Navigation helpers
@@ -94,6 +131,7 @@ const CollectionsPage = () => {
     setSelectedSubcategory('');
     setWeightRange([0, 200]);
     setSelectedPurities([]);
+    setSearchQuery('');
     setSearchParams({ category: categoryId });
   };
 
@@ -102,6 +140,7 @@ const CollectionsPage = () => {
     setSelectedSubcategory('');
     setWeightRange([0, 200]);
     setSelectedPurities([]);
+    setSearchQuery('');
     setSearchParams({});
   };
 
@@ -117,23 +156,125 @@ const CollectionsPage = () => {
     });
   };
 
-  const shareViaWhatsApp = () => {
-    const msg = `Hi, here are some items from our collection that match your requirements: ${window.location.href}`;
-    window.open(`https://wa.me/${whatsappDigits}?text=${encodeURIComponent(msg)}`, '_blank');
-  };
-
   // Product card image
   const getProductImage = (product) => {
     if (imageView === 'model') return product.image_model || product.image_dummy || null;
     return product.image_dummy || null;
   };
 
-  // ── CATEGORY CARDS VIEW ────────────────────────────────────────────────────
+  // Shared search bar component (inline)
+  const SearchBar = ({ placeholder = 'Search by item code, name, or category...' }) => (
+    <div style={{ position: 'relative', marginBottom: '28px' }}>
+      <Search
+        size={16}
+        color="rgba(212,175,55,0.5)"
+        style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
+      />
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          width: '100%',
+          padding: '13px 44px 13px 42px',
+          background: '#1a0710',
+          border: '1px solid rgba(212,175,55,0.35)',
+          borderRadius: '10px',
+          color: '#fff',
+          fontSize: '14px',
+          outline: 'none',
+          boxSizing: 'border-box',
+          transition: 'border-color 0.2s',
+        }}
+        onFocus={e => e.target.style.borderColor = 'rgba(212,175,55,0.65)'}
+        onBlur={e => e.target.style.borderColor = 'rgba(212,175,55,0.35)'}
+      />
+      {searchQuery && (
+        <button
+          onClick={() => setSearchQuery('')}
+          style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+        >
+          <X size={15} />
+        </button>
+      )}
+    </div>
+  );
+
+  // Shared product card renderer
+  const ProductCard = ({ product, index }) => {
+    const img = getProductImage(product);
+    return (
+      <motion.div
+        key={product.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: Math.min(index * 0.04, 0.4) }}
+      >
+        <div
+          className="pcard"
+          style={{ position: 'relative', background: '#1a0f12', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '12px', overflow: 'hidden', transition: 'border-color 0.25s, transform 0.25s, box-shadow 0.25s', cursor: 'pointer' }}
+          onClick={() => navigate(`/product/${product.id}`)}
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)';
+            e.currentTarget.style.transform = 'translateY(-4px)';
+            e.currentTarget.style.boxShadow = '0 16px 40px rgba(61,8,21,0.55)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = 'rgba(212,175,55,0.15)';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          <div style={{ aspectRatio: '4/5', overflow: 'hidden', position: 'relative', background: '#120808' }}>
+            {img ? (
+              <img className="pcard-img" src={img} alt={product.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.45s ease' }}
+              />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: 'Georgia, serif', fontSize: '52px', color: 'rgba(212,175,55,0.14)' }}>{product.name.charAt(0)}</span>
+              </div>
+            )}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '45%', background: 'linear-gradient(to top, #1a0f12 0%, transparent 100%)', pointerEvents: 'none' }} />
+            {product.item_code && (
+              <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(26,7,16,0.85)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '4px', padding: '2px 7px', fontSize: '10px', color: '#D4AF37', fontWeight: 600, letterSpacing: '0.04em', backdropFilter: 'blur(4px)' }}>
+                {product.item_code}
+              </div>
+            )}
+            <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+              <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '20px', backdropFilter: 'blur(6px)', background: product.stock_status === 'in_stock' ? 'rgba(34,197,94,0.2)' : 'rgba(251,146,60,0.2)', color: product.stock_status === 'in_stock' ? '#4ade80' : '#fb923c' }}>
+                {product.stock_status === 'in_stock' ? 'In Stock' : 'MTO'}
+              </span>
+            </div>
+          </div>
+          <div style={{ padding: '14px 16px 18px' }}>
+            <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '17px', fontWeight: 400, color: '#D4AF37', margin: '0 0 7px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {product.name}
+            </h3>
+            {categoryMap[product.category_id] && !selectedCategory && (
+              <p style={{ fontSize: '11px', color: 'rgba(212,175,55,0.45)', margin: '0 0 4px', letterSpacing: '0.04em' }}>
+                {categoryMap[product.category_id]}
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: 'rgba(212,175,55,0.52)', letterSpacing: '0.04em' }}>
+              <span>{product.weight} g</span>
+              <span>{product.purity?.toUpperCase()}</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // ── CATEGORY CARDS VIEW ──────────────────────────────────────────────────
   if (!selectedCategory) {
+    const showSearchResults = debouncedQuery.length > 0 && !loading;
+
     return (
       <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff', paddingTop: '100px', paddingBottom: '80px' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 32px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <p style={{ fontSize: '10px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.6)', marginBottom: '12px' }}>Explore</p>
             <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontFamily: 'Georgia, serif', fontWeight: 400, color: '#fff', marginBottom: '16px' }}>
               Our Collections
@@ -141,12 +282,36 @@ const CollectionsPage = () => {
             <div style={{ width: '40px', height: '1px', background: '#D4AF37', margin: '0 auto' }} />
           </div>
 
+          {/* Search bar */}
+          <SearchBar />
+
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
               {[1, 2, 3, 4].map(i => (
                 <div key={i} style={{ aspectRatio: '3/4', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }} className="cat-skeleton" />
               ))}
             </div>
+          ) : showSearchResults ? (
+            /* Search results */
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)' }}>
+                  Found <strong style={{ color: '#D4AF37' }}>{searchResults.length}</strong> item{searchResults.length !== 1 ? 's' : ''} for "{debouncedQuery}"
+                </p>
+              </div>
+              {searchResults.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.35)' }}>
+                  <p style={{ fontSize: '18px', fontFamily: 'Georgia, serif' }}>No items found.</p>
+                  <p style={{ fontSize: '13px', marginTop: '8px' }}>Try a different search term.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
+                  {searchResults.map((product, index) => (
+                    <ProductCard key={product.id} product={product} index={index} />
+                  ))}
+                </div>
+              )}
+            </>
           ) : visibleCategories.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.35)' }}>
               <p style={{ fontSize: '18px', fontFamily: 'Georgia, serif' }}>No collections available yet.</p>
@@ -194,6 +359,7 @@ const CollectionsPage = () => {
           .cat-card:hover .cat-media { transform: scale(1.06); }
           .cat-skeleton { animation: skelPulse 1.5s ease-in-out infinite; }
           @keyframes skelPulse { 0%,100% { opacity:1; } 50% { opacity:0.45; } }
+          .pcard:hover .pcard-img { transform: scale(1.05); }
           @media (max-width: 640px) { .cat-card { aspect-ratio: unset; } }
         `}</style>
       </div>
@@ -249,9 +415,9 @@ const CollectionsPage = () => {
           ))}
         </div>
 
-        {/* Subcategory chips (moved from sidebar) */}
+        {/* Subcategory chips */}
         {subcats.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '28px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
             {['', ...subcats].map(sub => (
               <button
                 key={sub || 'all'}
@@ -264,9 +430,18 @@ const CollectionsPage = () => {
           </div>
         )}
 
+        {/* Search bar */}
+        <SearchBar placeholder="Search by name or item code..." />
+
+        {debouncedQuery && (
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginBottom: '16px', marginTop: '-12px' }}>
+            Found <strong style={{ color: '#D4AF37' }}>{displayProducts.length}</strong> item{displayProducts.length !== 1 ? 's' : ''} matching "{debouncedQuery}"
+          </p>
+        )}
+
         <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
 
-          {/* Filters sidebar (weight + purity only) */}
+          {/* Filters sidebar */}
           <div style={{ width: '200px', flexShrink: 0, position: 'sticky', top: '88px' }}>
             <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '10px', padding: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
@@ -283,15 +458,8 @@ const CollectionsPage = () => {
                     <input
                       type="number" step="0.5" min="0" max="200"
                       value={weightRange[0]}
-                      onChange={e => {
-                        const v = parseFloat(e.target.value) || 0;
-                        setWeightRange([Math.min(v, weightRange[1]), weightRange[1]]);
-                      }}
-                      onBlur={e => {
-                        const v = parseFloat(e.target.value) || 0;
-                        const clamped = Math.max(0, Math.min(v, weightRange[1]));
-                        setWeightRange([clamped, weightRange[1]]);
-                      }}
+                      onChange={e => { const v = parseFloat(e.target.value) || 0; setWeightRange([Math.min(v, weightRange[1]), weightRange[1]]); }}
+                      onBlur={e => { const v = parseFloat(e.target.value) || 0; setWeightRange([Math.max(0, Math.min(v, weightRange[1])), weightRange[1]]); }}
                       style={{ width: '100%', padding: '6px 8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '6px', color: '#D4AF37', fontSize: '13px', outline: 'none', boxSizing: 'border-box', fontVariantNumeric: 'tabular-nums' }}
                     />
                   </div>
@@ -300,30 +468,17 @@ const CollectionsPage = () => {
                     <input
                       type="number" step="0.5" min="0" max="200"
                       value={weightRange[1]}
-                      onChange={e => {
-                        const v = parseFloat(e.target.value) || 0;
-                        setWeightRange([weightRange[0], Math.max(v, weightRange[0])]);
-                      }}
-                      onBlur={e => {
-                        const v = parseFloat(e.target.value) || 0;
-                        const clamped = Math.min(200, Math.max(v, weightRange[0]));
-                        setWeightRange([weightRange[0], clamped]);
-                      }}
+                      onChange={e => { const v = parseFloat(e.target.value) || 0; setWeightRange([weightRange[0], Math.max(v, weightRange[0])]); }}
+                      onBlur={e => { const v = parseFloat(e.target.value) || 0; setWeightRange([weightRange[0], Math.min(200, Math.max(v, weightRange[0]))]); }}
                       style={{ width: '100%', padding: '6px 8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '6px', color: '#D4AF37', fontSize: '13px', outline: 'none', boxSizing: 'border-box', fontVariantNumeric: 'tabular-nums' }}
                     />
                   </div>
                 </div>
                 <input type="range" min="0" max="200" step="0.5" value={weightRange[0]}
-                  onChange={e => {
-                    const v = parseFloat(e.target.value);
-                    setWeightRange([Math.min(v, weightRange[1]), weightRange[1]]);
-                  }}
+                  onChange={e => { const v = parseFloat(e.target.value); setWeightRange([Math.min(v, weightRange[1]), weightRange[1]]); }}
                   style={{ width: '100%', accentColor: '#D4AF37', marginBottom: '4px', display: 'block' }} />
                 <input type="range" min="0" max="200" step="0.5" value={weightRange[1]}
-                  onChange={e => {
-                    const v = parseFloat(e.target.value);
-                    setWeightRange([weightRange[0], Math.max(v, weightRange[0])]);
-                  }}
+                  onChange={e => { const v = parseFloat(e.target.value); setWeightRange([weightRange[0], Math.max(v, weightRange[0])]); }}
                   style={{ width: '100%', accentColor: '#D4AF37', display: 'block' }} />
               </div>
 
@@ -349,85 +504,25 @@ const CollectionsPage = () => {
                   <div key={i} style={{ aspectRatio: '4/5', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }} className="cat-skeleton" />
                 ))}
               </div>
-            ) : filteredProducts.length === 0 ? (
+            ) : displayProducts.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '80px 0' }}>
                 <p style={{ fontSize: '18px', color: 'rgba(255,255,255,0.35)', fontFamily: 'Georgia, serif' }}>No products found.</p>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.22)', marginTop: '8px' }}>Try adjusting the filters.</p>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.22)', marginTop: '8px' }}>
+                  {debouncedQuery ? 'Try a different search term.' : 'Try adjusting the filters.'}
+                </p>
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
-                {filteredProducts.map((product, index) => {
-                  const img = getProductImage(product);
-                  return (
-                    <motion.div
-                      key={product.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(index * 0.04, 0.4) }}
-                    >
-                      <div
-                        className="pcard"
-                        data-testid={`product-card-${product.id}`}
-                        style={{ position: 'relative', background: '#1a0f12', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '12px', overflow: 'hidden', transition: 'border-color 0.25s, transform 0.25s, box-shadow 0.25s', cursor: 'pointer' }}
-                        onClick={() => navigate(`/product/${product.id}`)}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.borderColor = 'rgba(212,175,55,0.45)';
-                          e.currentTarget.style.transform = 'translateY(-4px)';
-                          e.currentTarget.style.boxShadow = '0 16px 40px rgba(61,8,21,0.55)';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.borderColor = 'rgba(212,175,55,0.15)';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
-                      >
-                        <div style={{ aspectRatio: '4/5', overflow: 'hidden', position: 'relative', background: '#120808' }}>
-                          {img ? (
-                            <img className="pcard-img" src={img} alt={product.name}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.45s ease' }}
-                            />
-                          ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <span style={{ fontFamily: 'Georgia, serif', fontSize: '52px', color: 'rgba(212,175,55,0.14)' }}>{product.name.charAt(0)}</span>
-                            </div>
-                          )}
-                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '45%', background: 'linear-gradient(to top, #1a0f12 0%, transparent 100%)', pointerEvents: 'none' }} />
-
-                          {/* Item code badge */}
-                          {product.item_code && (
-                            <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(26,7,16,0.85)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '4px', padding: '2px 7px', fontSize: '10px', color: '#D4AF37', fontWeight: 600, letterSpacing: '0.04em', backdropFilter: 'blur(4px)' }}>
-                              {product.item_code}
-                            </div>
-                          )}
-
-                          {/* Stock badge */}
-                          <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
-                            <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '20px', backdropFilter: 'blur(6px)', background: product.stock_status === 'in_stock' ? 'rgba(34,197,94,0.2)' : 'rgba(251,146,60,0.2)', color: product.stock_status === 'in_stock' ? '#4ade80' : '#fb923c' }}>
-                              {product.stock_status === 'in_stock' ? 'In Stock' : 'MTO'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div style={{ padding: '14px 16px 18px' }}>
-                          <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '17px', fontWeight: 400, color: '#D4AF37', margin: '0 0 7px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {product.name}
-                          </h3>
-                          <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: 'rgba(212,175,55,0.52)', letterSpacing: '0.04em' }}>
-                            <span>{product.weight} g</span>
-                            <span>{product.purity?.toUpperCase()}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                {displayProducts.map((product, index) => (
+                  <ProductCard key={product.id} product={product} index={index} />
+                ))}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Share this view modal */}
+      {/* Share modal */}
       <AnimatePresence>
         {showShareModal && (
           <motion.div
@@ -446,7 +541,6 @@ const CollectionsPage = () => {
                   <X size={20} />
                 </button>
               </div>
-
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '8px', padding: '10px 12px', marginBottom: '16px' }}>
                 <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {window.location.href}
@@ -456,7 +550,6 @@ const CollectionsPage = () => {
                 </button>
               </div>
               {linkCopied && <p style={{ fontSize: '12px', color: '#4ade80', marginBottom: '12px', textAlign: 'center' }}>Link copied!</p>}
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <a
                   href={`https://wa.me/${whatsappDigits}?text=${encodeURIComponent(`Hi, here are some items from our collection that match your requirements: ${window.location.href}\n\nClick any item to see full details and prices.`)}`}

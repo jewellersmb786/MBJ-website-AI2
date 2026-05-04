@@ -85,6 +85,45 @@ async def seed_default_schemes(db, generate_uuid):
     await db.schemes.insert_many(docs)
 
 
+DEFAULT_GEMSTONES = [
+    {"name": "Ruby",                   "birth_month": 7,    "color_hex": "#C70039", "properties": "Symbolizes passion, vitality, and courage. Believed to attract prosperity and protect against misfortune. Worn for confidence and leadership.", "display_order": 1},
+    {"name": "Emerald",                "birth_month": 5,    "color_hex": "#2E7D32", "properties": "Stone of harmony, love, and renewal. Said to enhance intuition and bring emotional balance. Associated with growth and wisdom.", "display_order": 2},
+    {"name": "Sapphire",               "birth_month": 9,    "color_hex": "#1E40AF", "properties": "Represents truth, sincerity, and inner peace. Believed to bring focus, mental clarity, and protection from negativity.", "display_order": 3},
+    {"name": "Pearl",                  "birth_month": 6,    "color_hex": "#F8F8FF", "properties": "Symbolizes purity, calm, and emotional balance. Worn to soothe the mind and enhance feminine energy. Associated with the moon.", "display_order": 4},
+    {"name": "Yellow Sapphire (Pukhraj)", "birth_month": 11, "color_hex": "#FBC02D", "properties": "Brings wisdom, prosperity, and good fortune. Highly valued in Vedic astrology for Jupiter's blessings — wealth, marriage, and knowledge.", "display_order": 5},
+    {"name": "Coral (Moonga)",          "birth_month": 3,    "color_hex": "#FF6F61", "properties": "Believed to enhance courage and vitality. Associated with Mars — gives strength, removes obstacles, and protects from harm.", "display_order": 6},
+    {"name": "Diamond",                "birth_month": 4,    "color_hex": "#E0F7FA", "properties": "Symbol of eternal love, strength, and clarity. Believed to enhance personal power, attract abundance, and bring success in relationships.", "display_order": 7},
+    {"name": "Cat's Eye (Lehsunia)",   "birth_month": None, "color_hex": "#8B6F47", "properties": "Protects against the evil eye and hidden enemies. Believed to bring sudden wealth and stability. Associated with Ketu in Vedic astrology.", "display_order": 8},
+    {"name": "Hessonite (Gomed)",      "birth_month": None, "color_hex": "#B3541E", "properties": "Said to remove confusion and bring success in legal matters and competitions. Associated with Rahu — helps overcome obstacles and bad luck.", "display_order": 9},
+]
+
+DEFAULT_ARTICLE_TYPES = [
+    {"name": "Ring",             "description": "Worn on the finger associated with the planet of the gemstone. Suitable for daily wear and offers continuous benefit.", "display_order": 1},
+    {"name": "Pendant",          "description": "Worn close to the heart, allowing direct contact with the body. Versatile and elegant — suits both daily and special occasions.", "display_order": 2},
+    {"name": "Bracelet",         "description": "Worn on the wrist for steady, gentle astrological influence. Can hold multiple stones if combined remedies are needed.", "display_order": 3},
+    {"name": "Anklet (Payal)",   "description": "Traditional choice in South Indian jewellery. Offers grounding energy and is often worn for protection and stability.", "display_order": 4},
+    {"name": "Earrings",         "description": "Studs or drops set with gemstones. Worn for subtle astrological benefit, especially associated with the head and mind.", "display_order": 5},
+]
+
+
+async def seed_default_gemstones(db, generate_uuid):
+    count = await db.gemstones.count_documents({})
+    if count > 0:
+        return
+    now = datetime.utcnow()
+    docs = [{**g, "id": generate_uuid(), "is_active": True, "image": None, "created_at": now} for g in DEFAULT_GEMSTONES]
+    await db.gemstones.insert_many(docs)
+
+
+async def seed_default_article_types(db, generate_uuid):
+    count = await db.spiritual_article_types.count_documents({})
+    if count > 0:
+        return
+    now = datetime.utcnow()
+    docs = [{**a, "id": generate_uuid(), "is_active": True, "image": None, "created_at": now} for a in DEFAULT_ARTICLE_TYPES]
+    await db.spiritual_article_types.insert_many(docs)
+
+
 async def _migrate_scheme_types(db):
     """Idempotent: backfills scheme_type and renames monthly_amount→minimum_monthly_amount on schemes."""
     # 1. Backfill missing scheme_type
