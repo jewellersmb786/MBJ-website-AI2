@@ -130,8 +130,12 @@ async def startup_event():
             logger.info(f"Updated settings with new rate fields: {update_fields}")
     
     # Seed default schemes if collection is empty
-    from seed_data import seed_default_schemes
-    await seed_default_schemes(db, generate_uuid)
+    try:
+        from seed_data import seed_default_schemes
+        await seed_default_schemes(db, lambda: str(uuid.uuid4()))
+        logger.info("Scheme seed check complete")
+    except Exception as e:
+        logger.error(f"Scheme seeding failed (non-fatal): {e}")
 
     # Scrape and cache gold rates
     await update_gold_rates()
