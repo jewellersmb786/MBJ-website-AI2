@@ -32,6 +32,7 @@ const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/collections', label: 'Collections' },
   { to: '/schemes', label: 'Schemes' },
+  { to: '/my-scheme', label: 'My Schemes' },
   { to: '/spiritual', label: 'Spiritual' },
   { to: '/calculator', label: 'Quotation' },
   { to: '/custom-order', label: 'Customisation' },

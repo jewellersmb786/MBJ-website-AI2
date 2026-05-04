@@ -131,11 +131,13 @@ async def startup_event():
     
     # Seed default schemes if collection is empty
     try:
-        from seed_data import seed_default_schemes
+        from seed_data import seed_default_schemes, _migrate_scheme_types
         await seed_default_schemes(db, lambda: str(uuid.uuid4()))
         logger.info("Scheme seed check complete")
+        await _migrate_scheme_types(db)
+        logger.info("Scheme type migration complete")
     except Exception as e:
-        logger.error(f"Scheme seeding failed (non-fatal): {e}")
+        logger.error(f"Scheme seeding/migration failed (non-fatal): {e}")
 
     # Scrape and cache gold rates
     await update_gold_rates()
@@ -732,12 +734,61 @@ async def get_scheme(scheme_id: str):
 
 @api_router.post("/scheme-enrollments")
 async def create_scheme_enrollment(enrollment: SchemeEnrollmentCreate):
+    scheme = await db.schemes.find_one({"id": enrollment.scheme_id}, {"_id": 0})
+    if not scheme:
+        raise HTTPException(status_code=404, detail="Scheme not found")
     data = enrollment.model_dump()
     data['id'] = generate_uuid()
     data['status'] = 'new'
     data['created_at'] = datetime.utcnow()
+    data['scheme_name'] = scheme.get('name', '')
+    data['scheme_type'] = scheme.get('scheme_type', 'flexible')
+    data['monthly_amount'] = scheme.get('monthly_amount')
+    data['original_total_months'] = scheme.get('total_months')
+    data['grace_days'] = scheme.get('grace_days')
+    data['months_paid'] = 0
+    data['forfeited_months'] = []
+    data['payments'] = []
+    data['total_amount_paid'] = 0.0
+    data['total_grams_accumulated'] = 0.0
+    data['start_date'] = None
+    data['expected_total_months'] = None
     await db.scheme_enrollments.insert_one(data)
     return {"message": "Enrollment submitted successfully", "id": data['id']}
+
+@api_router.get("/scheme-enrollments/by-phone/{phone}")
+async def get_enrollments_by_phone(phone: str):
+    from datetime import date as date_cls
+    enrollments = await db.scheme_enrollments.find({"customer_phone": phone}, {"_id": 0}).to_list(50)
+    today = date_cls.today()
+    result = []
+    for e in enrollments:
+        scheme_type = e.get('scheme_type', 'flexible')
+        npw = None
+        if scheme_type == 'fixed_monthly' and e.get('status') == 'active':
+            start_str = e.get('start_date')
+            months_paid = e.get('months_paid', 0)
+            grace = e.get('grace_days') or 5
+            if start_str:
+                try:
+                    sd = date_cls.fromisoformat(start_str)
+                    ws = sd + timedelta(days=months_paid * 30)
+                    we = ws + timedelta(days=grace)
+                    npw = {'start_date': ws.isoformat(), 'end_date': we.isoformat(), 'is_overdue': today > we}
+                except Exception:
+                    pass
+        expected = e.get('expected_total_months')
+        months_paid = e.get('months_paid', 0)
+        completion_pct = round(months_paid / expected * 100, 1) if (scheme_type == 'fixed_monthly' and expected) else None
+        safe_payments = [
+            {k: p.get(k) for k in ('payment_date', 'amount', 'method', 'month_number', 'gold_rate_at_payment', 'grams_credited')}
+            for p in e.get('payments', [])
+        ]
+        e['payments'] = safe_payments
+        e['next_payment_window'] = npw
+        e['completion_percent'] = completion_pct
+        result.append(e)
+    return result
 
 # ============================================================================
 # ADMIN APIs - Schemes
@@ -778,12 +829,89 @@ async def delete_scheme(scheme_id: str, admin = Depends(get_current_admin)):
 async def get_scheme_enrollments(admin = Depends(get_current_admin)):
     return await db.scheme_enrollments.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
 
+@api_router.get("/admin/scheme-enrollments/{enrollment_id}")
+async def get_scheme_enrollment(enrollment_id: str, admin = Depends(get_current_admin)):
+    e = await db.scheme_enrollments.find_one({"id": enrollment_id}, {"_id": 0})
+    if not e:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    return e
+
+@api_router.delete("/admin/scheme-enrollments/{enrollment_id}")
+async def delete_enrollment(enrollment_id: str, admin = Depends(get_current_admin)):
+    result = await db.scheme_enrollments.delete_one({"id": enrollment_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    return {"message": "Enrollment deleted"}
+
 @api_router.put("/admin/scheme-enrollments/{enrollment_id}/status")
 async def update_enrollment_status(enrollment_id: str, status: str, admin = Depends(get_current_admin)):
     result = await db.scheme_enrollments.update_one({"id": enrollment_id}, {"$set": {"status": status}})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Enrollment not found")
     return {"message": "Status updated"}
+
+@api_router.post("/admin/scheme-enrollments/{enrollment_id}/payments")
+async def log_payment(enrollment_id: str, payment: SchemePaymentCreate, admin = Depends(get_current_admin)):
+    enrollment = await db.scheme_enrollments.find_one({"id": enrollment_id}, {"_id": 0})
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    scheme_type = enrollment.get('scheme_type', 'flexible')
+    now = datetime.utcnow()
+    payment_doc = {
+        'id': generate_uuid(),
+        'amount': payment.amount,
+        'payment_date': payment.payment_date,
+        'method': payment.method,
+        'notes': payment.notes,
+        'recorded_at': now,
+        'gold_rate_at_payment': None,
+        'grams_credited': None,
+        'month_number': None,
+    }
+    inc_fields = {'months_paid': 1, 'total_amount_paid': payment.amount}
+    set_fields = {}
+    if scheme_type == 'flexible':
+        settings = await db.settings.find_one({"id": "site_settings"}, {"_id": 0})
+        gold_rate = (settings or {}).get('k22_rate') or (settings or {}).get('current_gold_rate', 0)
+        grams = round(payment.amount / gold_rate, 4) if gold_rate else 0.0
+        payment_doc['gold_rate_at_payment'] = gold_rate
+        payment_doc['grams_credited'] = grams
+        inc_fields['total_grams_accumulated'] = grams
+    else:
+        months_paid_now = enrollment.get('months_paid', 0)
+        payment_doc['month_number'] = months_paid_now + 1
+    if not enrollment.get('start_date'):
+        set_fields['start_date'] = payment.payment_date
+        orig = enrollment.get('original_total_months')
+        if orig:
+            set_fields['expected_total_months'] = orig
+    if enrollment.get('status') == 'new':
+        set_fields['status'] = 'active'
+    months_after = enrollment.get('months_paid', 0) + 1
+    expected = set_fields.get('expected_total_months') or enrollment.get('expected_total_months')
+    if scheme_type == 'fixed_monthly' and expected and months_after >= expected:
+        set_fields['status'] = 'completed'
+        set_fields['completed_at'] = now
+    update_op = {'$push': {'payments': payment_doc}, '$inc': inc_fields}
+    if set_fields:
+        update_op['$set'] = set_fields
+    await db.scheme_enrollments.update_one({"id": enrollment_id}, update_op)
+    updated = await db.scheme_enrollments.find_one({"id": enrollment_id}, {"_id": 0})
+    return updated
+
+@api_router.post("/admin/scheme-enrollments/{enrollment_id}/forfeit-month")
+async def forfeit_month(enrollment_id: str, body: ForfeitMonthBody, admin = Depends(get_current_admin)):
+    enrollment = await db.scheme_enrollments.find_one({"id": enrollment_id}, {"_id": 0})
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+    if enrollment.get('scheme_type', 'flexible') != 'fixed_monthly':
+        raise HTTPException(status_code=400, detail="Forfeit only applies to fixed_monthly schemes")
+    await db.scheme_enrollments.update_one(
+        {"id": enrollment_id},
+        {"$push": {"forfeited_months": body.month_number}, "$inc": {"expected_total_months": 1}}
+    )
+    updated = await db.scheme_enrollments.find_one({"id": enrollment_id}, {"_id": 0})
+    return updated
 
 # ============================================================================
 # PUBLIC APIs - Spiritual

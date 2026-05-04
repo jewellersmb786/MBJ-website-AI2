@@ -7,6 +7,10 @@ from datetime import datetime
 DEFAULT_SCHEMES = [
     {
         "name": "Gold Savings Plan",
+        "scheme_type": "flexible",
+        "monthly_amount": None,
+        "total_months": None,
+        "grace_days": None,
         "tagline": "Save daily, lock today's rate, buy when you're ready",
         "description": (
             "Our Gold Savings Plan allows you to buy gold in grams at your convenience by paying any amount based on the daily gold rate, "
@@ -37,6 +41,10 @@ DEFAULT_SCHEMES = [
     },
     {
         "name": "Gold Harvest Scheme",
+        "scheme_type": "fixed_monthly",
+        "monthly_amount": 1000.0,
+        "total_months": 12,
+        "grace_days": 5,
         "tagline": "Pay 12, get 13 — our way of saying thank you",
         "description": (
             "The Gold Harvest Scheme is a fixed monthly savings plan designed for customers who want a structured path to their next jewellery purchase.\n\n"
@@ -75,6 +83,22 @@ async def seed_default_schemes(db, generate_uuid):
     now = datetime.utcnow()
     docs = [{**scheme, "id": generate_uuid(), "created_at": now} for scheme in DEFAULT_SCHEMES]
     await db.schemes.insert_many(docs)
+
+
+async def _migrate_scheme_types(db):
+    """Idempotent: backfills scheme_type and fixed_monthly fields on pre-existing schemes."""
+    await db.schemes.update_many(
+        {"scheme_type": {"$in": [None, ""]}},
+        {"$set": {"scheme_type": "flexible"}}
+    )
+    await db.schemes.update_one(
+        {"name": "Gold Harvest Scheme", "monthly_amount": {"$in": [None]}},
+        {"$set": {"scheme_type": "fixed_monthly", "monthly_amount": 1000.0, "total_months": 12, "grace_days": 5}}
+    )
+    await db.schemes.update_one(
+        {"name": "Gold Harvest Scheme", "total_months": {"$in": [None]}},
+        {"$set": {"scheme_type": "fixed_monthly", "monthly_amount": 1000.0, "total_months": 12, "grace_days": 5}}
+    )
 
 
 # ============================================================================

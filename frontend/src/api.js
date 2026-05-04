@@ -60,6 +60,10 @@ export const schemesAPI = {
   enroll: (data) => api.post('/scheme-enrollments', data),
 };
 
+export const schemeEnrollmentsAPI = {
+  getByPhone: (phone) => api.get(`/scheme-enrollments/by-phone/${encodeURIComponent(phone)}`),
+};
+
 export const gemstonesAPI = {
   getAll: () => api.get('/gemstones'),
 };
@@ -124,7 +128,11 @@ export const adminAPI = {
 
   schemeEnrollments: {
     getAll: () => api.get('/admin/scheme-enrollments'),
+    getById: (id) => api.get(`/admin/scheme-enrollments/${id}`),
     updateStatus: (id, status) => api.put(`/admin/scheme-enrollments/${id}/status`, null, { params: { status } }),
+    delete: (id) => api.delete(`/admin/scheme-enrollments/${id}`),
+    logPayment: (id, payment) => api.post(`/admin/scheme-enrollments/${id}/payments`, payment),
+    forfeitMonth: (id, payload) => api.post(`/admin/scheme-enrollments/${id}/forfeit-month`, payload),
   },
 
   gemstones: {

@@ -343,6 +343,10 @@ class Scheme(BaseModel):
     highlights: List[str] = []
     terms: Optional[str] = None
     cta_button_text: Optional[str] = "Enroll Now"
+    scheme_type: Optional[str] = "flexible"
+    monthly_amount: Optional[float] = None
+    total_months: Optional[int] = None
+    grace_days: Optional[int] = 5
     is_active: bool = True
     display_order: int = 0
     created_at: datetime
@@ -355,6 +359,10 @@ class SchemeCreate(BaseModel):
     highlights: List[str] = []
     terms: Optional[str] = None
     cta_button_text: Optional[str] = "Enroll Now"
+    scheme_type: Optional[str] = "flexible"
+    monthly_amount: Optional[float] = None
+    total_months: Optional[int] = None
+    grace_days: Optional[int] = 5
     display_order: int = 0
 
 class SchemeUpdate(BaseModel):
@@ -365,19 +373,49 @@ class SchemeUpdate(BaseModel):
     highlights: Optional[List[str]] = None
     terms: Optional[str] = None
     cta_button_text: Optional[str] = None
+    scheme_type: Optional[str] = None
+    monthly_amount: Optional[float] = None
+    total_months: Optional[int] = None
+    grace_days: Optional[int] = None
     is_active: Optional[bool] = None
     display_order: Optional[int] = None
+
+class SchemePayment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    amount: float
+    payment_date: str          # ISO date string "YYYY-MM-DD"
+    method: str
+    notes: Optional[str] = None
+    gold_rate_at_payment: Optional[float] = None
+    grams_credited: Optional[float] = None
+    month_number: Optional[int] = None
+    recorded_at: datetime
 
 class SchemeEnrollment(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
     scheme_id: str
+    scheme_name: str = ""
+    scheme_type: str = "flexible"
     customer_name: str
     customer_phone: str
     customer_email: Optional[str] = None
     notes: Optional[str] = None
     status: str = "new"
+    start_date: Optional[str] = None   # ISO date string
+    monthly_amount: Optional[float] = None
+    original_total_months: Optional[int] = None
+    grace_days: Optional[int] = None
+    expected_total_months: Optional[int] = None
+    months_paid: int = 0
+    forfeited_months: List[int] = []
+    payments: List[SchemePayment] = []
+    total_amount_paid: float = 0
+    total_grams_accumulated: float = 0
     created_at: datetime
+    completed_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
 
 class SchemeEnrollmentCreate(BaseModel):
     scheme_id: str
@@ -385,6 +423,16 @@ class SchemeEnrollmentCreate(BaseModel):
     customer_phone: str
     customer_email: Optional[str] = None
     notes: Optional[str] = None
+
+class SchemePaymentCreate(BaseModel):
+    amount: float
+    payment_date: str          # ISO date string from HTML5 date input
+    method: str
+    notes: Optional[str] = None
+
+class ForfeitMonthBody(BaseModel):
+    month_number: int
+    reason: Optional[str] = None
 
 # Spiritual Models
 class Gemstone(BaseModel):
