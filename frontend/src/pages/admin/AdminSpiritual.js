@@ -165,6 +165,15 @@ const AdminSpiritual = () => {
     } catch { toast.error('Error saving'); }
   };
 
+  const handleDeleteInquiry = async (id) => {
+    if (!window.confirm('Delete this inquiry permanently?')) return;
+    try {
+      await adminAPI.spiritualInquiries.delete(id);
+      setInquiries(prev => prev.filter(i => i.id !== id));
+      toast.success('Inquiry deleted');
+    } catch (err) { toast.error(err?.response?.data?.detail || 'Error deleting inquiry'); }
+  };
+
   const handleDelete = async (type, id) => {
     if (!window.confirm('Delete this item?')) return;
     try {
@@ -285,7 +294,7 @@ const AdminSpiritual = () => {
                 <thead><tr style={{ background: 'rgba(0,0,0,0.3)' }}>
                   <th style={sHead}>Ref</th><th style={sHead}>Customer</th><th style={sHead}>Phone</th>
                   <th style={sHead}>Gemstone</th><th style={sHead}>Article</th><th style={sHead}>Notes</th>
-                  <th style={sHead}>Status</th><th style={sHead}>Date</th>
+                  <th style={sHead}>Status</th><th style={sHead}>Date</th><th style={{ ...sHead, width: '48px' }}></th>
                 </tr></thead>
                 <tbody>
                   {inquiries.map((inq, idx) => (
@@ -304,6 +313,12 @@ const AdminSpiritual = () => {
                         </select>
                       </td>
                       <td style={{ ...sCell, fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>{fmtDate(inq.created_at)}</td>
+                      <td style={sCell}>
+                        <button onClick={() => handleDeleteInquiry(inq.id)}
+                          style={{ padding: '4px 8px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', cursor: 'pointer' }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
                     </motion.tr>
                   ))}
                 </tbody>

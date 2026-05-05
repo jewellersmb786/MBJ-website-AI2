@@ -130,6 +130,7 @@ export const adminAPI = {
     getAll: () => api.get('/admin/custom-orders'),
     updateStatus: (id, status) => api.put(`/admin/custom-orders/${id}`, null, { params: { status } }),
     update: (id, data) => api.put(`/admin/custom-orders/${id}`, null, { params: data }),
+    delete: (id) => api.delete(`/admin/custom-orders/${id}`),
   },
 
   schemes: {
@@ -166,6 +167,7 @@ export const adminAPI = {
   spiritualInquiries: {
     getAll: () => api.get('/admin/spiritual-inquiries'),
     updateStatus: (id, status) => api.put(`/admin/spiritual-inquiries/${id}/status`, null, { params: { status } }),
+    delete: (id) => api.delete(`/admin/spiritual-inquiries/${id}`),
   },
   
   settings: {

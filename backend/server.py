@@ -281,13 +281,43 @@ async def get_category_descendants(category_id: str):
     ids = await _get_descendant_ids(category_id)
     return {"category_id": category_id, "descendant_ids": ids}
 
-@api_router.get("/categories/{category_id}/filter-attributes", response_model=List[FilterAttribute])
+@api_router.get("/categories/{category_id}/filter-attributes")
 async def get_filter_attributes_public(category_id: str):
+    """Return filter attributes with options pruned to only values used by actual products."""
     top_id = await _get_top_level_id(category_id)
-    attrs = await db.filter_attributes.find(
+    all_attrs = await db.filter_attributes.find(
         {"category_id": top_id, "is_active": True}, {"_id": 0}
     ).sort("display_order", 1).to_list(50)
-    return attrs
+    if not all_attrs:
+        return []
+
+    # Collect all descendant category IDs for this top-level
+    desc_ids = await _get_descendant_ids(top_id)
+
+    # Fetch attribute_values from all active products in those categories
+    products = await db.products.find(
+        {"category_id": {"$in": desc_ids}, "is_active": True},
+        {"_id": 0, "attribute_values": 1}
+    ).to_list(5000)
+
+    # Build attr_name → set of values actually used
+    used: dict = {}
+    for p in products:
+        for attr_name, val in (p.get("attribute_values") or {}).items():
+            if val:
+                used.setdefault(attr_name, set()).add(val)
+
+    # Prune each attribute: keep only options present in product data
+    result = []
+    for attr in all_attrs:
+        master_options = attr.get("options", [])
+        product_vals = used.get(attr.get("name", ""), set())
+        # Intersect, preserving master list order
+        filtered_options = [opt for opt in master_options if opt in product_vals]
+        if not filtered_options:
+            continue  # attribute has no used options — hide entire section
+        result.append({**attr, "options": filtered_options})
+    return result
 
 @api_router.get("/categories/{category_id}")
 async def get_category(category_id: str):
@@ -791,6 +821,13 @@ async def update_custom_order_status(inquiry_id: str, status: str, admin = Depen
         raise HTTPException(status_code=404, detail="Inquiry not found")
     return {"message": "Status updated successfully"}
 
+@api_router.delete("/admin/custom-orders/{inquiry_id}")
+async def delete_custom_order(inquiry_id: str, admin = Depends(get_current_admin)):
+    result = await db.custom_orders.delete_one({"id": inquiry_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Custom order not found")
+    return {"message": "Custom order deleted"}
+
 # ============================================================================
 # ADMIN APIs - Settings
 # ============================================================================
@@ -1153,6 +1190,13 @@ async def update_spiritual_inquiry_status(inquiry_id: str, status: str, admin = 
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Inquiry not found")
     return {"message": "Status updated"}
+
+@api_router.delete("/admin/spiritual-inquiries/{inquiry_id}")
+async def delete_spiritual_inquiry(inquiry_id: str, admin = Depends(get_current_admin)):
+    result = await db.spiritual_inquiries.delete_one({"id": inquiry_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Inquiry not found")
+    return {"message": "Inquiry deleted"}
 
 # ============================================================================
 # Include router and setup

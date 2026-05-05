@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { adminAPI } from '../../api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Instagram, Phone, Mail, Calendar, MessageSquare, Search, X, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Instagram, Phone, Mail, Calendar, MessageSquare, Search, X, ChevronDown, ChevronUp, Clock, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = ['new', 'contacted', 'quote_sent', 'in_progress', 'completed', 'cancelled'];
@@ -183,12 +183,22 @@ const AdminCustomOrders = () => {
     try {
       const res = await adminAPI.customOrders.getAll();
       setOrders(res.data || []);
-    } catch (err) { console.error(err); }
+    } catch { toast.error('Error loading custom orders'); }
     finally { setLoading(false); }
   };
 
   const handleStatusChange = (id, newStatus) => {
     setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+  };
+
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    if (!window.confirm('Delete this custom order permanently?')) return;
+    try {
+      await adminAPI.customOrders.delete(id);
+      setOrders(prev => prev.filter(o => o.id !== id));
+      toast.success('Custom order deleted');
+    } catch (err) { toast.error(err?.response?.data?.detail || 'Error deleting order'); }
   };
 
   const filtered = useMemo(() => {
@@ -260,7 +270,7 @@ const AdminCustomOrders = () => {
                   <th style={sHead}>Metal</th>
                   <th style={sHead}>Status</th>
                   <th style={sHead}>Submitted</th>
-                  <th style={{ ...sHead, width: '32px' }}></th>
+                  <th style={{ ...sHead, width: '80px' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -290,10 +300,16 @@ const AdminCustomOrders = () => {
                     <td style={{ ...sCell, color: 'rgba(255,255,255,0.55)' }}>{order.preferred_metal || '—'}</td>
                     <td style={sCell}><StatusBadge status={order.status} /></td>
                     <td style={{ ...sCell, color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{fmtDateShort(order.created_at)}</td>
-                    <td style={{ ...sCell, textAlign: 'center' }}>
-                      {order.reference_images?.length > 0 && (
-                        <span style={{ fontSize: '10px', color: 'rgba(212,175,55,0.5)' }}>📷{order.reference_images.length}</span>
-                      )}
+                    <td style={{ ...sCell, textAlign: 'right' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+                        {order.reference_images?.length > 0 && (
+                          <span style={{ fontSize: '10px', color: 'rgba(212,175,55,0.5)' }}>📷{order.reference_images.length}</span>
+                        )}
+                        <button onClick={e => handleDelete(e, order.id)}
+                          style={{ padding: '4px 8px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </td>
                   </motion.tr>
                 ))}
