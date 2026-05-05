@@ -76,52 +76,67 @@ const DetailModal = ({ order, onClose, onStatusChange }) => {
         {/* Customer info */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
           {[
-            ['Name', order.name],
-            ['Phone', order.phone],
-            order.email && ['Email', order.email],
-            ['Type', order.jewellery_type],
-            order.weight_requirement != null && ['Weight Req.', `${order.weight_requirement}g`],
-            order.budget_range && ['Budget', order.budget_range],
-            order.preferred_metal && ['Metal', order.preferred_metal],
-            order.occasion && ['Occasion', order.occasion],
-            order.preferred_completion_date && ['Completion By', fmtDateShort(order.preferred_completion_date)],
-          ].filter(Boolean).map(([label, val]) => (
+            { label: 'Name', value: order.name },
+            { label: 'Phone', value: order.phone },
+            { label: 'Email', value: order.email },
+            { label: 'Jewellery Type', value: order.jewellery_type },
+            { label: 'Weight Req.', value: order.weight_requirement != null ? `${order.weight_requirement}g` : null },
+            { label: 'Occasion', value: order.occasion },
+            { label: 'Completion By', value: order.preferred_completion_date },
+            ...(order.budget_range ? [{ label: 'Budget', value: order.budget_range }] : []),
+            ...(order.preferred_metal ? [{ label: 'Metal', value: order.preferred_metal }] : []),
+          ].map(({ label, value }) => (
             <div key={label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '10px 12px' }}>
               <p style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.5)', margin: '0 0 3px' }}>{label}</p>
-              <p style={{ fontSize: '13px', color: '#fff', margin: 0 }}>{val}</p>
+              {value ? (
+                <p style={{ fontSize: '13px', color: '#fff', margin: 0 }}>{value}</p>
+              ) : (
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', margin: 0, fontStyle: 'italic' }}>Not specified</p>
+              )}
             </div>
           ))}
         </div>
 
         {/* Description */}
-        {order.description && (
-          <div style={{ marginBottom: '24px' }}>
-            <p style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.5)', margin: '0 0 8px' }}>Requirements</p>
+        <div style={{ marginBottom: '24px' }}>
+          <p style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.5)', margin: '0 0 8px' }}>Requirements</p>
+          {order.description ? (
             <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '12px', margin: 0, lineHeight: 1.6 }}>{order.description}</p>
-          </div>
-        )}
+          ) : (
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', margin: 0 }}>Not specified</p>
+          )}
+        </div>
 
         {/* Reference images */}
-        {order.reference_images?.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <p style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.5)', margin: '0 0 10px' }}>Reference Images ({order.reference_images.length})</p>
+        <div style={{ marginBottom: '24px' }}>
+          <p style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.5)', margin: '0 0 10px' }}>
+            Reference Images{order.reference_images?.length > 0 ? ` (${order.reference_images.length})` : ''}
+          </p>
+          {order.reference_images?.length > 0 ? (
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               {order.reference_images.map((img, i) => (
                 <img key={i} src={img} alt={`Ref ${i+1}`} onClick={() => setLightbox(img)}
                   style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(212,175,55,0.25)', cursor: 'pointer' }} />
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', margin: 0 }}>None uploaded</p>
+          )}
+        </div>
 
         {/* Instagram URL */}
-        {order.instagram_url && (
-          <div style={{ marginBottom: '24px' }}>
-            <p style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.5)', margin: '0 0 6px' }}>Instagram Reference</p>
-            <a href={order.instagram_url} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: '13px', color: '#D4AF37', wordBreak: 'break-all' }}>{order.instagram_url}</a>
-          </div>
-        )}
+        <div style={{ marginBottom: '24px' }}>
+          <p style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.5)', margin: '0 0 6px' }}>Instagram Reference</p>
+          {order.instagram_url ? (
+            <div>
+              <a href={order.instagram_url} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: '13px', color: '#D4AF37', fontWeight: 600, textDecoration: 'none' }}>View on Instagram</a>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', margin: '3px 0 0', wordBreak: 'break-all' }}>{order.instagram_url}</p>
+            </div>
+          ) : (
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', margin: 0 }}>Not specified</p>
+          )}
+        </div>
 
         {/* Status history */}
         {order.status_history?.length > 0 && (

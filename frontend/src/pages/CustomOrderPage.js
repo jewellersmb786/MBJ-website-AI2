@@ -50,7 +50,6 @@ const CustomOrderPage = () => {
     if (!formData.name.trim()) { toast.error('Name is required.'); return; }
     const digits = formData.phone.replace(/\D/g, '');
     if (digits.length < 10) { toast.error('Please enter a valid 10-digit phone number.'); return; }
-    if (formData.description.trim().length < 20) { toast.error('Description must be at least 20 characters.'); return; }
 
     setSubmitting(true);
     try {
@@ -59,8 +58,9 @@ const CustomOrderPage = () => {
         phone: formData.phone.trim(),
         email: formData.email.trim() || undefined,
         jewellery_type: formData.jewellery_type || 'Custom Design',
-        description: formData.description.trim(),
+        description: formData.description.trim() || undefined,
         reference_images: formData.reference_images,
+        instagram_url: formData.instagram_url.trim() || undefined,
         weight_requirement: formData.weight_requirement ? parseFloat(formData.weight_requirement) : undefined,
         occasion: formData.occasion || undefined,
         preferred_completion_date: formData.preferred_completion_date || undefined,
@@ -207,10 +207,10 @@ const CustomOrderPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">Description & Requirements *</label>
+                <label className="block text-sm font-semibold text-gray-300 mb-2">Description & Requirements</label>
                 <textarea name="description" value={formData.description} onChange={handleChange} rows="4"
                   className={inputCls} style={{ resize: 'vertical', minHeight: '100px' }}
-                  placeholder="Describe your custom jewellery requirements (min 20 characters)..." />
+                  placeholder="Describe your custom jewellery requirements..." />
               </div>
 
               {/* Weight + 22K Note */}
