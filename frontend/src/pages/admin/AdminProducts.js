@@ -1,8 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { adminAPI, categoriesAPI } from '../../api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, X, Upload, Save, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+// Build tree + flatten helpers
+const buildCatTree = (cats) => {
+  const roots = cats.filter(c => !c.parent_id).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const addChildren = (nodes, depth = 0) =>
+    nodes.map(n => ({
+      ...n, depth,
+      children: addChildren(cats.filter(c => c.parent_id === n.id).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)), depth + 1),
+    }));
+  return addChildren(roots);
+};
+const flattenCatTree = (nodes, result = []) => {
+  for (const n of nodes) { result.push(n); flattenCatTree(n.children, result); }
+  return result;
+};
 
 const AdminProducts = () => {
   const [categories, setCategories] = useState([]);
@@ -11,6 +26,9 @@ const AdminProducts = () => {
   const [loading, setLoading] = useState(true);
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [formCategoryId, setFormCategoryId] = useState('');
+  const [formFilterAttrs, setFormFilterAttrs] = useState([]);
+  const [formAttrValues, setFormAttrValues] = useState({});
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -39,13 +57,12 @@ const AdminProducts = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await categoriesAPI.getAll();
-      setCategories(response.data);
-      if (response.data.length > 0) {
-        setSelectedCategory(response.data[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+      const response = await adminAPI.categories.getAll();
+      setCategories(response.data || []);
+      const tops = (response.data || []).filter(c => !c.parent_id);
+      if (tops.length) setSelectedCategory(tops[0]);
+    } catch {
+      toast.error('Error fetching categories');
     } finally {
       setLoading(false);
     }
@@ -55,10 +72,23 @@ const AdminProducts = () => {
     try {
       const response = await adminAPI.products.getAll({ category_id: categoryId });
       setProducts(response.data);
-    } catch (error) {
-      console.error('Error fetching products:', error);
+    } catch {
+      toast.error('Error fetching products');
     }
   };
+
+  // Fetch filter attributes when form category changes
+  const loadFormFilterAttrs = useCallback(async (catId) => {
+    if (!catId) { setFormFilterAttrs([]); return; }
+    try {
+      const r = await adminAPI.filterAttributes.getByCategory(catId);
+      setFormFilterAttrs((r.data || []).filter(a => a.is_active));
+    } catch {
+      setFormFilterAttrs([]);
+    }
+  }, []);
+
+  useEffect(() => { loadFormFilterAttrs(formCategoryId); }, [formCategoryId, loadFormFilterAttrs]);
 
   const handleSingleImageUpload = (field) => (e) => {
     const file = e.target.files[0];
@@ -70,6 +100,9 @@ const AdminProducts = () => {
 
   const openAddModal = () => {
     setEditingProduct(null);
+    const defaultCatId = selectedCategory?.id || '';
+    setFormCategoryId(defaultCatId);
+    setFormAttrValues({});
     setFormData({
       name: '',
       description: '',
@@ -90,14 +123,16 @@ const AdminProducts = () => {
 
   const openEditModal = (product) => {
     setEditingProduct(product);
+    setFormCategoryId(product.category_id || '');
+    setFormAttrValues(product.attribute_values || {});
     setFormData({
       name: product.name,
       description: product.description || '',
-      weight: product.weight,
+      weight: String(product.weight ?? ''),
       purity: product.purity,
-      wastage_percent: product.wastage_percent,
-      making_charges: product.making_charges,
-      stone_charges: product.stone_charges,
+      wastage_percent: String(product.wastage_percent ?? ''),
+      making_charges: String(product.making_charges ?? ''),
+      stone_charges: String(product.stone_charges ?? ''),
       stock_status: product.stock_status,
       is_featured: product.is_featured,
       image_dummy: product.image_dummy || '',
@@ -116,14 +151,16 @@ const AdminProducts = () => {
       return;
     }
 
+    if (!formCategoryId) { toast.error('Please select a category'); return; }
     try {
       const payload = {
         ...formData,
-        category_id: selectedCategory.id,
-        weight: parseFloat(formData.weight),
-        wastage_percent: parseFloat(formData.wastage_percent || 0),
-        making_charges: parseFloat(formData.making_charges || 0),
-        stone_charges: parseFloat(formData.stone_charges || 0)
+        category_id: formCategoryId,
+        weight: parseFloat(formData.weight) || 0,
+        wastage_percent: parseFloat(formData.wastage_percent) || 0,
+        making_charges: parseFloat(formData.making_charges) || 0,
+        stone_charges: parseFloat(formData.stone_charges) || 0,
+        attribute_values: formAttrValues,
       };
 
       if (editingProduct) {
@@ -135,10 +172,9 @@ const AdminProducts = () => {
       }
 
       setShowProductModal(false);
-      fetchProducts(selectedCategory.id);
-    } catch (error) {
+      fetchProducts(selectedCategory?.id || formCategoryId);
+    } catch {
       toast.error('Error saving product');
-      console.error(error);
     }
   };
 
@@ -169,10 +205,10 @@ const AdminProducts = () => {
         <p className="text-gray-400">Add and manage products by category</p>
       </div>
 
-      {/* Category Tabs */}
+      {/* Category Tabs — top-level only */}
       <div className="bg-black/50 border border-[#D4AF37]/20 rounded-2xl p-4 mb-6">
         <div className="flex items-center gap-2 flex-wrap">
-          {categories.map((category) => (
+          {categories.filter(c => !c.parent_id).map((category) => (
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category)}
@@ -312,6 +348,20 @@ const AdminProducts = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Category picker (tree dropdown) */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">Category *</label>
+                  <select value={formCategoryId} onChange={e => { setFormCategoryId(e.target.value); setFormAttrValues({}); }}
+                    style={{ width: '100%', padding: '12px 14px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '12px', color: formCategoryId ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: '14px', outline: 'none', cursor: 'pointer' }}>
+                    <option value="">— Select category —</option>
+                    {flattenCatTree(buildCatTree(categories)).map(c => (
+                      <option key={c.id} value={c.id}>
+                        {'  '.repeat(c.depth)}{c.depth > 0 ? '↳ ' : ''}{c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Product Name */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2">Product Name *</label>
@@ -499,6 +549,25 @@ const AdminProducts = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* Attribute Values */}
+                {formFilterAttrs.length > 0 && (
+                  <div style={{ padding: '16px', background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '12px' }}>
+                    <p style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(212,175,55,0.7)', marginBottom: '14px', fontWeight: 600 }}>Product Attributes</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {formFilterAttrs.map(attr => (
+                        <div key={attr.id}>
+                          <label style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px' }}>{attr.display_name || attr.name}</label>
+                          <select value={formAttrValues[attr.name] || ''} onChange={e => setFormAttrValues(p => e.target.value ? { ...p, [attr.name]: e.target.value } : Object.fromEntries(Object.entries(p).filter(([k]) => k !== attr.name)))}
+                            style={{ width: '100%', padding: '10px 12px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '8px', color: formAttrValues[attr.name] ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: '13px', outline: 'none', cursor: 'pointer' }}>
+                            <option value="">— Not specified —</option>
+                            {(attr.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Submit Buttons */}
                 <div className="flex items-center gap-4 pt-4">

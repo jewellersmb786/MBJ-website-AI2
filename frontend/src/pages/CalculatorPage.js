@@ -38,8 +38,8 @@ const CalculatorPage = () => {
         k18_rate: response.data.k18_rate || 5400
       });
       setSettings(response.data);
-    } catch (error) {
-      console.error('Error fetching live gold rate:', error);
+    } catch {
+      // use default rates
     }
   };
 
@@ -86,9 +86,8 @@ const CalculatorPage = () => {
       });
       
       toast.success('Price calculated!');
-    } catch (error) {
+    } catch {
       toast.error('Error calculating price');
-      console.error('Error:', error);
     } finally {
       setCalculating(false);
     }
@@ -174,12 +173,11 @@ const CalculatorPage = () => {
                   Weight (grams) *
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   name="weight"
                   value={formData.weight}
                   onChange={handleChange}
-                  step="0.01"
-                  min="0"
                   className="w-full px-6 py-4 bg-black/50 border border-gold/30 rounded-xl text-white text-lg focus:ring-2 focus:ring-gold focus:border-transparent"
                   placeholder="Enter weight in grams"
                   required

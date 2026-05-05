@@ -85,6 +85,105 @@ async def seed_default_schemes(db, generate_uuid):
     await db.schemes.insert_many(docs)
 
 
+# ============================================================================
+# Default Filter Attributes — seeded per top-level category name
+# ============================================================================
+
+DEFAULT_FILTER_ATTRS = {
+    "Rings": [
+        {"name": "Gender",       "options": ["Men","Women","Unisex","Couple"],                         "display_order": 1},
+        {"name": "Style",        "options": ["Casting","Stone","Plain","Electroforming","Solitaire"],   "display_order": 2},
+        {"name": "Occasion",     "options": ["Daily Wear","Engagement","Wedding","Casual","Party"],    "display_order": 3},
+        {"name": "Stone Type",   "options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],        "display_order": 4},
+        {"name": "Metal Colour", "options": ["Yellow","White","Rose"],                                 "display_order": 5},
+    ],
+    "Necklaces": [
+        {"name": "Style",      "options": ["Choker","Princess","Matinee","Opera","Layered"],          "display_order": 1},
+        {"name": "Length",     "options": ["Short","Medium","Long"],                                  "display_order": 2},
+        {"name": "Occasion",   "options": ["Daily","Bridal","Festive","Casual","Party"],              "display_order": 3},
+        {"name": "Stone Type", "options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],        "display_order": 4},
+        {"name": "Gender",     "options": ["Women","Men"],                                            "display_order": 5},
+    ],
+    "Haram": [
+        {"name": "Style",      "options": ["U-shape","V-shape","Strap","Beaded","Multilayer","Lakshmi"], "display_order": 1},
+        {"name": "Occasion",   "options": ["Bridal","Festive","Temple"],                              "display_order": 2},
+        {"name": "Stone Type", "options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],        "display_order": 3},
+        {"name": "Length",     "options": ["Short","Long"],                                           "display_order": 4},
+    ],
+    "Bangles": [
+        {"name": "Style",        "options": ["Plain","Kada","Bridal Set","Daily Wear","Antique"],     "display_order": 1},
+        {"name": "Stone Type",   "options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],      "display_order": 2},
+        {"name": "Occasion",     "options": ["Daily","Bridal","Festive"],                             "display_order": 3},
+        {"name": "Set Quantity", "options": ["Single","Pair","Set of 4","Set of 6"],                 "display_order": 4},
+    ],
+    "Earrings": [
+        {"name": "Style",    "options": ["Studs","Drops","Hoops","Chandbali","Jhumka","Ear Cuff"],   "display_order": 1},
+        {"name": "Length",   "options": ["Small","Medium","Long"],                                   "display_order": 2},
+        {"name": "Occasion", "options": ["Daily","Bridal","Festive","Casual","Party"],               "display_order": 3},
+        {"name": "Stone Type","options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],        "display_order": 4},
+    ],
+    "Pendants": [
+        {"name": "Style",      "options": ["Religious","Initial","Geometric","Floral","Zodiac","Heart"], "display_order": 1},
+        {"name": "Stone Type", "options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],       "display_order": 2},
+        {"name": "Occasion",   "options": ["Daily","Festive","Gifting"],                             "display_order": 3},
+        {"name": "Gender",     "options": ["Men","Women","Unisex"],                                  "display_order": 4},
+    ],
+    "Bracelets": [
+        {"name": "Style",      "options": ["Tennis","Bangle-style","Charm","Solid","Chain"],         "display_order": 1},
+        {"name": "Stone Type", "options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],       "display_order": 2},
+        {"name": "Occasion",   "options": ["Daily","Party","Gifting"],                               "display_order": 3},
+        {"name": "Gender",     "options": ["Men","Women","Unisex"],                                  "display_order": 4},
+    ],
+    "Maang Tikka": [
+        {"name": "Style",      "options": ["Traditional","Modern","Polki","Kundan"],                 "display_order": 1},
+        {"name": "Stone Type", "options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],       "display_order": 2},
+        {"name": "Occasion",   "options": ["Bridal","Festive"],                                      "display_order": 3},
+    ],
+    "Bridal Collections": [
+        {"name": "Set Type",   "options": ["Necklace+Earrings","Necklace+Earrings+Tikka","Full Bridal Set"], "display_order": 1},
+        {"name": "Style",      "options": ["Traditional","Modern","Antique"],                        "display_order": 2},
+        {"name": "Stone Type", "options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],       "display_order": 3},
+    ],
+    "Nakshi Jewellery": [
+        {"name": "Period",     "options": ["Vintage","Reproduction"],                                "display_order": 1},
+        {"name": "Stone Type", "options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],       "display_order": 2},
+        {"name": "Style",      "options": ["Temple","Floral","Geometric","Figurative"],              "display_order": 3},
+    ],
+    "Antique Collections": [
+        {"name": "Period",     "options": ["Vintage","Reproduction"],                                "display_order": 1},
+        {"name": "Stone Type", "options": ["Diamond","Polki","Ruby","Emerald","Pearl","None"],       "display_order": 2},
+        {"name": "Style",      "options": ["Temple","Floral","Geometric","Figurative"],              "display_order": 3},
+    ],
+}
+
+
+async def seed_default_filter_attributes(db, generate_uuid):
+    """Seed per-category filter attributes. Idempotent per category."""
+    now = datetime.utcnow()
+    for cat_name, attr_defs in DEFAULT_FILTER_ATTRS.items():
+        cat = await db.categories.find_one({"name": cat_name}, {"_id": 0, "id": 1})
+        if not cat:
+            continue
+        cat_id = cat["id"]
+        existing = await db.filter_attributes.count_documents({"category_id": cat_id})
+        if existing > 0:
+            continue  # already seeded
+        docs = [
+            {
+                **a,
+                "id": generate_uuid(),
+                "category_id": cat_id,
+                "display_name": None,
+                "description": None,
+                "is_active": True,
+                "visible_options_count": 6,
+                "created_at": now,
+            }
+            for a in attr_defs
+        ]
+        await db.filter_attributes.insert_many(docs)
+
+
 DEFAULT_GEMSTONES = [
     {"name": "Ruby",                   "birth_month": 7,    "color_hex": "#C70039", "properties": "Symbolizes passion, vitality, and courage. Believed to attract prosperity and protect against misfortune. Worn for confidence and leadership.", "display_order": 1},
     {"name": "Emerald",                "birth_month": 5,    "color_hex": "#2E7D32", "properties": "Stone of harmony, love, and renewal. Said to enhance intuition and bring emotional balance. Associated with growth and wisdom.", "display_order": 2},

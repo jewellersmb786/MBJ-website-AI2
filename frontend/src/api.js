@@ -34,6 +34,12 @@ export const calculatorAPI = {
 export const categoriesAPI = {
   getAll: (activeOnly = true) => api.get(`/categories?active_only=${activeOnly}`),
   getById: (id) => api.get(`/categories/${id}`),
+  getDescendants: (id) => api.get(`/categories/${id}/descendants`),
+  getFilterAttributes: (id) => api.get(`/categories/${id}/filter-attributes`),
+};
+
+export const filterAttributesAPI = {
+  getByCategory: (categoryId) => api.get(`/categories/${categoryId}/filter-attributes`),
 };
 
 export const productsAPI = {
@@ -87,10 +93,17 @@ export const adminAPI = {
   },
   
   categories: {
-    getAll: () => api.get('/categories?active_only=false'),
+    getAll: () => api.get('/admin/categories'),
     create: (data) => api.post('/admin/categories', data),
     update: (id, data) => api.put(`/admin/categories/${id}`, data),
     delete: (id) => api.delete(`/admin/categories/${id}`),
+  },
+
+  filterAttributes: {
+    getByCategory: (categoryId) => api.get(`/admin/categories/${categoryId}/filter-attributes`),
+    create: (data) => api.post('/admin/filter-attributes', data),
+    update: (id, data) => api.put(`/admin/filter-attributes/${id}`, data),
+    delete: (id) => api.delete(`/admin/filter-attributes/${id}`),
   },
   
   products: {

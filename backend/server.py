@@ -1,5 +1,5 @@
 import re
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, File, UploadFile
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, File, UploadFile, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -139,6 +139,14 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Scheme seeding/migration failed (non-fatal): {e}")
 
+    # Seed default filter attributes per top-level category
+    try:
+        from seed_data import seed_default_filter_attributes
+        await seed_default_filter_attributes(db, lambda: str(uuid.uuid4()))
+        logger.info("Filter attribute seed check complete")
+    except Exception as e:
+        logger.error(f"Filter attribute seeding failed (non-fatal): {e}")
+
     # Seed default gemstones if collection is empty
     try:
         from seed_data import seed_default_gemstones
@@ -239,17 +247,50 @@ async def calculate_jewellery_price(calc: PriceCalculation):
         "purity": calc.purity
     }
 
+# ─── helper: collect all descendant IDs (including self) ────────────────────
+async def _get_descendant_ids(root_id: str) -> list:
+    all_cats = await db.categories.find({}, {"_id": 0, "id": 1, "parent_id": 1}).to_list(500)
+    ids = {root_id}
+    queue = [root_id]
+    while queue:
+        parent = queue.pop()
+        for c in all_cats:
+            if c.get("parent_id") == parent and c["id"] not in ids:
+                ids.add(c["id"])
+                queue.append(c["id"])
+    return list(ids)
+
+# ─── helper: resolve top-level ancestor ─────────────────────────────────────
+async def _get_top_level_id(category_id: str) -> str:
+    cat = await db.categories.find_one({"id": category_id}, {"_id": 0, "parent_id": 1})
+    if not cat:
+        return category_id
+    if not cat.get("parent_id"):
+        return category_id
+    return await _get_top_level_id(cat["parent_id"])
+
 # Categories
 @api_router.get("/categories", response_model=List[Category])
 async def get_categories(active_only: bool = True):
-    """Get all categories"""
     query = {"is_active": True} if active_only else {}
-    categories = await db.categories.find(query, {"_id": 0}).sort("order", 1).to_list(100)
+    categories = await db.categories.find(query, {"_id": 0}).sort("order", 1).to_list(500)
     return categories
 
-@api_router.get("/categories/{category_id}", response_model=Category)
+@api_router.get("/categories/{category_id}/descendants")
+async def get_category_descendants(category_id: str):
+    ids = await _get_descendant_ids(category_id)
+    return {"category_id": category_id, "descendant_ids": ids}
+
+@api_router.get("/categories/{category_id}/filter-attributes", response_model=List[FilterAttribute])
+async def get_filter_attributes_public(category_id: str):
+    top_id = await _get_top_level_id(category_id)
+    attrs = await db.filter_attributes.find(
+        {"category_id": top_id, "is_active": True}, {"_id": 0}
+    ).sort("display_order", 1).to_list(50)
+    return attrs
+
+@api_router.get("/categories/{category_id}")
 async def get_category(category_id: str):
-    """Get single category"""
     category = await db.categories.find_one({"id": category_id}, {"_id": 0})
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -268,25 +309,57 @@ def _adapt_product(doc: dict) -> dict:
 
 @api_router.get("/products", response_model=List[Product])
 async def get_products(
+    request: Request,
     category_id: Optional[str] = None,
     subcategory: Optional[str] = None,
     stock_status: Optional[str] = None,
     featured_only: bool = False,
     active_only: bool = True,
-    limit: int = 100
+    weight_min: Optional[float] = None,
+    weight_max: Optional[float] = None,
+    purity: Optional[str] = None,
+    name: Optional[str] = None,
+    item_code: Optional[str] = None,
+    limit: int = 1000
 ):
-    """Get products with filters"""
+    """Get products with filters — supports category descendants + attribute_values filters."""
+    _KNOWN = {"category_id","subcategory","stock_status","featured_only","active_only",
+              "weight_min","weight_max","purity","name","item_code","limit"}
+    attr_filters = {k: v for k, v in request.query_params.multi_items()
+                    if k not in _KNOWN}
+
     query = {}
     if active_only:
         query["is_active"] = True
     if category_id:
-        query["category_id"] = category_id
+        desc_ids = await _get_descendant_ids(category_id)
+        query["category_id"] = {"$in": desc_ids}
     if subcategory:
         query["subcategory"] = subcategory
     if stock_status:
         query["stock_status"] = stock_status
     if featured_only:
         query["is_featured"] = True
+    if name:
+        query["name"] = {"$regex": name, "$options": "i"}
+    if item_code:
+        query["item_code"] = {"$regex": item_code, "$options": "i"}
+    if weight_min is not None:
+        query.setdefault("weight", {})["$gte"] = weight_min
+    if weight_max is not None:
+        query.setdefault("weight", {})["$lte"] = weight_max
+    if purity:
+        query["purity"] = purity
+
+    # Attribute filters — OR within attribute, AND across attributes
+    if attr_filters:
+        # Collect multi-values per attribute key
+        attr_map: dict = {}
+        for k, v in attr_filters:
+            attr_map.setdefault(k, []).append(v)
+        for attr_name, values in attr_map.items():
+            field = f"attribute_values.{attr_name}"
+            query[field] = {"$in": values} if len(values) > 1 else values[0]
 
     products = await db.products.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
     return [_adapt_product(p) for p in products]
@@ -467,43 +540,76 @@ async def get_dashboard_stats(admin = Depends(get_current_admin)):
 # ADMIN APIs - Categories
 # ============================================================================
 
+@api_router.get("/admin/categories")
+async def get_all_categories_admin(admin = Depends(get_current_admin)):
+    return await db.categories.find({}, {"_id": 0}).sort("order", 1).to_list(500)
+
 @api_router.post("/admin/categories")
 async def create_category(category: CategoryCreate, admin = Depends(get_current_admin)):
-    """Create new category"""
     category_data = category.model_dump()
     category_data['id'] = generate_uuid()
-    category_data['slug'] = category.name.lower().replace(' ', '-')
-    category_data['is_active'] = True
+    category_data['slug'] = category.name.lower().replace(' ', '-').replace(' ', '_')
     category_data['created_at'] = datetime.utcnow()
-    
     await db.categories.insert_one(category_data)
     return {"message": "Category created successfully", "id": category_data['id']}
 
 @api_router.put("/admin/categories/{category_id}")
-async def update_category(category_id: str, updates: dict, admin = Depends(get_current_admin)):
-    """Update category"""
-    result = await db.categories.update_one(
-        {"id": category_id},
-        {"$set": updates}
-    )
+async def update_category(category_id: str, updates: CategoryUpdate, admin = Depends(get_current_admin)):
+    update_data = updates.model_dump(exclude_unset=True)
+    if "name" in update_data:
+        update_data["slug"] = update_data["name"].lower().replace(' ', '-')
+    result = await db.categories.update_one({"id": category_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Category not found")
     return {"message": "Category updated successfully"}
 
 @api_router.delete("/admin/categories/{category_id}")
 async def delete_category(category_id: str, admin = Depends(get_current_admin)):
-    """Hard-delete category after checking no products reference it."""
     exists = await db.categories.find_one({"id": category_id})
     if not exists:
         raise HTTPException(status_code=404, detail="Category not found")
+    children = await db.categories.count_documents({"parent_id": category_id})
+    if children > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete — {children} subcategor{'ies' if children != 1 else 'y'} exist under it. Delete those first.")
     product_count = await db.products.count_documents({"category_id": category_id})
     if product_count > 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Cannot delete category — {product_count} product{'s' if product_count != 1 else ''} still reference it. Delete or reassign those products first."
-        )
+        raise HTTPException(status_code=400, detail=f"Cannot delete — {product_count} product{'s' if product_count != 1 else ''} reference it. Reassign those products first.")
     await db.categories.delete_one({"id": category_id})
     return {"message": "Category deleted successfully"}
+
+# ============================================================================
+# Filter Attribute Endpoints
+# ============================================================================
+
+@api_router.get("/admin/categories/{category_id}/filter-attributes", response_model=List[FilterAttribute])
+async def get_filter_attributes_admin(category_id: str, admin = Depends(get_current_admin)):
+    top_id = await _get_top_level_id(category_id)
+    attrs = await db.filter_attributes.find({"category_id": top_id}, {"_id": 0}).sort("display_order", 1).to_list(50)
+    return attrs
+
+@api_router.post("/admin/filter-attributes")
+async def create_filter_attribute(attr: FilterAttributeCreate, admin = Depends(get_current_admin)):
+    data = attr.model_dump()
+    data['id'] = generate_uuid()
+    data['is_active'] = True
+    data['created_at'] = datetime.utcnow()
+    await db.filter_attributes.insert_one(data)
+    return {"message": "Filter attribute created", "id": data['id']}
+
+@api_router.put("/admin/filter-attributes/{attr_id}")
+async def update_filter_attribute(attr_id: str, updates: FilterAttributeUpdate, admin = Depends(get_current_admin)):
+    update_data = updates.model_dump(exclude_unset=True)
+    result = await db.filter_attributes.update_one({"id": attr_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Filter attribute not found")
+    return {"message": "Filter attribute updated"}
+
+@api_router.delete("/admin/filter-attributes/{attr_id}")
+async def delete_filter_attribute(attr_id: str, admin = Depends(get_current_admin)):
+    result = await db.filter_attributes.delete_one({"id": attr_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Filter attribute not found")
+    return {"message": "Filter attribute deleted"}
 
 # ============================================================================
 # ADMIN APIs - Products

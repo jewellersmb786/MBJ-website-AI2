@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { settingsAPI } from '../api';
+import React, { useState, useEffect, useRef } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { settingsAPI, categoriesAPI } from '../api';
 import { Phone, Menu, X, Mail, MessageCircle } from 'lucide-react';
 import CustomCursor from './CustomCursor';
 
@@ -48,15 +48,19 @@ const SOCIAL = [
 
 const Layout = () => {
   const [settings, setSettings] = useState(null);
+  const [allCategories, setAllCategories] = useState([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [collectionsHover, setCollectionsHover] = useState(false);
+  const hoverTimeout = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const isHome = location.pathname === '/';
 
   useEffect(() => {
-    // Use settingsAPI for EVERYTHING — rates, social links, all settings
     settingsAPI.getPublic().then(r => setSettings(r.data)).catch(() => {});
+    categoriesAPI.getAll(true).then(r => setAllCategories(r.data || [])).catch(() => {});
   }, []);
 
   useEffect(() => { setMobileMenuOpen(false); }, [location]);
@@ -210,33 +214,65 @@ const Layout = () => {
             }} className="desktop-nav">
               {NAV_LINKS.map(({ to, label }) => {
                 const act = isActive(to);
+                const isCollections = to === '/collections';
+
+                // Featured subcategories for hover dropdown
+                const featuredSubs = isCollections
+                  ? allCategories.filter(c => c.parent_id && c.is_featured_in_nav).slice(0, 8)
+                  : [];
+
+                const linkStyle = {
+                  flex: '1 1 0', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  textAlign: 'center', fontSize: scrolled ? '11px' : '12px', letterSpacing: '0.1em',
+                  textTransform: 'uppercase', fontWeight: act ? 600 : 400,
+                  color: act ? '#D4AF37' : 'rgba(255,255,255,0.65)',
+                  textDecoration: 'none', borderBottom: 'none',
+                  transition: 'color 0.2s, font-weight 0.2s, font-size 0.4s',
+                  padding: '0 2px', whiteSpace: 'nowrap', position: 'relative',
+                };
+
+                if (isCollections && featuredSubs.length > 0) {
+                  return (
+                    <div key={to} style={{ flex: '1 1 0', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      onMouseEnter={() => { clearTimeout(hoverTimeout.current); setCollectionsHover(true); }}
+                      onMouseLeave={() => { hoverTimeout.current = setTimeout(() => setCollectionsHover(false), 150); }}>
+                      <Link to={to} style={linkStyle}
+                        onMouseEnter={e => { if (!act) e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={e => { if (!act) e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}>
+                        {label}
+                      </Link>
+                      {collectionsHover && (
+                        <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', marginTop: '8px', background: 'rgba(8,8,8,0.97)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '10px', padding: '8px', minWidth: '180px', zIndex: 60, backdropFilter: 'blur(12px)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                          {featuredSubs.map(sub => {
+                            const topId = sub.parent_id;
+                            return (
+                              <button key={sub.id}
+                                onClick={() => { setCollectionsHover(false); navigate(`/collections?category=${topId}&scope=${sub.id}`); }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', fontSize: '12px', cursor: 'pointer', borderRadius: '6px', transition: 'background 0.15s, color 0.15s', textAlign: 'left' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.08)'; e.currentTarget.style.color = '#D4AF37'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}>
+                                {sub.display_image && <img src={sub.display_image} alt={sub.name} style={{ width: '22px', height: '22px', objectFit: 'cover', borderRadius: '4px' }} />}
+                                {sub.name}
+                              </button>
+                            );
+                          })}
+                          <div style={{ height: '1px', background: 'rgba(212,175,55,0.1)', margin: '6px 0' }} />
+                          <Link to="/collections" onClick={() => setCollectionsHover(false)}
+                            style={{ display: 'block', padding: '7px 12px', fontSize: '11px', color: 'rgba(212,175,55,0.6)', letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'none', transition: 'color 0.15s' }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                            onMouseLeave={e => e.currentTarget.style.color = 'rgba(212,175,55,0.6)'}>
+                            View All Collections →
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
-                  <Link
-                    key={to}
-                    to={to}
-                    style={{
-                      flex: '1 1 0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      // Bigger font, professional
-                      fontSize: scrolled ? '11px' : '12px',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase',
-                      fontWeight: act ? 600 : 400,
-                      // Active = gold color only, no underline
-                      color: act ? '#D4AF37' : 'rgba(255,255,255,0.65)',
-                      textDecoration: 'none',
-                      // NO border bottom at all
-                      borderBottom: 'none',
-                      transition: 'color 0.2s, font-weight 0.2s, font-size 0.4s',
-                      padding: '0 2px',
-                      whiteSpace: 'nowrap',
-                    }}
+                  <Link key={to} to={to} style={linkStyle}
                     onMouseEnter={e => { if (!act) e.currentTarget.style.color = '#fff'; }}
-                    onMouseLeave={e => { if (!act) e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}
-                  >
+                    onMouseLeave={e => { if (!act) e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}>
                     {label}
                   </Link>
                 );

@@ -27,6 +27,7 @@ import AdminCustomOrders from './pages/admin/AdminCustomOrders';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminSchemes from './pages/admin/AdminSchemes';
 import AdminSpiritual from './pages/admin/AdminSpiritual';
+import AdminFilterAttributes from './pages/admin/AdminFilterAttributes';
 
 // Layout
 import Layout from './components/Layout';
@@ -66,6 +67,7 @@ function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="schemes" element={<AdminSchemes />} />
             <Route path="spiritual" element={<AdminSpiritual />} />
+            <Route path="filter-attributes" element={<AdminFilterAttributes />} />
           </Route>
         </Routes>
       </BrowserRouter>

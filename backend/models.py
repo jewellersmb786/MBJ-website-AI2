@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime, date
 from enum import Enum
 
@@ -36,12 +36,14 @@ class GoldPurity(str, Enum):
 # Category Models
 class Category(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    
+
     id: str
     name: str
     slug: str
     display_image: Optional[str] = None
-    subcategories: List[str] = []  # ["men", "women"] or empty
+    subcategories: List[str] = []  # legacy — kept for backward compat
+    parent_id: Optional[str] = None   # null = top-level
+    is_featured_in_nav: bool = False   # show in top-nav hover menu (max 8 per top-level)
     order: int = 0
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -50,7 +52,50 @@ class CategoryCreate(BaseModel):
     name: str
     display_image: Optional[str] = None
     subcategories: List[str] = []
+    parent_id: Optional[str] = None
+    is_featured_in_nav: bool = False
     order: int = 0
+    is_active: bool = True
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    display_image: Optional[str] = None
+    parent_id: Optional[str] = None
+    is_featured_in_nav: Optional[bool] = None
+    order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+# Filter Attribute Models
+class FilterAttribute(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    category_id: str           # top-level category this attribute belongs to
+    name: str                  # e.g. "Gender"
+    display_name: Optional[str] = None
+    description: Optional[str] = None
+    options: List[str] = []    # e.g. ["Men", "Women", "Unisex"]
+    display_order: int = 0
+    is_active: bool = True
+    visible_options_count: int = 6
+    created_at: datetime
+
+class FilterAttributeCreate(BaseModel):
+    category_id: str
+    name: str
+    display_name: Optional[str] = None
+    description: Optional[str] = None
+    options: List[str] = []
+    display_order: int = 0
+    visible_options_count: int = 6
+
+class FilterAttributeUpdate(BaseModel):
+    name: Optional[str] = None
+    display_name: Optional[str] = None
+    description: Optional[str] = None
+    options: Optional[List[str]] = None
+    display_order: Optional[int] = None
+    is_active: Optional[bool] = None
+    visible_options_count: Optional[int] = None
 
 # Product Models
 class Product(BaseModel):
@@ -59,10 +104,10 @@ class Product(BaseModel):
     id: str
     name: str
     category_id: str
-    subcategory: Optional[str] = None
-    image_dummy: Optional[str] = None   # item on stand/bust
-    image_model: Optional[str] = None   # item on a person
-    item_code: Optional[str] = None     # e.g. "N142"
+    subcategory: Optional[str] = None   # deprecated — kept for backward compat
+    image_dummy: Optional[str] = None
+    image_model: Optional[str] = None
+    item_code: Optional[str] = None
     instagram_url: Optional[str] = None
     description: Optional[str] = None
     weight: float
@@ -71,6 +116,7 @@ class Product(BaseModel):
     stone_charges: float = 0.0
     purity: GoldPurity = GoldPurity.K22
     stock_status: StockStatus = StockStatus.IN_STOCK
+    attribute_values: Dict[str, str] = {}   # e.g. {"Gender": "Women", "Style": "U-shape"}
     is_featured: bool = False
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -91,6 +137,7 @@ class ProductCreate(BaseModel):
     stone_charges: float = 0.0
     purity: str = "22k"
     stock_status: str = "in_stock"
+    attribute_values: Dict[str, str] = {}
     is_featured: bool = False
 
 class ProductUpdate(BaseModel):
@@ -108,6 +155,7 @@ class ProductUpdate(BaseModel):
     stone_charges: Optional[float] = None
     purity: Optional[str] = None
     stock_status: Optional[str] = None
+    attribute_values: Optional[Dict[str, str]] = None
     is_featured: Optional[bool] = None
     is_active: Optional[bool] = None
 

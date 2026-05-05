@@ -219,8 +219,8 @@ const CustomOrderPage = () => {
                   <label className="block text-sm font-semibold text-gray-300 mb-2">
                     Weight Requirement (grams) <span className="text-gray-500 font-normal">(optional)</span>
                   </label>
-                  <input type="number" name="weight_requirement" value={formData.weight_requirement}
-                    onChange={handleChange} step="0.5" min="0"
+                  <input type="text" inputMode="decimal" name="weight_requirement" value={formData.weight_requirement}
+                    onChange={handleChange}
                     className={inputCls} placeholder="e.g. 25 — leave blank if unsure" />
                 </div>
                 <div style={{ border: '1px solid rgba(212,175,55,0.3)', borderRadius: '8px', padding: '12px 16px', alignSelf: 'flex-end', color: '#D4AF37', fontStyle: 'italic', fontSize: '13px', lineHeight: 1.5 }}>
