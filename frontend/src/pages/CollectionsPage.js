@@ -454,7 +454,7 @@ const CollectionsPage = () => {
 
         <div style={{ display: 'flex', gap: '28px', alignItems: 'flex-start' }}>
           {/* Filter sidebar */}
-          <div style={{ width: '210px', flexShrink: 0, position: 'sticky', top: '88px' }}>
+          <div style={{ width: '210px', flexShrink: 0, position: 'sticky', top: '88px', overflowX: 'hidden' }}>
             <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '10px', padding: '18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
                 <Filter size={14} color="#D4AF37" />
@@ -499,12 +499,12 @@ const CollectionsPage = () => {
               <div style={{ marginBottom: '18px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                 <p style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.38)', margin: '0 0 10px' }}>Weight (g)</p>
                 <div style={{ display: 'flex', gap: '6px' }}>
-                  <input type="number" step="0.5" placeholder="Min" value={weightMin}
+                  <input type="text" inputMode="decimal" placeholder="Min" value={weightMin}
                     onChange={e => setWeightMin(e.target.value)}
-                    style={{ flex: 1, padding: '6px 8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '6px', color: '#D4AF37', fontSize: '12px', outline: 'none', boxSizing: 'border-box' }} />
-                  <input type="number" step="0.5" placeholder="Max" value={weightMax}
+                    style={{ flex: 1, minWidth: 0, width: '100%', padding: '6px 8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '6px', color: '#D4AF37', fontSize: '12px', outline: 'none', boxSizing: 'border-box' }} />
+                  <input type="text" inputMode="decimal" placeholder="Max" value={weightMax}
                     onChange={e => setWeightMax(e.target.value)}
-                    style={{ flex: 1, padding: '6px 8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '6px', color: '#D4AF37', fontSize: '12px', outline: 'none', boxSizing: 'border-box' }} />
+                    style={{ flex: 1, minWidth: 0, width: '100%', padding: '6px 8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '6px', color: '#D4AF37', fontSize: '12px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
 

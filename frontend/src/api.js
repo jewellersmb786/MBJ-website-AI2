@@ -48,7 +48,7 @@ export const productsAPI = {
 };
 
 export const customOrderAPI = {
-  create: (data) => api.post('/custom-order', data),
+  create: (data) => api.post('/custom-orders', data),
 };
 
 export const orderAPI = {

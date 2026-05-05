@@ -404,7 +404,7 @@ async def get_product(product_id: str):
     return _adapt_product(product)
 
 # Custom Order Inquiry
-@api_router.post("/custom-order")
+@api_router.post("/custom-orders")
 async def create_custom_order_inquiry(inquiry: CustomOrderInquiryCreate):
     """Submit custom order inquiry"""
     inquiry_data = inquiry.model_dump()
