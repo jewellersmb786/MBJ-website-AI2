@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { categoriesAPI, productsAPI, settingsAPI } from '../api';
+import WishlistButton from '../components/WishlistButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Filter, Share2, Copy, X, Search, ChevronDown, ChevronUp, Info } from 'lucide-react';
 
@@ -273,10 +274,11 @@ const CollectionsPage = () => {
                 {product.item_code}
               </div>
             )}
-            <div style={{ position: 'absolute', top: '8px', right: '8px' }}>
+            <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
               <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '20px', backdropFilter: 'blur(6px)', background: product.stock_status === 'in_stock' ? 'rgba(34,197,94,0.2)' : 'rgba(251,146,60,0.2)', color: product.stock_status === 'in_stock' ? '#4ade80' : '#fb923c' }}>
                 {product.stock_status === 'in_stock' ? 'In Stock' : 'MTO'}
               </span>
+              <WishlistButton productId={product.id} size={13} />
             </div>
           </div>
           <div style={{ padding: '14px 16px 18px' }}>

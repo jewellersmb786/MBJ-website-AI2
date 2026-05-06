@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { settingsAPI, categoriesAPI } from '../api';
+import { settingsAPI, categoriesAPI, testimonialsAPI, festivalBannersAPI } from '../api';
 import * as LucideIcons from 'lucide-react';
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const FALLBACK_HERO = 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/ui57govy_Lucid_Realism_Take_reference_from_the_images_which_I_have_shar_0.jpg';
 const FALLBACK_PARALLAX = 'https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/p6odm8yi_bridal%203.jpg';
@@ -29,19 +29,92 @@ const sectionHeaderStyle = {
   marginBottom: '56px',
 };
 
+const Stars = ({ rating }) => (
+  <span style={{ letterSpacing: '-1px', fontSize: '16px' }}>
+    {[1,2,3,4,5].map(i => <span key={i} style={{ color: i <= rating ? '#D4AF37' : 'rgba(255,255,255,0.15)' }}>★</span>)}
+  </span>
+);
+
 const HomePage = () => {
   const [settings, setSettings] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [testimonials, setTestimonials] = useState([]);
+  const [festivalBanner, setFestivalBanner] = useState(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const touchStart = useRef(null);
+  const touchEnd = useRef(null);
 
   useEffect(() => {
     settingsAPI.getPublic().then(r => setSettings(r.data)).catch(() => {});
     categoriesAPI.getAll().then(r => setCategories(r.data)).catch(() => {});
+    testimonialsAPI.getFeatured().then(r => setTestimonials(r.data || [])).catch(() => {});
+    festivalBannersAPI.getActive().then(r => {
+      const b = r.data;
+      if (b) {
+        const dismissed = sessionStorage.getItem(`festival_banner_dismissed_${b.id}`);
+        setFestivalBanner(b);
+        setBannerDismissed(Boolean(dismissed));
+      }
+    }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const fn = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', fn, { passive: true });
+    return () => window.removeEventListener('resize', fn);
+  }, []);
+
+  const visibleCount = windowWidth >= 768 ? 3 : 1;
+
+  useEffect(() => {
+    if (testimonials.length <= visibleCount) return;
+    const timer = setInterval(() => setCarouselIndex(i => (i + 1) % testimonials.length), 6000);
+    return () => clearInterval(timer);
+  }, [testimonials.length, visibleCount]);
+
+  const prevSlide = () => setCarouselIndex(i => (i - 1 + testimonials.length) % testimonials.length);
+  const nextSlide = () => setCarouselIndex(i => (i + 1) % testimonials.length);
+
+  const handleDismissBanner = () => {
+    if (festivalBanner) sessionStorage.setItem(`festival_banner_dismissed_${festivalBanner.id}`, '1');
+    setBannerDismissed(true);
+  };
+
+  const getDisplayedTestimonials = () => {
+    if (!testimonials.length) return [];
+    const count = Math.min(visibleCount, testimonials.length);
+    return Array.from({ length: count }, (_, i) => testimonials[(carouselIndex + i) % testimonials.length]);
+  };
 
   const heroImage = settings?.hero_image_url || FALLBACK_HERO;
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff' }}>
+
+      {/* ══════════════════════
+          FESTIVAL BANNER
+      ══════════════════════ */}
+      {festivalBanner && !bannerDismissed && (
+        <div style={{ position: 'relative', width: '100%', zIndex: 5, lineHeight: 0 }}>
+          {festivalBanner.click_link ? (
+            <a href={festivalBanner.click_link} style={{ display: 'block' }}>
+              <img src={festivalBanner.image} alt={festivalBanner.title || 'Promo'} className="festival-desktop-img" style={{ width: '100%', display: 'block', maxHeight: '200px', objectFit: 'cover' }} />
+              {festivalBanner.image_mobile && <img src={festivalBanner.image_mobile} alt={festivalBanner.title || 'Promo'} className="festival-mobile-img" style={{ width: '100%', display: 'none', objectFit: 'cover' }} />}
+            </a>
+          ) : (
+            <>
+              <img src={festivalBanner.image} alt={festivalBanner.title || 'Promo'} className="festival-desktop-img" style={{ width: '100%', display: 'block', maxHeight: '200px', objectFit: 'cover' }} />
+              {festivalBanner.image_mobile && <img src={festivalBanner.image_mobile} alt={festivalBanner.title || 'Promo'} className="festival-mobile-img" style={{ width: '100%', display: 'none', objectFit: 'cover' }} />}
+            </>
+          )}
+          <button onClick={handleDismissBanner}
+            style={{ position: 'absolute', top: '10px', right: '12px', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', lineHeight: 1 }}>
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* ══════════════════════
           HERO — image only
@@ -232,11 +305,112 @@ const HomePage = () => {
         );
       })()}
 
+      {/* ══════════════════════
+          TESTIMONIALS CAROUSEL
+      ══════════════════════ */}
+      {testimonials.length > 0 && (
+        <section style={{ padding: '100px 0', background: '#080808' }}>
+          <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 32px' }}>
+            <div style={sectionHeaderStyle}>
+              <p style={{ fontSize: '10px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.6)', marginBottom: '12px' }}>Our Customers</p>
+              <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', fontFamily: 'Georgia, serif', fontWeight: 400, color: '#fff', marginBottom: '16px' }}>What our customers say</h2>
+              <div style={{ width: '40px', height: '1px', background: '#D4AF37', margin: '0 auto' }} />
+            </div>
+
+            {/* Carousel */}
+            <div style={{ position: 'relative' }}
+              onTouchStart={e => { touchStart.current = e.targetTouches[0].clientX; }}
+              onTouchMove={e => { touchEnd.current = e.targetTouches[0].clientX; }}
+              onTouchEnd={() => {
+                if (touchStart.current === null || touchEnd.current === null) return;
+                const diff = touchStart.current - touchEnd.current;
+                if (Math.abs(diff) > 50) { diff > 0 ? nextSlide() : prevSlide(); }
+                touchStart.current = null; touchEnd.current = null;
+              }}
+            >
+              {testimonials.length > visibleCount && (
+                <>
+                  <button onClick={prevSlide} style={{ position: 'absolute', left: '-18px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button onClick={nextSlide} style={{ position: 'absolute', right: '-18px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ChevronRight size={18} />
+                  </button>
+                </>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(visibleCount, testimonials.length)}, 1fr)`, gap: '20px' }}>
+                {getDisplayedTestimonials().map((t, i) => (
+                  <div key={`${t.id}-${i}`} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.12)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {t.customer_photo ? (
+                        <img src={t.customer_photo} alt={t.customer_name} style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(212,175,55,0.3)', flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(212,175,55,0.1)', border: '2px solid rgba(212,175,55,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontFamily: 'Georgia, serif', fontSize: '18px', color: '#D4AF37' }}>{t.customer_name.charAt(0)}</span>
+                        </div>
+                      )}
+                      <div>
+                        <p style={{ fontSize: '14px', color: '#fff', fontWeight: 600, margin: '0 0 3px' }}>{t.customer_name}</p>
+                        <Stars rating={t.rating} />
+                      </div>
+                    </div>
+                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, margin: 0, flex: 1 }}>
+                      {t.review_text.length > 150 ? t.review_text.slice(0, 150) + '…' : t.review_text}
+                    </p>
+                    {t.product_image && (
+                      <img src={t.product_image} alt="Item" style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(212,175,55,0.2)' }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Dots */}
+              {testimonials.length > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '24px' }}>
+                  {testimonials.map((_, i) => (
+                    <button key={i} onClick={() => setCarouselIndex(i)}
+                      style={{ width: i === carouselIndex ? '20px' : '6px', height: '6px', borderRadius: '3px', border: 'none', background: i === carouselIndex ? '#D4AF37' : 'rgba(212,175,55,0.25)', cursor: 'pointer', padding: 0, transition: 'all 0.3s' }} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Google rating + share link row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginTop: '32px', flexWrap: 'wrap' }}>
+              {settings?.google_review_rating && (
+                <a href={settings.google_maps_review_url || '#'} target={settings.google_maps_review_url ? '_blank' : '_self'} rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontSize: '13px', transition: 'border-color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(212,175,55,0.3)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+                >
+                  <span style={{ color: '#D4AF37', fontSize: '15px' }}>★</span>
+                  <span style={{ fontWeight: 600 }}>{settings.google_review_rating}</span>
+                  {settings.google_review_count && <span style={{ color: 'rgba(255,255,255,0.4)' }}>({settings.google_review_count} reviews)</span>}
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>on Google</span>
+                </a>
+              )}
+              <Link to="/share-review"
+                style={{ fontSize: '13px', color: 'rgba(212,175,55,0.7)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                onMouseLeave={e => e.currentTarget.style.color = 'rgba(212,175,55,0.7)'}
+              >
+                Share your experience →
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       <style>{`
         .spec-tile:hover .spec-img { transform: scale(1.06); }
         @keyframes bounce {
           0%, 100% { transform: translateX(-50%) translateY(0); }
           50% { transform: translateX(-50%) translateY(8px); }
+        }
+        @media (max-width: 640px) {
+          .festival-desktop-img { display: none !important; }
+          .festival-mobile-img { display: block !important; }
         }
         @media (max-width: 768px) {
           section > div > div[style*="grid-template-columns: 1fr 1fr"] {

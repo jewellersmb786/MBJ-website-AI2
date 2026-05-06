@@ -15,6 +15,8 @@ import ContactPage from './pages/ContactPage';
 import SchemesPage from './pages/SchemesPage';
 import SchemeDetailPage from './pages/SchemeDetailPage';
 import SpiritualPage from './pages/SpiritualPage';
+import ShareReviewPage from './pages/ShareReviewPage';
+import WishlistPage from './pages/WishlistPage';
 
 // Admin Pages
 import AdminLogin from './pages/admin/AdminLogin';
@@ -28,6 +30,8 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminSchemes from './pages/admin/AdminSchemes';
 import AdminSpiritual from './pages/admin/AdminSpiritual';
 import AdminFilterAttributes from './pages/admin/AdminFilterAttributes';
+import AdminTestimonials from './pages/admin/AdminTestimonials';
+import AdminBanners from './pages/admin/AdminBanners';
 
 // Layout
 import Layout from './components/Layout';
@@ -52,7 +56,9 @@ function App() {
             <Route path="contact" element={<ContactPage />} />
             <Route path="schemes" element={<SchemesPage />} />
             <Route path="schemes/:id" element={<SchemeDetailPage />} />
-<Route path="spiritual" element={<SpiritualPage />} />
+            <Route path="spiritual" element={<SpiritualPage />} />
+            <Route path="share-review" element={<ShareReviewPage />} />
+            <Route path="wishlist" element={<WishlistPage />} />
           </Route>
 
           {/* Admin Routes */}
@@ -68,6 +74,8 @@ function App() {
             <Route path="schemes" element={<AdminSchemes />} />
             <Route path="spiritual" element={<AdminSpiritual />} />
             <Route path="filter-attributes" element={<AdminFilterAttributes />} />
+            <Route path="testimonials" element={<AdminTestimonials />} />
+            <Route path="banners" element={<AdminBanners />} />
           </Route>
         </Routes>
       </BrowserRouter>

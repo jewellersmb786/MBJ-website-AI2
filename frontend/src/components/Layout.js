@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { settingsAPI, categoriesAPI } from '../api';
-import { Phone, Menu, X, Mail, MessageCircle } from 'lucide-react';
+import { Phone, Menu, X, Mail, MessageCircle, Heart } from 'lucide-react';
 import CustomCursor from './CustomCursor';
 
 const LOGO_URL = 'https://i.ibb.co/DHmMcnm9/openart-image-rw2-Sfjg-1736872346359-raw-removebg-preview-1.png';
@@ -32,9 +32,10 @@ const NAV_LINKS = [
   { to: '/', label: 'Home' },
   { to: '/collections', label: 'Collections' },
   { to: '/schemes', label: 'Schemes' },
-{ to: '/spiritual', label: 'Spiritual' },
+  { to: '/spiritual', label: 'Spiritual' },
   { to: '/calculator', label: 'Quotation' },
   { to: '/custom-order', label: 'Customisation' },
+  { to: '/wishlist', label: 'Wishlist', icon: Heart },
   { to: '/about', label: 'About Us' },
   { to: '/contact', label: 'Contact' },
 ];
@@ -212,7 +213,7 @@ const Layout = () => {
               flex: 1,
               height: '100%',
             }} className="desktop-nav">
-              {NAV_LINKS.map(({ to, label }) => {
+              {NAV_LINKS.map(({ to, label, icon: NavIcon }) => {
                 const act = isActive(to);
                 const isCollections = to === '/collections';
 
@@ -273,7 +274,7 @@ const Layout = () => {
                   <Link key={to} to={to} style={linkStyle}
                     onMouseEnter={e => { if (!act) e.currentTarget.style.color = '#fff'; }}
                     onMouseLeave={e => { if (!act) e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}>
-                    {label}
+                    {NavIcon ? <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><NavIcon size={11} />{label}</span> : label}
                   </Link>
                 );
               })}

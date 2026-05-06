@@ -82,6 +82,22 @@ export const spiritualInquiriesAPI = {
   create: (data) => api.post('/spiritual-inquiries', data),
 };
 
+export const testimonialsAPI = {
+  getFeatured: () => api.get('/testimonials/featured'),
+  getAll: () => api.get('/testimonials'),
+  submit: (data) => api.post('/testimonials', data),
+};
+
+export const festivalBannersAPI = {
+  getActive: () => api.get('/festival-banner/active'),
+};
+
+export const wishlistAPI = {
+  get: (phone) => api.get(`/wishlist/${encodeURIComponent(phone)}`),
+  add: (phone, productId) => api.post('/wishlist/add', { customer_phone: phone, product_id: productId }),
+  remove: (phone, productId) => api.post('/wishlist/remove', { customer_phone: phone, product_id: productId }),
+};
+
 
 // Admin API calls
 export const adminAPI = {
@@ -168,6 +184,21 @@ export const adminAPI = {
     getAll: () => api.get('/admin/spiritual-inquiries'),
     updateStatus: (id, status) => api.put(`/admin/spiritual-inquiries/${id}/status`, null, { params: { status } }),
     delete: (id) => api.delete(`/admin/spiritual-inquiries/${id}`),
+  },
+
+  testimonials: {
+    getAll: (filters = {}) => api.get('/admin/testimonials', { params: filters }),
+    approve: (id) => api.put(`/admin/testimonials/${id}/approve`),
+    reject: (id) => api.put(`/admin/testimonials/${id}/reject`),
+    toggleFeatured: (id, isFeatured) => api.put(`/admin/testimonials/${id}/feature`, { is_featured: isFeatured }),
+    delete: (id) => api.delete(`/admin/testimonials/${id}`),
+  },
+
+  festivalBanners: {
+    getAll: () => api.get('/admin/festival-banners'),
+    create: (data) => api.post('/admin/festival-banners', data),
+    update: (id, data) => api.put(`/admin/festival-banners/${id}`, data),
+    delete: (id) => api.delete(`/admin/festival-banners/${id}`),
   },
   
   settings: {

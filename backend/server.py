@@ -504,6 +504,9 @@ async def get_public_settings():
             {"icon": "Award", "title": "BIS Hallmarked Gold", "description": "Certified purity and quality on every piece we craft"},
             {"icon": "Shield", "title": "Transparent Pricing", "description": "Live gold rates with detailed price breakdown — no hidden charges"},
         ]),
+        "google_maps_review_url": settings.get("google_maps_review_url"),
+        "google_review_rating": settings.get("google_review_rating"),
+        "google_review_count": settings.get("google_review_count"),
     }
 
 # ============================================================================
@@ -1197,6 +1200,181 @@ async def delete_spiritual_inquiry(inquiry_id: str, admin = Depends(get_current_
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Inquiry not found")
     return {"message": "Inquiry deleted"}
+
+# ============================================================================
+# Testimonials
+# ============================================================================
+
+@api_router.post("/testimonials")
+async def submit_testimonial(t: TestimonialCreate):
+    if not t.customer_name.strip():
+        raise HTTPException(status_code=400, detail="Name is required")
+    if len(re.sub(r'\D', '', t.customer_phone)) < 10:
+        raise HTTPException(status_code=400, detail="Valid 10-digit phone required")
+    if not (1 <= t.rating <= 5):
+        raise HTTPException(status_code=400, detail="Rating must be 1-5")
+    if len(t.review_text.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Review must be at least 10 characters")
+    uid = generate_uuid()
+    data = t.model_dump()
+    data['id'] = uid
+    data['status'] = 'pending'
+    data['is_featured'] = False
+    data['submitted_at'] = datetime.utcnow()
+    data['approved_at'] = None
+    await db.testimonials.insert_one(data)
+    return {"message": "Review submitted successfully", "id": uid}
+
+@api_router.get("/testimonials/featured")
+async def get_featured_testimonials():
+    docs = await db.testimonials.find(
+        {"status": "approved", "is_featured": True}, {"_id": 0, "customer_phone": 0}
+    ).sort("approved_at", -1).to_list(12)
+    return docs
+
+@api_router.get("/testimonials")
+async def get_approved_testimonials():
+    docs = await db.testimonials.find(
+        {"status": "approved"}, {"_id": 0, "customer_phone": 0}
+    ).sort("approved_at", -1).to_list(50)
+    return docs
+
+@api_router.get("/admin/testimonials")
+async def admin_get_testimonials(status: Optional[str] = None, admin = Depends(get_current_admin)):
+    q = {}
+    if status and status in ('pending', 'approved', 'rejected'):
+        q['status'] = status
+    return await db.testimonials.find(q, {"_id": 0}).sort("submitted_at", -1).to_list(500)
+
+@api_router.put("/admin/testimonials/{tid}/approve")
+async def approve_testimonial(tid: str, admin = Depends(get_current_admin)):
+    result = await db.testimonials.update_one(
+        {"id": tid}, {"$set": {"status": "approved", "approved_at": datetime.utcnow()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+    return {"message": "Approved"}
+
+@api_router.put("/admin/testimonials/{tid}/reject")
+async def reject_testimonial(tid: str, admin = Depends(get_current_admin)):
+    result = await db.testimonials.update_one({"id": tid}, {"$set": {"status": "rejected"}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+    return {"message": "Rejected"}
+
+@api_router.put("/admin/testimonials/{tid}/feature")
+async def feature_testimonial(tid: str, body: ToggleFeaturedBody, admin = Depends(get_current_admin)):
+    doc = await db.testimonials.find_one({"id": tid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+    if doc.get("status") != "approved":
+        raise HTTPException(status_code=400, detail="Only approved testimonials can be featured")
+    await db.testimonials.update_one({"id": tid}, {"$set": {"is_featured": body.is_featured}})
+    return {"message": "Updated"}
+
+@api_router.delete("/admin/testimonials/{tid}")
+async def delete_testimonial(tid: str, admin = Depends(get_current_admin)):
+    result = await db.testimonials.delete_one({"id": tid})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+    return {"message": "Deleted"}
+
+# ============================================================================
+# Festival Banners
+# ============================================================================
+
+@api_router.get("/festival-banner/active")
+async def get_active_festival_banner():
+    doc = await db.festival_banners.find_one({"is_active": True}, {"_id": 0})
+    return doc
+
+@api_router.get("/admin/festival-banners")
+async def admin_get_festival_banners(admin = Depends(get_current_admin)):
+    return await db.festival_banners.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+
+@api_router.post("/admin/festival-banners")
+async def admin_create_festival_banner(banner: FestivalBannerCreate, admin = Depends(get_current_admin)):
+    uid = generate_uuid()
+    data = banner.model_dump()
+    data['id'] = uid
+    data['is_active'] = False
+    data['created_at'] = datetime.utcnow()
+    await db.festival_banners.insert_one(data)
+    del data['_id']
+    return data
+
+@api_router.put("/admin/festival-banners/{bid}")
+async def admin_update_festival_banner(bid: str, updates: FestivalBannerUpdate, admin = Depends(get_current_admin)):
+    update_data = updates.model_dump(exclude_none=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No updates provided")
+    if update_data.get("is_active"):
+        await db.festival_banners.update_many({"id": {"$ne": bid}}, {"$set": {"is_active": False}})
+    result = await db.festival_banners.update_one({"id": bid}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Banner not found")
+    return {"message": "Updated"}
+
+@api_router.delete("/admin/festival-banners/{bid}")
+async def admin_delete_festival_banner(bid: str, admin = Depends(get_current_admin)):
+    result = await db.festival_banners.delete_one({"id": bid})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Banner not found")
+    return {"message": "Deleted"}
+
+# ============================================================================
+# Wishlist
+# ============================================================================
+
+@api_router.get("/wishlist/{phone}")
+async def get_wishlist(phone: str):
+    phone_clean = re.sub(r'\D', '', phone)
+    wl = await db.wishlists.find_one({"customer_phone": phone_clean}, {"_id": 0})
+    if not wl:
+        return {"customer_phone": phone_clean, "product_ids": [], "products": []}
+    product_ids = wl.get("product_ids", [])
+    products = []
+    for pid in product_ids:
+        p = await db.products.find_one(
+            {"id": pid, "is_active": True},
+            {"_id": 0, "id": 1, "name": 1, "item_code": 1, "weight": 1, "purity": 1,
+             "image_dummy": 1, "image_model": 1, "category_id": 1, "stock_status": 1}
+        )
+        if p:
+            products.append(p)
+    return {**wl, "products": products}
+
+@api_router.post("/wishlist/add")
+async def add_to_wishlist(body: WishlistAddItem):
+    phone_clean = re.sub(r'\D', '', body.customer_phone)
+    now = datetime.utcnow()
+    wl = await db.wishlists.find_one({"customer_phone": phone_clean})
+    if not wl:
+        uid = generate_uuid()
+        await db.wishlists.insert_one({
+            "id": uid, "customer_phone": phone_clean,
+            "product_ids": [body.product_id], "created_at": now, "updated_at": now
+        })
+    elif body.product_id not in wl.get("product_ids", []):
+        await db.wishlists.update_one(
+            {"customer_phone": phone_clean},
+            {"$push": {"product_ids": body.product_id}, "$set": {"updated_at": now}}
+        )
+    updated = await db.wishlists.find_one({"customer_phone": phone_clean}, {"_id": 0})
+    return updated
+
+@api_router.post("/wishlist/remove")
+async def remove_from_wishlist(body: WishlistRemoveItem):
+    phone_clean = re.sub(r'\D', '', body.customer_phone)
+    now = datetime.utcnow()
+    await db.wishlists.update_one(
+        {"customer_phone": phone_clean},
+        {"$pull": {"product_ids": body.product_id}, "$set": {"updated_at": now}}
+    )
+    updated = await db.wishlists.find_one({"customer_phone": phone_clean}, {"_id": 0})
+    if not updated:
+        return {"customer_phone": phone_clean, "product_ids": []}
+    return updated
 
 # ============================================================================
 # Include router and setup

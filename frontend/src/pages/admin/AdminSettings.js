@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI, categoriesAPI } from '../../api';
-import { Save, TrendingUp, Store, Share2, Image, FileText, Upload, X, Layout } from 'lucide-react';
+import { Save, TrendingUp, Store, Share2, Image, FileText, Upload, X, Layout, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminSettings = () => {
@@ -34,6 +34,9 @@ const AdminSettings = () => {
     cta_banner_subtext: '',
     cta_banner_button_text: 'Explore Collections',
     cta_banner_button_link: '/collections',
+    google_maps_review_url: '',
+    google_review_rating: '',
+    google_review_count: '',
     mbj_difference: [
       { icon: 'Sparkles', title: 'Authentic Nakshi Work', description: 'Traditional handcrafted Nakshi jewellery with intricate embossed detailing' },
       { icon: 'Award', title: 'BIS Hallmarked Gold', description: 'Certified purity and quality on every piece we craft' },
@@ -62,8 +65,8 @@ const AdminSettings = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const isNum = ['k24_rate','k22_rate','k18_rate','gst_percent','advance_payment_percent'].includes(name);
-    setSettings(prev => ({ ...prev, [name]: isNum ? parseFloat(value) || 0 : value }));
+    const isNum = ['k24_rate','k22_rate','k18_rate','gst_percent','advance_payment_percent','google_review_rating','google_review_count'].includes(name);
+    setSettings(prev => ({ ...prev, [name]: isNum ? (parseFloat(value) || '') : value }));
   };
 
   const handleHeroImageUpload = (e) => {
@@ -453,6 +456,33 @@ const AdminSettings = () => {
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>Icon name must be a valid lucide-react icon (e.g. Sparkles, Award, Shield, Star, Gem)</p>
             </div>
           </div>
+        </div>
+
+        {/* ── REVIEWS & SOCIAL PROOF ── */}
+        <div style={sectionStyle}>
+          {sectionTitle(<Star size={20} />, 'Reviews & Social Proof', 'Displayed alongside testimonials on your homepage')}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
+            <div>
+              <label style={labelStyle}>Google Maps Review URL</label>
+              <input type="url" name="google_maps_review_url" value={settings.google_maps_review_url || ''}
+                onChange={handleChange} placeholder="https://g.page/r/your-page/review" style={inputStyle} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={labelStyle}>Google Rating (e.g. 4.8)</label>
+                <input type="number" step="0.1" min="0" max="5" name="google_review_rating"
+                  value={settings.google_review_rating || ''} onChange={handleChange} style={inputStyle} placeholder="4.8" />
+              </div>
+              <div>
+                <label style={labelStyle}>Review Count</label>
+                <input type="number" min="0" name="google_review_count"
+                  value={settings.google_review_count || ''} onChange={handleChange} style={inputStyle} placeholder="47" />
+              </div>
+            </div>
+          </div>
+          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>
+            These appear next to the testimonials section on your homepage. Update manually as your rating changes.
+          </p>
         </div>
 
         {/* ── SAVE BUTTON ── */}

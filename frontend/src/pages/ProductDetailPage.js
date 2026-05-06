@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { productsAPI, categoriesAPI, settingsAPI } from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, X, ZoomIn, Instagram } from 'lucide-react';
+import WishlistButton from '../components/WishlistButton';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -262,6 +263,7 @@ const ProductDetailPage = () => {
                   {product.item_code}
                 </span>
               )}
+              <WishlistButton productId={product.id} size={20} />
             </div>
 
             {/* Specs row */}

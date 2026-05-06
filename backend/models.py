@@ -341,6 +341,9 @@ class Settings(BaseModel):
     cta_banner_button_text: Optional[str] = "Explore Collections"
     cta_banner_button_link: Optional[str] = "/collections"
     mbj_difference: Optional[List[dict]] = None
+    google_maps_review_url: Optional[str] = None
+    google_review_rating: Optional[float] = None
+    google_review_count: Optional[int] = None
     rates_updated_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -381,6 +384,78 @@ class SettingsUpdate(BaseModel):
     cta_banner_button_text: Optional[str] = None
     cta_banner_button_link: Optional[str] = None
     mbj_difference: Optional[List[dict]] = None
+    google_maps_review_url: Optional[str] = None
+    google_review_rating: Optional[float] = None
+    google_review_count: Optional[int] = None
+
+# Testimonial Models
+class Testimonial(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    customer_name: str
+    customer_phone: str
+    rating: int
+    review_text: str
+    customer_photo: Optional[str] = None
+    product_image: Optional[str] = None
+    product_id: Optional[str] = None
+    status: str = "pending"
+    is_featured: bool = False
+    submitted_at: datetime
+    approved_at: Optional[datetime] = None
+
+class TestimonialCreate(BaseModel):
+    customer_name: str
+    customer_phone: str
+    rating: int
+    review_text: str
+    customer_photo: Optional[str] = None
+    product_image: Optional[str] = None
+    product_id: Optional[str] = None
+
+class ToggleFeaturedBody(BaseModel):
+    is_featured: bool
+
+# Festival Banner Models
+class FestivalBanner(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    image: str
+    image_mobile: Optional[str] = None
+    click_link: Optional[str] = None
+    is_active: bool = False
+    title: Optional[str] = None
+    created_at: datetime
+
+class FestivalBannerCreate(BaseModel):
+    image: str
+    image_mobile: Optional[str] = None
+    click_link: Optional[str] = None
+    title: Optional[str] = None
+
+class FestivalBannerUpdate(BaseModel):
+    image: Optional[str] = None
+    image_mobile: Optional[str] = None
+    click_link: Optional[str] = None
+    is_active: Optional[bool] = None
+    title: Optional[str] = None
+
+# Wishlist Models
+class Wishlist(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    customer_phone: str
+    product_ids: List[str] = []
+    created_at: datetime
+    updated_at: datetime
+
+class WishlistAddItem(BaseModel):
+    customer_phone: str
+    product_id: str
+
+class WishlistRemoveItem(BaseModel):
+    customer_phone: str
+    product_id: str
 
 # Scheme Models
 class Scheme(BaseModel):
