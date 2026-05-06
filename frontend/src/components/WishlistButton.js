@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
 import { wishlistAPI } from '../api';
+import { useUserPhone } from '../contexts/UserPhoneContext';
 
 // Module-level cache — all WishlistButtons on the same page share one fetch
 let _wlCache = null; // { phone: string, ids: Set<string> }
 
-const tryLS = (fn, fallback) => { try { return fn(); } catch { return fallback; } };
-
 const WishlistButton = ({ productId, size = 20 }) => {
-  const [savedPhone, setSavedPhone] = useState(() => tryLS(() => localStorage.getItem('wishlist_phone') || '', ''));
+  const { phone: contextPhone, setPhone: savePhone } = useUserPhone();
+  const [savedPhone, setSavedPhone] = useState(contextPhone);
   const [inWishlist, setInWishlist] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalPhone, setModalPhone] = useState('');
+
+  useEffect(() => {
+    if (contextPhone !== savedPhone) setSavedPhone(contextPhone);
+  }, [contextPhone]); // sync if user logs in elsewhere
 
   useEffect(() => {
     if (!savedPhone) return;
@@ -56,7 +60,7 @@ const WishlistButton = ({ productId, size = 20 }) => {
     e.preventDefault();
     const digits = modalPhone.replace(/\D/g, '');
     if (digits.length < 10) return;
-    tryLS(() => localStorage.setItem('wishlist_phone', digits), null);
+    savePhone(digits);
     _wlCache = null;
     setShowModal(false);
     setLoading(true);

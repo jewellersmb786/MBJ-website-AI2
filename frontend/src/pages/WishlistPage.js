@@ -3,12 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Heart, X, ArrowRight } from 'lucide-react';
 import { wishlistAPI } from '../api';
 import toast from 'react-hot-toast';
-
-const tryLS = (fn, fallback) => { try { return fn(); } catch { return fallback; } };
+import { useUserPhone } from '../contexts/UserPhoneContext';
 
 const WishlistPage = () => {
   const navigate = useNavigate();
-  const [phone, setPhone] = useState(() => tryLS(() => localStorage.getItem('wishlist_phone') || '', ''));
+  const { phone, setPhone, clearPhone } = useUserPhone();
   const [inputPhone, setInputPhone] = useState('');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -35,7 +34,6 @@ const WishlistPage = () => {
     e.preventDefault();
     const digits = inputPhone.replace(/\D/g, '');
     if (digits.length < 10) { toast.error('Enter a valid 10-digit phone number'); return; }
-    tryLS(() => localStorage.setItem('wishlist_phone', digits), null);
     setPhone(digits);
     setInputPhone('');
   };
@@ -55,8 +53,7 @@ const WishlistPage = () => {
   };
 
   const handleSwitchPhone = () => {
-    tryLS(() => localStorage.removeItem('wishlist_phone'), null);
-    setPhone('');
+    clearPhone();
     setProducts([]);
   };
 

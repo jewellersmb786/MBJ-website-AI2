@@ -49,6 +49,7 @@ export const productsAPI = {
 
 export const customOrderAPI = {
   create: (data) => api.post('/custom-orders', data),
+  getByPhone: (phone) => api.get(`/custom-orders/by-phone/${encodeURIComponent(phone)}`),
 };
 
 export const orderAPI = {

@@ -42,9 +42,10 @@ const HomePage = () => {
   const [festivalBanner, setFestivalBanner] = useState(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [lightbox, setLightbox] = useState(null); // { photos: [{src,label}], idx, testimonial }
   const touchStart = useRef(null);
   const touchEnd = useRef(null);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     settingsAPI.getPublic().then(r => setSettings(r.data)).catch(() => {});
@@ -60,33 +61,46 @@ const HomePage = () => {
     }).catch(() => {});
   }, []);
 
+  // Auto-rotate carousel
   useEffect(() => {
-    const fn = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', fn, { passive: true });
-    return () => window.removeEventListener('resize', fn);
-  }, []);
+    if (testimonials.length <= 1) return;
+    intervalRef.current = setInterval(() => setCarouselIndex(i => (i + 1) % testimonials.length), 7000);
+    return () => clearInterval(intervalRef.current);
+  }, [testimonials.length]);
 
-  const visibleCount = windowWidth >= 768 ? 3 : 1;
-
+  // Keyboard handler: Escape closes lightbox or banner; arrows navigate lightbox
   useEffect(() => {
-    if (testimonials.length <= visibleCount) return;
-    const timer = setInterval(() => setCarouselIndex(i => (i + 1) % testimonials.length), 6000);
-    return () => clearInterval(timer);
-  }, [testimonials.length, visibleCount]);
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        if (lightbox) { setLightbox(null); return; }
+        if (festivalBanner && !bannerDismissed) handleDismissBanner();
+      }
+      if (lightbox) {
+        if (e.key === 'ArrowLeft')  setLightbox(p => ({ ...p, idx: (p.idx - 1 + p.photos.length) % p.photos.length }));
+        if (e.key === 'ArrowRight') setLightbox(p => ({ ...p, idx: (p.idx + 1) % p.photos.length }));
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox, festivalBanner, bannerDismissed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const prevSlide = () => setCarouselIndex(i => (i - 1 + testimonials.length) % testimonials.length);
   const nextSlide = () => setCarouselIndex(i => (i + 1) % testimonials.length);
 
   const handleDismissBanner = () => {
-    if (festivalBanner) sessionStorage.setItem(`festival_banner_dismissed_${festivalBanner.id}`, '1');
+    if (festivalBanner) sessionStorage.setItem(`festival_banner_dismissed_${festivalBanner.id}`, 'true');
     setBannerDismissed(true);
   };
 
-  const getDisplayedTestimonials = () => {
-    if (!testimonials.length) return [];
-    const count = Math.min(visibleCount, testimonials.length);
-    return Array.from({ length: count }, (_, i) => testimonials[(carouselIndex + i) % testimonials.length]);
+  const openLightbox = (t, photoIdx) => {
+    const photos = [];
+    if (t.customer_photo) photos.push({ src: t.customer_photo, label: 'Customer Photo' });
+    if (t.product_image)  photos.push({ src: t.product_image,  label: 'Item Photo' });
+    setLightbox({ photos, idx: Math.min(photoIdx, photos.length - 1), testimonial: t });
   };
+
+  const isMobile = window.innerWidth <= 640;
+  const bannerImg = festivalBanner ? ((isMobile && festivalBanner.image_mobile) ? festivalBanner.image_mobile : festivalBanner.image) : null;
 
   const heroImage = settings?.hero_image_url || FALLBACK_HERO;
 
@@ -94,25 +108,27 @@ const HomePage = () => {
     <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff' }}>
 
       {/* ══════════════════════
-          FESTIVAL BANNER
+          FESTIVAL BANNER MODAL
       ══════════════════════ */}
       {festivalBanner && !bannerDismissed && (
-        <div style={{ position: 'relative', width: '100%', zIndex: 5, lineHeight: 0 }}>
-          {festivalBanner.click_link ? (
-            <a href={festivalBanner.click_link} style={{ display: 'block' }}>
-              <img src={festivalBanner.image} alt={festivalBanner.title || 'Promo'} className="festival-desktop-img" style={{ width: '100%', display: 'block', maxHeight: '200px', objectFit: 'cover' }} />
-              {festivalBanner.image_mobile && <img src={festivalBanner.image_mobile} alt={festivalBanner.title || 'Promo'} className="festival-mobile-img" style={{ width: '100%', display: 'none', objectFit: 'cover' }} />}
-            </a>
-          ) : (
-            <>
-              <img src={festivalBanner.image} alt={festivalBanner.title || 'Promo'} className="festival-desktop-img" style={{ width: '100%', display: 'block', maxHeight: '200px', objectFit: 'cover' }} />
-              {festivalBanner.image_mobile && <img src={festivalBanner.image_mobile} alt={festivalBanner.title || 'Promo'} className="festival-mobile-img" style={{ width: '100%', display: 'none', objectFit: 'cover' }} />}
-            </>
-          )}
-          <button onClick={handleDismissBanner}
-            style={{ position: 'absolute', top: '10px', right: '12px', width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', lineHeight: 1 }}>
-            ✕
-          </button>
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+          onClick={handleDismissBanner}
+        >
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '80vh', display: 'flex' }} onClick={e => e.stopPropagation()}>
+            {festivalBanner.click_link ? (
+              <a href={festivalBanner.click_link} onClick={handleDismissBanner} target="_blank" rel="noopener noreferrer" style={{ display: 'block', lineHeight: 0 }}>
+                <img src={bannerImg} alt={festivalBanner.title || 'Promo'} style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '8px', display: 'block' }} />
+              </a>
+            ) : (
+              <img src={bannerImg} alt={festivalBanner.title || 'Promo'} style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '8px', display: 'block' }} />
+            )}
+            <button onClick={handleDismissBanner}
+              style={{ position: 'absolute', top: '-14px', right: '-14px', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(212,175,55,0.5)', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', transition: 'transform 0.15s', lineHeight: 1 }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >✕</button>
+          </div>
         </div>
       )}
 
@@ -308,114 +324,162 @@ const HomePage = () => {
       {/* ══════════════════════
           TESTIMONIALS CAROUSEL
       ══════════════════════ */}
-      {testimonials.length > 0 && (
-        <section style={{ padding: '100px 0', background: '#080808' }}>
-          <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 32px' }}>
-            <div style={sectionHeaderStyle}>
-              <p style={{ fontSize: '10px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.6)', marginBottom: '12px' }}>Our Customers</p>
-              <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', fontFamily: 'Georgia, serif', fontWeight: 400, color: '#fff', marginBottom: '16px' }}>What our customers say</h2>
-              <div style={{ width: '40px', height: '1px', background: '#D4AF37', margin: '0 auto' }} />
-            </div>
+      {testimonials.length > 0 && (() => {
+        const t = testimonials[carouselIndex];
+        const hasCust = Boolean(t.customer_photo);
+        const hasProd = Boolean(t.product_image);
 
-            {/* Carousel */}
-            <div style={{ position: 'relative' }}
-              onTouchStart={e => { touchStart.current = e.targetTouches[0].clientX; }}
-              onTouchMove={e => { touchEnd.current = e.targetTouches[0].clientX; }}
-              onTouchEnd={() => {
-                if (touchStart.current === null || touchEnd.current === null) return;
-                const diff = touchStart.current - touchEnd.current;
-                if (Math.abs(diff) > 50) { diff > 0 ? nextSlide() : prevSlide(); }
-                touchStart.current = null; touchEnd.current = null;
-              }}
-            >
-              {testimonials.length > visibleCount && (
-                <>
-                  <button onClick={prevSlide} style={{ position: 'absolute', left: '-18px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button onClick={nextSlide} style={{ position: 'absolute', right: '-18px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ChevronRight size={18} />
-                  </button>
-                </>
-              )}
+        const TextBlock = ({ large }) => (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minWidth: 0 }}>
+            {hasCust && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src={t.customer_photo} alt={t.customer_name} onClick={() => openLightbox(t, 0)}
+                  style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(212,175,55,0.4)', flexShrink: 0, cursor: 'pointer' }} />
+                <div>
+                  <p style={{ fontSize: '15px', color: '#fff', fontWeight: 600, margin: '0 0 4px' }}>{t.customer_name}</p>
+                  <Stars rating={t.rating} />
+                </div>
+              </div>
+            )}
+            {!hasCust && (
+              <div>
+                <p style={{ fontSize: '15px', color: '#fff', fontWeight: 600, margin: '0 0 4px' }}>{t.customer_name}</p>
+                <Stars rating={t.rating} />
+              </div>
+            )}
+            <p style={{ fontSize: large ? '18px' : '15px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.8, margin: 0, fontStyle: 'italic' }}>
+              "{t.review_text}"
+            </p>
+          </div>
+        );
 
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(visibleCount, testimonials.length)}, 1fr)`, gap: '20px' }}>
-                {getDisplayedTestimonials().map((t, i) => (
-                  <div key={`${t.id}-${i}`} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.12)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {t.customer_photo ? (
-                        <img src={t.customer_photo} alt={t.customer_name} style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(212,175,55,0.3)', flexShrink: 0 }} />
-                      ) : (
-                        <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(212,175,55,0.1)', border: '2px solid rgba(212,175,55,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <span style={{ fontFamily: 'Georgia, serif', fontSize: '18px', color: '#D4AF37' }}>{t.customer_name.charAt(0)}</span>
-                        </div>
-                      )}
-                      <div>
-                        <p style={{ fontSize: '14px', color: '#fff', fontWeight: 600, margin: '0 0 3px' }}>{t.customer_name}</p>
-                        <Stars rating={t.rating} />
-                      </div>
-                    </div>
-                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, margin: 0, flex: 1 }}>
-                      {t.review_text.length > 150 ? t.review_text.slice(0, 150) + '…' : t.review_text}
-                    </p>
-                    {t.product_image && (
-                      <img src={t.product_image} alt="Item" style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(212,175,55,0.2)' }} />
-                    )}
-                  </div>
-                ))}
+        return (
+          <section style={{ padding: '100px 0', background: '#080808' }}>
+            <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 48px' }}>
+              <div style={sectionHeaderStyle}>
+                <p style={{ fontSize: '10px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.6)', marginBottom: '12px' }}>Our Customers</p>
+                <h2 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', fontFamily: 'Georgia, serif', fontWeight: 400, color: '#fff', marginBottom: '16px' }}>What our customers say</h2>
+                <div style={{ width: '40px', height: '1px', background: '#D4AF37', margin: '0 auto' }} />
               </div>
 
-              {/* Dots */}
-              {testimonials.length > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '24px' }}>
-                  {testimonials.map((_, i) => (
-                    <button key={i} onClick={() => setCarouselIndex(i)}
-                      style={{ width: i === carouselIndex ? '20px' : '6px', height: '6px', borderRadius: '3px', border: 'none', background: i === carouselIndex ? '#D4AF37' : 'rgba(212,175,55,0.25)', cursor: 'pointer', padding: 0, transition: 'all 0.3s' }} />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Google rating + share link row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginTop: '32px', flexWrap: 'wrap' }}>
-              {settings?.google_review_rating && (
-                <a href={settings.google_maps_review_url || '#'} target={settings.google_maps_review_url ? '_blank' : '_self'} rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', textDecoration: 'none', fontSize: '13px', transition: 'border-color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(212,175,55,0.3)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
-                >
-                  <span style={{ color: '#D4AF37', fontSize: '15px' }}>★</span>
-                  <span style={{ fontWeight: 600 }}>{settings.google_review_rating}</span>
-                  {settings.google_review_count && <span style={{ color: 'rgba(255,255,255,0.4)' }}>({settings.google_review_count} reviews)</span>}
-                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>on Google</span>
-                </a>
-              )}
-              <Link to="/share-review"
-                style={{ fontSize: '13px', color: 'rgba(212,175,55,0.7)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
-                onMouseLeave={e => e.currentTarget.style.color = 'rgba(212,175,55,0.7)'}
+              <div style={{ position: 'relative' }}
+                onMouseEnter={() => clearInterval(intervalRef.current)}
+                onMouseLeave={() => {
+                  if (testimonials.length > 1) {
+                    intervalRef.current = setInterval(() => setCarouselIndex(i => (i + 1) % testimonials.length), 7000);
+                  }
+                }}
+                onTouchStart={e => { touchStart.current = e.targetTouches[0].clientX; }}
+                onTouchMove={e => { touchEnd.current = e.targetTouches[0].clientX; }}
+                onTouchEnd={() => {
+                  if (touchStart.current === null || touchEnd.current === null) return;
+                  const diff = touchStart.current - touchEnd.current;
+                  if (Math.abs(diff) > 50) { diff > 0 ? nextSlide() : prevSlide(); }
+                  touchStart.current = null; touchEnd.current = null;
+                }}
               >
-                Share your experience →
-              </Link>
+                {/* Prev / Next arrows */}
+                {testimonials.length > 1 && (
+                  <>
+                    <button onClick={prevSlide} style={{ position: 'absolute', left: '-36px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(212,175,55,0.35)', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button onClick={nextSlide} style={{ position: 'absolute', right: '-36px', top: '50%', transform: 'translateY(-50%)', zIndex: 2, width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.65)', border: '1px solid rgba(212,175,55,0.35)', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ChevronRight size={18} />
+                    </button>
+                  </>
+                )}
+
+                {/* Card */}
+                <div key={t.id} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(212,175,55,0.14)', borderRadius: '20px', padding: '40px 40px', minHeight: '220px', animation: 'fadeInCard 0.35s ease' }}>
+                  {hasCust && hasProd ? (
+                    // Split: text+customer left, product image right
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: '40px', alignItems: 'center' }}>
+                      <TextBlock />
+                      <img src={t.product_image} alt="Item" onClick={() => openLightbox(t, 1)}
+                        style={{ width: '260px', height: '260px', objectFit: 'cover', borderRadius: '12px', border: '1px solid rgba(212,175,55,0.2)', cursor: 'pointer', display: 'block' }} />
+                    </div>
+                  ) : hasProd && !hasCust ? (
+                    // Product image right, text left
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: '36px', alignItems: 'center' }}>
+                      <TextBlock />
+                      <img src={t.product_image} alt="Item" onClick={() => openLightbox(t, 0)}
+                        style={{ width: '220px', height: '220px', objectFit: 'cover', borderRadius: '12px', border: '1px solid rgba(212,175,55,0.2)', cursor: 'pointer', display: 'block' }} />
+                    </div>
+                  ) : (
+                    // Customer photo only OR no photos
+                    <TextBlock large={!hasCust && !hasProd} />
+                  )}
+                </div>
+
+                {/* Dot indicators */}
+                {testimonials.length > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '24px' }}>
+                    {testimonials.map((_, i) => (
+                      <button key={i} onClick={() => setCarouselIndex(i)}
+                        style={{ width: i === carouselIndex ? '20px' : '6px', height: '6px', borderRadius: '3px', border: 'none', background: i === carouselIndex ? '#D4AF37' : 'rgba(212,175,55,0.22)', cursor: 'pointer', padding: 0, transition: 'all 0.3s' }} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginTop: '32px', flexWrap: 'wrap' }}>
+                {settings?.google_maps_review_url && (
+                  <a href={settings.google_maps_review_url} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.45)'}
+                  >
+                    Read our Google Reviews →
+                  </a>
+                )}
+                <Link to="/share-review"
+                  style={{ fontSize: '13px', color: 'rgba(212,175,55,0.7)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(212,175,55,0.7)'}
+                >
+                  Share your experience →
+                </Link>
+              </div>
             </div>
+          </section>
+        );
+      })()}
+
+      {/* Photo lightbox */}
+      {lightbox && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.96)', zIndex: 10000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setLightbox(null)}>
+          <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <img src={lightbox.photos[lightbox.idx].src} alt="" style={{ maxWidth: '90vw', maxHeight: '65vh', objectFit: 'contain', borderRadius: '8px', display: 'block' }} />
+            {lightbox.photos.length > 1 && (
+              <>
+                <button onClick={() => setLightbox(p => ({ ...p, idx: (p.idx - 1 + p.photos.length) % p.photos.length }))} style={{ position: 'absolute', left: '-44px', top: '50%', transform: 'translateY(-50%)', width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(212,175,55,0.4)', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ChevronLeft size={18} />
+                </button>
+                <button onClick={() => setLightbox(p => ({ ...p, idx: (p.idx + 1) % p.photos.length }))} style={{ position: 'absolute', right: '-44px', top: '50%', transform: 'translateY(-50%)', width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(212,175,55,0.4)', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ChevronRight size={18} />
+                </button>
+              </>
+            )}
           </div>
-        </section>
+          <div style={{ textAlign: 'center', marginTop: '20px', maxWidth: '520px', padding: '0 24px' }}>
+            <p style={{ fontSize: '15px', fontWeight: 600, color: '#D4AF37', margin: '0 0 8px' }}>{lightbox.testimonial.customer_name}</p>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, margin: 0, fontStyle: 'italic' }}>"{lightbox.testimonial.review_text}"</p>
+          </div>
+          <button onClick={() => setLightbox(null)} style={{ position: 'fixed', top: '20px', right: '20px', width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(212,175,55,0.4)', color: '#D4AF37', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>✕</button>
+        </div>
       )}
 
       <style>{`
         .spec-tile:hover .spec-img { transform: scale(1.06); }
-        @keyframes bounce {
-          0%, 100% { transform: translateX(-50%) translateY(0); }
-          50% { transform: translateX(-50%) translateY(8px); }
-        }
-        @media (max-width: 640px) {
-          .festival-desktop-img { display: none !important; }
-          .festival-mobile-img { display: block !important; }
-        }
+        @keyframes bounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(8px); } }
+        @keyframes fadeInCard { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 768px) {
-          section > div > div[style*="grid-template-columns: 1fr 1fr"] {
-            grid-template-columns: 1fr !important;
-          }
+          section > div > div[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+          div[style*="grid-template-columns: 1fr 260px"] { grid-template-columns: 1fr !important; }
+          div[style*="grid-template-columns: 1fr 220px"] { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

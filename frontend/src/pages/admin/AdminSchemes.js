@@ -115,11 +115,13 @@ const SchemeModal = ({ scheme, onClose, onSave }) => {
   const [saving, setSaving] = useState(false);
   const isFixed = form.scheme_type === 'fixed_monthly';
 
-  const handleImg = (e) => {
+  const handleImg = async (e) => {
     const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setForm(p => ({ ...p, hero_image: reader.result }));
-    reader.readAsDataURL(file);
+    try {
+      const { compressImage, PRESET_PRODUCT } = await import('../../utils/compressImage');
+      const compressed = await compressImage(file, PRESET_PRODUCT);
+      setForm(p => ({ ...p, hero_image: compressed }));
+    } catch { toast.error('Image upload failed'); }
   };
 
   const handleSave = async () => {

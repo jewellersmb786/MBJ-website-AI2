@@ -17,12 +17,14 @@ const ItemModal = ({ item, fields, title, onClose, onSave }) => {
   const [form, setForm] = useState(item || {});
   const [saving, setSaving] = useState(false);
 
-  const handleImg = (e) => {
+  const handleImg = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setForm(p => ({ ...p, image: reader.result }));
-    reader.readAsDataURL(file);
+    try {
+      const { compressImage, PRESET_PRODUCT } = await import('../../utils/compressImage');
+      const compressed = await compressImage(file, PRESET_PRODUCT);
+      setForm(p => ({ ...p, image: compressed }));
+    } catch { toast.error('Image upload failed'); }
   };
 
   const handleSave = async () => {

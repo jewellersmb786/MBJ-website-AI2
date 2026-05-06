@@ -35,13 +35,19 @@ const BannerModal = ({ banner, onClose, onSaved }) => {
     is_active: banner?.is_active || false,
   });
   const [saving, setSaving] = useState(false);
+  const [compressedSizes, setCompressedSizes] = useState({});
 
   const handleImageUpload = async (e, field) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const b64 = await readFile(file);
-      setForm(p => ({ ...p, [field]: b64 }));
+      const { compressImage, PRESET_BANNER_DESKTOP, PRESET_BANNER_MOBILE } = await import('../../utils/compressImage');
+      const preset = field === 'image_mobile' ? PRESET_BANNER_MOBILE : PRESET_BANNER_DESKTOP;
+      const compressed = await compressImage(file, preset);
+      const base64Data = compressed.split(',')[1] || '';
+      const sizeKB = Math.round((base64Data.length * 0.75) / 1024);
+      setForm(p => ({ ...p, [field]: compressed }));
+      setCompressedSizes(p => ({ ...p, [field]: sizeKB }));
     } catch { toast.error('Failed to load image'); }
   };
 
@@ -81,10 +87,13 @@ const BannerModal = ({ banner, onClose, onSaved }) => {
             style={{ position: 'absolute', top: '-8px', right: '-8px', width: '20px', height: '20px', borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <X size={11} />
           </button>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px', fontSize: '11px', color: 'rgba(212,175,55,0.6)', cursor: 'pointer', textDecoration: 'underline' }}>
-            <Upload size={11} /> Replace
-            <input type="file" accept="image/*" onChange={e => handleImageUpload(e, field)} style={{ display: 'none' }} />
-          </label>
+          <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'rgba(212,175,55,0.6)', cursor: 'pointer', textDecoration: 'underline' }}>
+              <Upload size={11} /> Replace
+              <input type="file" accept="image/*" onChange={e => handleImageUpload(e, field)} style={{ display: 'none' }} />
+            </label>
+            {compressedSizes[field] && <span style={{ fontSize: '11px', color: 'rgba(34,197,94,0.7)' }}>Compressed to {compressedSizes[field]} KB</span>}
+          </div>
         </div>
       ) : (
         <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80px', border: '2px dashed rgba(212,175,55,0.25)', borderRadius: '8px', cursor: 'pointer', gap: '6px', transition: 'border-color 0.2s' }}
@@ -115,6 +124,9 @@ const BannerModal = ({ banner, onClose, onSaved }) => {
               placeholder="e.g. Diwali 2025 Promo" style={inputStyle} />
           </div>
 
+          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: '0 0 12px', background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)', borderRadius: '6px', padding: '8px 12px' }}>
+            Recommended: 1920×600px (desktop), 800×1000px (mobile). Larger images will be auto-resized.
+          </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <ImageField field="image" label="Desktop Image" required />
             <ImageField field="image_mobile" label="Mobile Image (optional)" />

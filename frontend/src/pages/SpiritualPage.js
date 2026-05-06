@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { gemstonesAPI, spiritualArticleTypesAPI, spiritualInquiriesAPI } from '../api';
 import { Sparkles, X, Send, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useUserPhone } from '../contexts/UserPhoneContext';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -13,7 +14,8 @@ const SpiritualPage = () => {
   const [birthMonthFilter, setBirthMonthFilter] = useState(null);
   const [selectedGemstone, setSelectedGemstone] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
-  const [form, setForm] = useState({ customer_name: '', customer_phone: '', customer_email: '', notes: '' });
+  const { phone: contextPhone } = useUserPhone();
+  const [form, setForm] = useState({ customer_name: '', customer_phone: contextPhone || '', customer_email: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
   const [successRef, setSuccessRef] = useState(null);
 

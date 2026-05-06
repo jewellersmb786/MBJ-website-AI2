@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { orderAPI, settingsAPI } from '../api';
 import { motion } from 'framer-motion';
 import { Search, Package } from 'lucide-react';
+import { useUserPhone } from '../contexts/UserPhoneContext';
 
 const STEPS = [
   { key: 'pending',   label: 'Order Placed' },
@@ -101,9 +102,11 @@ const OrderCard = ({ order, whatsapp }) => {
 
 const TrackOrderPage = () => {
   const { orderId: paramOrderId } = useParams();
+  const { phone: contextPhone } = useUserPhone();
   const [tab, setTab] = useState(paramOrderId ? 'id' : 'phone');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(contextPhone || '');
   const [orderId, setOrderId] = useState(paramOrderId || '');
+  const autoTriggered = useRef(false);
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -117,7 +120,9 @@ const TrackOrderPage = () => {
   }, []);
 
   useEffect(() => {
-    if (paramOrderId) {
+    if (paramOrderId) { doSearch(); return; }
+    if (contextPhone && !autoTriggered.current) {
+      autoTriggered.current = true;
       doSearch();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

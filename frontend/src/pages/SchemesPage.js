@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { schemesAPI, schemeEnrollmentsAPI, settingsAPI } from '../api';
 import { Coins, CheckCircle2, ChevronDown, ChevronUp, AlertTriangle, MessageCircle } from 'lucide-react';
+import { useUserPhone } from '../contexts/UserPhoneContext';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -198,10 +199,12 @@ const SchemesPage = () => {
   const [whatsapp, setWhatsapp] = useState('917019539776');
 
   // Enrollment lookup state
-  const [phone, setPhone] = useState('');
+  const { phone: contextPhone } = useUserPhone();
+  const [phone, setPhone] = useState(contextPhone || '');
   const [enrollments, setEnrollments] = useState(null);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const autoTriggered = useRef(false);
 
   useEffect(() => {
     Promise.all([schemesAPI.getAll(), settingsAPI.getPublic()])
@@ -214,12 +217,12 @@ const SchemesPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleLookup = async (e) => {
-    e.preventDefault();
-    if (phone.replace(/\D/g, '').length < 10) return;
+  const doLookup = async (lookupPhone) => {
+    const ph = lookupPhone || phone;
+    if (ph.replace(/\D/g, '').length < 10) return;
     setLookupLoading(true);
     try {
-      const res = await schemeEnrollmentsAPI.getByPhone(phone.trim());
+      const res = await schemeEnrollmentsAPI.getByPhone(ph.trim());
       setEnrollments(res.data || []);
     } catch {
       setEnrollments([]);
@@ -228,6 +231,16 @@ const SchemesPage = () => {
       setSearched(true);
     }
   };
+
+  const handleLookup = (e) => { e.preventDefault(); doLookup(); };
+
+  useEffect(() => {
+    if (contextPhone && !autoTriggered.current) {
+      autoTriggered.current = true;
+      doLookup(contextPhone);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const inpStyle = {
     flex: 1, padding: '12px 16px', background: 'rgba(0,0,0,0.5)',

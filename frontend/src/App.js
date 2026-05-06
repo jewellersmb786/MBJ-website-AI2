@@ -32,14 +32,17 @@ import AdminSpiritual from './pages/admin/AdminSpiritual';
 import AdminFilterAttributes from './pages/admin/AdminFilterAttributes';
 import AdminTestimonials from './pages/admin/AdminTestimonials';
 import AdminBanners from './pages/admin/AdminBanners';
+import MyAccountPage from './pages/MyAccountPage';
 
 // Layout
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
+import { UserPhoneProvider } from './contexts/UserPhoneContext';
 
 function App() {
   return (
     <AdminProvider>
+      <UserPhoneProvider>
       <BrowserRouter>
         <Toaster position="top-right" />
         <Routes>
@@ -59,6 +62,7 @@ function App() {
             <Route path="spiritual" element={<SpiritualPage />} />
             <Route path="share-review" element={<ShareReviewPage />} />
             <Route path="wishlist" element={<WishlistPage />} />
+            <Route path="my-account" element={<MyAccountPage />} />
           </Route>
 
           {/* Admin Routes */}
@@ -79,6 +83,7 @@ function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+      </UserPhoneProvider>
     </AdminProvider>
   );
 }

@@ -3,13 +3,16 @@ import { motion } from 'framer-motion';
 import { Upload, Link as LinkIcon, Instagram, Send } from 'lucide-react';
 import { customOrderAPI } from '../api';
 import toast from 'react-hot-toast';
+import { useUserPhone } from '../contexts/UserPhoneContext';
+import { compressImage, PRESET_REFERENCE } from '../utils/compressImage';
 
 const IMAGE_LIMIT = 5;
 
 const CustomOrderPage = () => {
+  const { phone: contextPhone, setPhone: savePhone } = useUserPhone();
   const [formData, setFormData] = useState({
     name: '',
-    phone: '',
+    phone: contextPhone || '',
     email: '',
     jewellery_type: '',
     description: '',
@@ -26,19 +29,15 @@ const CustomOrderPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleRefImagesUpload = (e) => {
+  const handleRefImagesUpload = async (e) => {
     const files = Array.from(e.target.files);
     const available = IMAGE_LIMIT - formData.reference_images.length;
     const toAdd = files.slice(0, available);
     if (toAdd.length === 0) { toast.error(`Maximum ${IMAGE_LIMIT} reference images allowed.`); return; }
-    const readers = toAdd.map(file => new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(file);
-    }));
-    Promise.all(readers).then(imgs => {
+    try {
+      const imgs = await Promise.all(toAdd.map(f => compressImage(f, PRESET_REFERENCE)));
       setFormData(prev => ({ ...prev, reference_images: [...prev.reference_images, ...imgs] }));
-    });
+    } catch { toast.error('Failed to process images'); }
   };
 
   const removeRefImage = (idx) => {
@@ -67,6 +66,7 @@ const CustomOrderPage = () => {
       });
 
       const ref = res.data?.reference_code || 'CUSTOM-NEW';
+      savePhone(formData.phone);
       setSuccessRef(ref);
 
       const whatsappNumber = '917019539776';

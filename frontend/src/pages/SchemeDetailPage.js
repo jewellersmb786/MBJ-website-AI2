@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { schemesAPI } from '../api';
 import { Coins, CheckCircle2, ChevronDown, ChevronUp, X, Send, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useUserPhone } from '../contexts/UserPhoneContext';
 
 const inpStyle = {
   width: '100%',
@@ -18,9 +19,10 @@ const inpStyle = {
 };
 
 const EnrollModal = ({ scheme, onClose }) => {
+  const { phone: contextPhone } = useUserPhone();
   const isFixed = scheme.scheme_type === 'fixed_monthly';
   const minAmt = scheme.minimum_monthly_amount || 0;
-  const [form, setForm] = useState({ customer_name: '', customer_phone: '', customer_email: '', notes: '', monthly_amount: minAmt ? String(minAmt) : '' });
+  const [form, setForm] = useState({ customer_name: '', customer_phone: contextPhone || '', customer_email: '', notes: '', monthly_amount: minAmt ? String(minAmt) : '' });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 

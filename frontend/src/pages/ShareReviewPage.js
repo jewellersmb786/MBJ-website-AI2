@@ -4,17 +4,8 @@ import { Star, Upload, Send, ExternalLink } from 'lucide-react';
 import { testimonialsAPI, settingsAPI } from '../api';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
-
-const IMAGE_LIMIT_BYTES = 2 * 1024 * 1024; // 2MB per image
-
-const readFileAsBase64 = (file) =>
-  new Promise((resolve, reject) => {
-    if (file.size > IMAGE_LIMIT_BYTES) { reject(new Error('File too large (max 2MB)')); return; }
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+import { useUserPhone } from '../contexts/UserPhoneContext';
+import { compressImage, PRESET_AVATAR, PRESET_TESTIMONIAL } from '../utils/compressImage';
 
 const inputCls = {
   width: '100%', padding: '12px 16px',
@@ -24,8 +15,9 @@ const inputCls = {
 };
 
 const ShareReviewPage = () => {
+  const { phone: contextPhone, setPhone: savePhone } = useUserPhone();
   const [settings, setSettings] = useState(null);
-  const [form, setForm] = useState({ customer_name: '', customer_phone: '', review_text: '' });
+  const [form, setForm] = useState({ customer_name: '', customer_phone: contextPhone || '', review_text: '' });
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [customerPhoto, setCustomerPhoto] = useState(null);
@@ -39,15 +31,13 @@ const ShareReviewPage = () => {
 
   const handleChange = (e) => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  const handleImageUpload = async (e, setter) => {
+  const handleImageUpload = async (e, setter, preset) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const b64 = await readFileAsBase64(file);
-      setter(b64);
-    } catch (err) {
-      toast.error(err.message || 'Failed to load image');
-    }
+      const compressed = await compressImage(file, preset);
+      setter(compressed);
+    } catch { toast.error('Failed to load image'); }
   };
 
   const handleSubmit = async (e) => {
@@ -55,7 +45,7 @@ const ShareReviewPage = () => {
     if (!form.customer_name.trim()) { toast.error('Name is required'); return; }
     if (form.customer_phone.replace(/\D/g, '').length < 10) { toast.error('Enter a valid 10-digit phone'); return; }
     if (!rating) { toast.error('Please select a star rating'); return; }
-    if (form.review_text.trim().length < 10) { toast.error('Review must be at least 10 characters'); return; }
+    if (!form.review_text.trim()) { toast.error('Please write a review'); return; }
 
     setSubmitting(true);
     try {
@@ -67,6 +57,7 @@ const ShareReviewPage = () => {
         customer_photo: customerPhoto || undefined,
         product_image: productImage || undefined,
       });
+      savePhone(form.customer_phone);
       setSubmitted(true);
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Submission failed. Please try again.');
@@ -122,7 +113,7 @@ const ShareReviewPage = () => {
     );
   }
 
-  const PhotoUploadField = ({ label, value, setter, hint }) => (
+  const PhotoUploadField = ({ label, value, setter, hint, preset }) => (
     <div>
       <p style={{ fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', margin: '0 0 8px' }}>{label} <span style={{ textTransform: 'none', letterSpacing: 0, color: 'rgba(255,255,255,0.25)' }}>(optional)</span></p>
       {value ? (
@@ -138,7 +129,7 @@ const ShareReviewPage = () => {
         >
           <Upload size={16} color="rgba(212,175,55,0.5)" />
           <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>{hint}</span>
-          <input type="file" accept="image/*" onChange={e => handleImageUpload(e, setter)} style={{ display: 'none' }} />
+          <input type="file" accept="image/*" onChange={e => handleImageUpload(e, setter, preset)} style={{ display: 'none' }} />
         </label>
       )}
     </div>
@@ -199,15 +190,12 @@ const ShareReviewPage = () => {
               <textarea name="review_text" value={form.review_text} onChange={handleChange} rows={4}
                 placeholder="Tell us about your experience with MBJ Jewellers…"
                 style={{ ...inputCls, resize: 'vertical', minHeight: '100px', lineHeight: 1.6 }} />
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.2)', margin: '4px 0 0', textAlign: 'right' }}>
-                {form.review_text.length} chars {form.review_text.length < 10 && '(min 10)'}
-              </p>
             </div>
 
             {/* Photo uploads */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <PhotoUploadField label="Photo of you with the item" value={customerPhoto} setter={setCustomerPhoto} hint="Click to upload" />
-              <PhotoUploadField label="Photo of the item" value={productImage} setter={setProductImage} hint="Click to upload" />
+              <PhotoUploadField label="Photo of you with the item" value={customerPhoto} setter={setCustomerPhoto} hint="Click to upload" preset={PRESET_AVATAR} />
+              <PhotoUploadField label="Photo of the item" value={productImage} setter={setProductImage} hint="Click to upload" preset={PRESET_TESTIMONIAL} />
             </div>
 
             <button type="submit" disabled={submitting}

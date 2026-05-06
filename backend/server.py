@@ -1202,6 +1202,21 @@ async def delete_spiritual_inquiry(inquiry_id: str, admin = Depends(get_current_
     return {"message": "Inquiry deleted"}
 
 # ============================================================================
+# Custom Orders by Phone (public)
+# ============================================================================
+
+@api_router.get("/custom-orders/by-phone/{phone}")
+async def get_custom_orders_by_phone(phone: str):
+    phone_10 = re.sub(r'\D', '', phone)[-10:]
+    orders = await db.custom_orders.find(
+        {"phone": {"$regex": phone_10}},
+        {"_id": 0, "id": 1, "reference_code": 1, "jewellery_type": 1, "description": 1,
+         "weight_requirement": 1, "occasion": 1, "preferred_completion_date": 1,
+         "instagram_url": 1, "status": 1, "created_at": 1}
+    ).sort("created_at", -1).to_list(50)
+    return orders
+
+# ============================================================================
 # Testimonials
 # ============================================================================
 
@@ -1213,8 +1228,8 @@ async def submit_testimonial(t: TestimonialCreate):
         raise HTTPException(status_code=400, detail="Valid 10-digit phone required")
     if not (1 <= t.rating <= 5):
         raise HTTPException(status_code=400, detail="Rating must be 1-5")
-    if len(t.review_text.strip()) < 10:
-        raise HTTPException(status_code=400, detail="Review must be at least 10 characters")
+    if not t.review_text.strip():
+        raise HTTPException(status_code=400, detail="Review text is required")
     uid = generate_uuid()
     data = t.model_dump()
     data['id'] = uid

@@ -69,20 +69,25 @@ const AdminSettings = () => {
     setSettings(prev => ({ ...prev, [name]: isNum ? (parseFloat(value) || '') : value }));
   };
 
-  const handleHeroImageUpload = (e) => {
+  const handleHeroImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setSettings(prev => ({ ...prev, hero_image_url: reader.result }));
-    reader.readAsDataURL(file);
+    try {
+      const { compressImage, PRESET_HERO } = await import('../../utils/compressImage');
+      const compressed = await compressImage(file, PRESET_HERO);
+      setSettings(prev => ({ ...prev, hero_image_url: compressed }));
+    } catch { toast.error('Image upload failed'); }
   };
 
-  const handleImageUpload = (field) => (e) => {
+  const handleImageUpload = (field) => async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setSettings(prev => ({ ...prev, [field]: reader.result }));
-    reader.readAsDataURL(file);
+    try {
+      const { compressImage, PRESET_HERO, PRESET_PRODUCT } = await import('../../utils/compressImage');
+      const preset = ['parallax_quote_image','cta_banner_image'].includes(field) ? PRESET_HERO : PRESET_PRODUCT;
+      const compressed = await compressImage(file, preset);
+      setSettings(prev => ({ ...prev, [field]: compressed }));
+    } catch { toast.error('Image upload failed'); }
   };
 
   const updateMbjDiff = (idx, key, val) => {
@@ -460,28 +465,14 @@ const AdminSettings = () => {
 
         {/* ── REVIEWS & SOCIAL PROOF ── */}
         <div style={sectionStyle}>
-          {sectionTitle(<Star size={20} />, 'Reviews & Social Proof', 'Displayed alongside testimonials on your homepage')}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
-            <div>
-              <label style={labelStyle}>Google Maps Review URL</label>
-              <input type="url" name="google_maps_review_url" value={settings.google_maps_review_url || ''}
-                onChange={handleChange} placeholder="https://g.page/r/your-page/review" style={inputStyle} />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={labelStyle}>Google Rating (e.g. 4.8)</label>
-                <input type="number" step="0.1" min="0" max="5" name="google_review_rating"
-                  value={settings.google_review_rating || ''} onChange={handleChange} style={inputStyle} placeholder="4.8" />
-              </div>
-              <div>
-                <label style={labelStyle}>Review Count</label>
-                <input type="number" min="0" name="google_review_count"
-                  value={settings.google_review_count || ''} onChange={handleChange} style={inputStyle} placeholder="47" />
-              </div>
-            </div>
+          {sectionTitle(<Star size={20} />, 'Reviews & Social Proof', 'Google review link shown in testimonials section')}
+          <div>
+            <label style={labelStyle}>Google Maps Review URL</label>
+            <input type="url" name="google_maps_review_url" value={settings.google_maps_review_url || ''}
+              onChange={handleChange} placeholder="https://g.page/r/your-page/review" style={inputStyle} />
           </div>
-          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>
-            These appear next to the testimonials section on your homepage. Update manually as your rating changes.
+          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '10px' }}>
+            Customers will see a "Read our Google Reviews →" link in the testimonials section.
           </p>
         </div>
 

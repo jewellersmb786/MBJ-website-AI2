@@ -90,12 +90,14 @@ const AdminProducts = () => {
 
   useEffect(() => { loadFormFilterAttrs(formCategoryId); }, [formCategoryId, loadFormFilterAttrs]);
 
-  const handleSingleImageUpload = (field) => (e) => {
+  const handleSingleImageUpload = (field) => async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setFormData(prev => ({ ...prev, [field]: reader.result }));
-    reader.readAsDataURL(file);
+    try {
+      const { compressImage, PRESET_PRODUCT } = await import('../../utils/compressImage');
+      const compressed = await compressImage(file, PRESET_PRODUCT);
+      setFormData(prev => ({ ...prev, [field]: compressed }));
+    } catch { toast.error('Image upload failed'); }
   };
 
   const openAddModal = () => {
