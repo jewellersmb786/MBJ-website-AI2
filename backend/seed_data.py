@@ -259,20 +259,36 @@ async def seed_default_gemstones(db, generate_uuid):
     await db.gemstones.insert_many(docs)
 
 
+def _find_default_gemstone(name):
+    """Case-insensitive lookup in DEFAULT_GEMSTONES. Returns matching entry or None."""
+    name_lower = name.lower().strip()
+    # Exact match first
+    for g in DEFAULT_GEMSTONES:
+        if g['name'].lower() == name_lower:
+            return g
+    # Partial match: strip parenthetical suffixes from default names for comparison
+    # e.g. "Yellow Sapphire (Pukhraj)" → "yellow sapphire", "Coral (Moonga)" → "coral"
+    for g in DEFAULT_GEMSTONES:
+        base = g['name'].lower().split('(')[0].strip()
+        if base == name_lower or name_lower.startswith(base) or base.startswith(name_lower):
+            return g
+    return None
+
+
 async def _migrate_gemstone_fields(db):
-    """Migrate old gemstone docs to new schema (idempotent)."""
+    """Migrate old gemstone docs to new schema and auto-fill Vedic data for untouched gemstones (idempotent)."""
     cursor = db.gemstones.find({})
     async for doc in cursor:
         updates = {}
         unsets = {}
 
-        # Migrate singular birth_month → birth_months array
+        # Step 1: Migrate singular birth_month → birth_months array
         if 'birth_month' in doc and 'birth_months' not in doc:
             bm = doc.get('birth_month')
             updates['birth_months'] = [bm] if bm else []
             unsets['birth_month'] = ''
 
-        # Add missing new fields with empty defaults
+        # Step 2: Ensure all new fields exist with empty defaults
         if 'birth_months' not in doc and 'birth_month' not in doc:
             updates['birth_months'] = []
         if 'vedic_rashi' not in doc:
@@ -282,6 +298,7 @@ async def _migrate_gemstone_fields(db):
         if 'wearing_finger' not in doc:
             updates['wearing_finger'] = None
 
+        # Apply step 1+2 first so we can check real values below
         if updates or unsets:
             op = {}
             if updates:
@@ -289,6 +306,34 @@ async def _migrate_gemstone_fields(db):
             if unsets:
                 op['$unset'] = unsets
             await db.gemstones.update_one({'id': doc['id']}, op)
+
+        # Step 3: Auto-fill Vedic data for untouched gemstones.
+        # Read the doc state after step 1+2 to get current arrays.
+        birth_months_now  = updates.get('birth_months',  doc.get('birth_months',  []))
+        vedic_rashi_now   = updates.get('vedic_rashi',   doc.get('vedic_rashi',   []))
+        planets_now       = updates.get('planets',       doc.get('planets',       []))
+        wearing_finger_now = updates.get('wearing_finger', doc.get('wearing_finger'))
+
+        all_empty = (
+            not birth_months_now and
+            not vedic_rashi_now and
+            not planets_now and
+            not wearing_finger_now
+        )
+
+        if all_empty:
+            default = _find_default_gemstone(doc.get('name', ''))
+            if default:
+                vedic_update = {
+                    'birth_months':   default.get('birth_months', []),
+                    'vedic_rashi':    default.get('vedic_rashi', []),
+                    'planets':        default.get('planets', []),
+                    'wearing_finger': default.get('wearing_finger'),
+                }
+                # Only write if there's something non-empty to set
+                if any(v for v in vedic_update.values() if v):
+                    await db.gemstones.update_one({'id': doc['id']}, {'$set': vedic_update})
+                    print(f"Filled Vedic data for '{doc.get('name')}'")  # noqa: T201
 
 
 async def seed_default_article_types(db, generate_uuid):
