@@ -4,7 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Plus, Edit2, Trash2, X, Save, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const RASHI_LIST = ['Mesh','Vrishabh','Mithun','Karka','Simha','Kanya','Tula','Vrishchik','Dhanu','Makar','Kumbh','Meen'];
+const PLANETS_LIST = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu'];
 const INQ_STATUS = ['new', 'contacted', 'completed', 'cancelled'];
 const INQ_META = { new: '#fbbf24', contacted: '#60a5fa', completed: '#4ade80', cancelled: '#f87171' };
 
@@ -12,6 +14,166 @@ const sHead = { padding: '10px 14px', fontSize: '10px', letterSpacing: '0.18em',
 const sCell = { padding: '11px 14px', fontSize: '13px', color: 'rgba(255,255,255,0.75)', verticalAlign: 'middle' };
 const inputStyle = { width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '8px', color: '#fff', fontSize: '14px', outline: 'none', boxSizing: 'border-box' };
 const fmtDate = (iso) => { try { return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return '—'; } };
+
+const MultiChips = ({ label, items, values, onChange, getLabel }) => (
+  <div>
+    <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '6px' }}>{label}</label>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+      {items.map((item, i) => {
+        const val = typeof item === 'number' ? item : item;
+        const active = values.includes(val);
+        return (
+          <button key={i} type="button"
+            onClick={() => onChange(active ? values.filter(v => v !== val) : [...values, val])}
+            style={{
+              padding: '4px 12px', borderRadius: '20px', border: `1px solid ${active ? '#D4AF37' : 'rgba(255,255,255,0.15)'}`,
+              background: active ? 'rgba(212,175,55,0.15)' : 'transparent',
+              color: active ? '#D4AF37' : 'rgba(255,255,255,0.45)',
+              fontSize: '12px', fontWeight: active ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s',
+            }}>
+            {getLabel ? getLabel(item, i) : item}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
+const GemstoneModal = ({ item, onClose, onSave }) => {
+  const [form, setForm] = useState({
+    name: item?.name || '',
+    color_hex: item?.color_hex || '#D4AF37',
+    properties: item?.properties || '',
+    birth_months: item?.birth_months || (item?.birth_month ? [item.birth_month] : []),
+    vedic_rashi: item?.vedic_rashi || [],
+    planets: item?.planets || [],
+    wearing_finger: item?.wearing_finger || '',
+    display_order: item?.display_order ?? 0,
+    is_active: item?.is_active !== false,
+    image: item?.image || '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleImg = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const { compressImage, PRESET_PRODUCT } = await import('../../utils/compressImage');
+      const compressed = await compressImage(file, PRESET_PRODUCT);
+      setForm(p => ({ ...p, image: compressed }));
+    } catch { toast.error('Image upload failed'); }
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim()) { toast.error('Name is required'); return; }
+    setSaving(true);
+    try { await onSave(form); } finally { setSaving(false); }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', overflowY: 'auto' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+        style={{ background: '#111', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '14px', padding: '28px', width: '100%', maxWidth: '600px', position: 'relative' }}>
+        <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}><X size={18} /></button>
+        <h2 style={{ fontSize: '18px', color: '#D4AF37', marginBottom: '20px' }}>{item ? 'Edit Gemstone' : 'Add Gemstone'}</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          <div>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Name *</label>
+            <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} style={inputStyle} placeholder="e.g. Ruby" />
+          </div>
+
+          <div>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Color</label>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input type="color" value={form.color_hex || '#D4AF37'} onChange={e => setForm(p => ({ ...p, color_hex: e.target.value }))}
+                style={{ width: '48px', height: '36px', padding: '2px', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '6px', background: 'transparent', cursor: 'pointer' }} />
+              <input type="text" value={form.color_hex || ''} onChange={e => setForm(p => ({ ...p, color_hex: e.target.value }))}
+                style={{ ...inputStyle, flex: 1 }} placeholder="#D4AF37" />
+            </div>
+          </div>
+
+          <MultiChips
+            label="Birth Months"
+            items={[1,2,3,4,5,6,7,8,9,10,11,12]}
+            values={form.birth_months}
+            onChange={v => setForm(p => ({ ...p, birth_months: v }))}
+            getLabel={(_, i) => MONTH_SHORT[i]}
+          />
+
+          <MultiChips
+            label="Vedic Rashi"
+            items={RASHI_LIST}
+            values={form.vedic_rashi}
+            onChange={v => setForm(p => ({ ...p, vedic_rashi: v }))}
+          />
+
+          <MultiChips
+            label="Planets (Graha)"
+            items={PLANETS_LIST}
+            values={form.planets}
+            onChange={v => setForm(p => ({ ...p, planets: v }))}
+          />
+
+          <div>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Wearing Finger (optional)</label>
+            <input type="text" value={form.wearing_finger} onChange={e => setForm(p => ({ ...p, wearing_finger: e.target.value }))}
+              style={inputStyle} placeholder="e.g. Ring finger of the right hand" />
+          </div>
+
+          <div>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Spiritual Properties</label>
+            <textarea value={form.properties} onChange={e => setForm(p => ({ ...p, properties: e.target.value }))}
+              rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
+              placeholder="Symbolizes..." />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Display Order</label>
+              <input type="number" value={form.display_order} onChange={e => setForm(p => ({ ...p, display_order: parseInt(e.target.value) || 0 }))} style={inputStyle} />
+            </div>
+            {item && (
+              <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '2px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))}
+                    style={{ accentColor: '#D4AF37', width: '15px', height: '15px' }} />
+                  <span style={{ fontSize: '13px', color: '#fff' }}>Active</span>
+                </label>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Image</label>
+            {form.image ? (
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <img src={form.image} alt="preview" style={{ height: '80px', width: 'auto', objectFit: 'cover', borderRadius: '6px' }} />
+                <button type="button" onClick={() => setForm(p => ({ ...p, image: '' }))}
+                  style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={11} /></button>
+              </div>
+            ) : (
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px', border: '2px dashed rgba(212,175,55,0.3)', borderRadius: '8px', cursor: 'pointer' }}>
+                <Upload size={16} color="rgba(212,175,55,0.5)" />
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Click to upload</span>
+                <input type="file" accept="image/*" onChange={handleImg} style={{ display: 'none' }} />
+              </label>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+            <button onClick={handleSave} disabled={saving}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: saving ? 'rgba(212,175,55,0.5)' : '#D4AF37', color: '#000', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+              <Save size={16} />{saving ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={onClose} style={{ padding: '12px 20px', background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const ItemModal = ({ item, fields, title, onClose, onSave }) => {
   const [form, setForm] = useState(item || {});
@@ -29,9 +191,7 @@ const ItemModal = ({ item, fields, title, onClose, onSave }) => {
 
   const handleSave = async () => {
     setSaving(true);
-    try {
-      await onSave(form);
-    } finally { setSaving(false); }
+    try { await onSave(form); } finally { setSaving(false); }
   };
 
   return (
@@ -47,16 +207,6 @@ const ItemModal = ({ item, fields, title, onClose, onSave }) => {
               <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>{f.label}</label>
               {f.type === 'textarea' ? (
                 <textarea value={form[f.key] || ''} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }} placeholder={f.placeholder || ''} />
-              ) : f.type === 'select' ? (
-                <select value={form[f.key] || ''} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value ? parseInt(e.target.value) : null }))} style={inputStyle}>
-                  <option value="">— None —</option>
-                  {MONTHS.map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
-                </select>
-              ) : f.type === 'color' ? (
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <input type="color" value={form[f.key] || '#D4AF37'} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} style={{ width: '48px', height: '36px', padding: '2px', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '6px', background: 'transparent', cursor: 'pointer' }} />
-                  <input type="text" value={form[f.key] || ''} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} style={{ ...inputStyle, flex: 1 }} placeholder="#D4AF37" />
-                </div>
               ) : f.type === 'checkbox' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '4px' }}>
                   <input type="checkbox" checked={form[f.key] !== false} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.checked }))} style={{ accentColor: '#D4AF37', width: '15px', height: '15px' }} id={f.key} />
@@ -67,7 +217,6 @@ const ItemModal = ({ item, fields, title, onClose, onSave }) => {
               )}
             </div>
           ))}
-          {/* Image */}
           <div>
             <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: '5px' }}>Image</label>
             {form.image ? (
@@ -103,7 +252,7 @@ const AdminSpiritual = () => {
   const [articleTypes, setArticleTypes] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(null);
+  const [modal, setModal] = useState(null); // { type: 'gemstones'|'articles', item }
 
   const load = async () => {
     setLoading(true);
@@ -116,7 +265,7 @@ const AdminSpiritual = () => {
       setGemstones(gRes.data || []);
       setArticleTypes(aRes.data || []);
       setInquiries(iRes.data || []);
-    } catch (err) { console.error(err); }
+    } catch {}
     finally { setLoading(false); }
   };
 
@@ -132,14 +281,6 @@ const AdminSpiritual = () => {
     } catch { toast.error('Error updating status'); }
   };
 
-  const gemstoneFields = [
-    { key: 'name', label: 'Name *' },
-    { key: 'birth_month', label: 'Birth Month', type: 'select' },
-    { key: 'color_hex', label: 'Color', type: 'color' },
-    { key: 'properties', label: 'Spiritual Properties', type: 'textarea' },
-    { key: 'display_order', label: 'Display Order', type: 'number' },
-    ...(modal?.item ? [{ key: 'is_active', label: 'Active', type: 'checkbox' }] : []),
-  ];
   const articleFields = [
     { key: 'name', label: 'Name *' },
     { key: 'description', label: 'Description', type: 'textarea' },
@@ -188,6 +329,11 @@ const AdminSpiritual = () => {
 
   const TABS = [['gemstones', 'Gemstones'], ['articles', 'Article Types'], ['inquiries', 'Inquiries']];
 
+  const fmtList = (arr, labelFn) => {
+    if (!arr || arr.length === 0) return '—';
+    return arr.map(labelFn).join(', ');
+  };
+
   return (
     <div style={{ maxWidth: '1100px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
@@ -195,7 +341,9 @@ const AdminSpiritual = () => {
           <h1 style={{ fontSize: '26px', color: '#D4AF37', fontWeight: 600, margin: '0 0 3px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Sparkles size={22} /> Spiritual
           </h1>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>{gemstones.length} gemstone(s) · {articleTypes.length} article type(s) · {inquiries.length} inquiry(ies)</p>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+            {gemstones.length} gemstone(s) · {articleTypes.length} article type(s) · {inquiries.length} inquiry(ies)
+          </p>
         </div>
         {tab !== 'inquiries' && (
           <button onClick={() => setModal({ type: tab, item: null })}
@@ -205,7 +353,6 @@ const AdminSpiritual = () => {
         )}
       </div>
 
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: '6px', marginBottom: '20px' }}>
         {TABS.map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)}
@@ -222,35 +369,63 @@ const AdminSpiritual = () => {
           {gemstones.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.3)' }}>No gemstones yet.</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr style={{ background: 'rgba(0,0,0,0.3)' }}>
-                <th style={sHead}>Image</th><th style={sHead}>Name</th><th style={sHead}>Month</th>
-                <th style={sHead}>Color</th><th style={{ ...sHead, textAlign: 'center' }}>Active</th>
-                <th style={{ ...sHead, width: '80px' }}></th>
-              </tr></thead>
-              <tbody>
-                {gemstones.map((g, idx) => (
-                  <motion.tr key={g.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.04 }}
-                    style={{ borderBottom: '1px solid rgba(212,175,55,0.07)' }}>
-                    <td style={sCell}>
-                      {g.image ? <img src={g.image} alt={g.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
-                        : g.color_hex ? <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: g.color_hex }} />
-                        : <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: 'rgba(212,175,55,0.08)' }} />}
-                    </td>
-                    <td style={{ ...sCell, color: '#fff', fontWeight: 500 }}>{g.name}</td>
-                    <td style={sCell}>{g.birth_month ? MONTHS[g.birth_month - 1] : '—'}</td>
-                    <td style={sCell}>{g.color_hex ? <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '16px', height: '16px', borderRadius: '50%', background: g.color_hex }} /><span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{g.color_hex}</span></div> : '—'}</td>
-                    <td style={{ ...sCell, textAlign: 'center' }}><span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: g.is_active ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)', color: g.is_active ? '#4ade80' : '#9ca3af' }}>{g.is_active ? 'Yes' : 'No'}</span></td>
-                    <td style={sCell}>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button onClick={() => setModal({ type: 'gemstones', item: g })} style={{ padding: '5px 8px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '6px', color: '#60a5fa', cursor: 'pointer' }}><Edit2 size={13} /></button>
-                        <button onClick={() => handleDelete('gem', g.id)} style={{ padding: '5px 8px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', cursor: 'pointer' }}><Trash2 size={13} /></button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead><tr style={{ background: 'rgba(0,0,0,0.3)' }}>
+                  <th style={sHead}>Image</th>
+                  <th style={sHead}>Name</th>
+                  <th style={sHead}>Planets</th>
+                  <th style={sHead}>Rashi</th>
+                  <th style={sHead}>Months</th>
+                  <th style={sHead}>Color</th>
+                  <th style={{ ...sHead, textAlign: 'center' }}>Active</th>
+                  <th style={{ ...sHead, width: '80px' }}></th>
+                </tr></thead>
+                <tbody>
+                  {gemstones.map((g, idx) => (
+                    <motion.tr key={g.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.04 }}
+                      style={{ borderBottom: '1px solid rgba(212,175,55,0.07)' }}>
+                      <td style={sCell}>
+                        {g.image
+                          ? <img src={g.image} alt={g.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
+                          : g.color_hex
+                            ? <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: g.color_hex }} />
+                            : <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: 'rgba(212,175,55,0.08)' }} />}
+                      </td>
+                      <td style={{ ...sCell, color: '#fff', fontWeight: 500 }}>{g.name}</td>
+                      <td style={{ ...sCell, fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+                        {fmtList(g.planets, p => p)}
+                      </td>
+                      <td style={{ ...sCell, fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+                        {fmtList(g.vedic_rashi, r => r)}
+                      </td>
+                      <td style={{ ...sCell, fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+                        {fmtList(g.birth_months, m => MONTH_SHORT[m - 1])}
+                      </td>
+                      <td style={sCell}>
+                        {g.color_hex
+                          ? <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: g.color_hex }} />
+                              <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{g.color_hex}</span>
+                            </div>
+                          : '—'}
+                      </td>
+                      <td style={{ ...sCell, textAlign: 'center' }}>
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: g.is_active ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)', color: g.is_active ? '#4ade80' : '#9ca3af' }}>
+                          {g.is_active ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                      <td style={sCell}>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button onClick={() => setModal({ type: 'gemstones', item: g })} style={{ padding: '5px 8px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '6px', color: '#60a5fa', cursor: 'pointer' }}><Edit2 size={13} /></button>
+                          <button onClick={() => handleDelete('gem', g.id)} style={{ padding: '5px 8px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#f87171', cursor: 'pointer' }}><Trash2 size={13} /></button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       ) : tab === 'articles' ? (
@@ -268,12 +443,17 @@ const AdminSpiritual = () => {
                   <motion.tr key={at.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.04 }}
                     style={{ borderBottom: '1px solid rgba(212,175,55,0.07)' }}>
                     <td style={sCell}>
-                      {at.image ? <img src={at.image} alt={at.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
+                      {at.image
+                        ? <img src={at.image} alt={at.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
                         : <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: 'rgba(212,175,55,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Sparkles size={16} color="rgba(212,175,55,0.3)" /></div>}
                     </td>
                     <td style={{ ...sCell, color: '#fff', fontWeight: 500 }}>{at.name}</td>
                     <td style={{ ...sCell, color: 'rgba(255,255,255,0.45)', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{at.description || '—'}</td>
-                    <td style={{ ...sCell, textAlign: 'center' }}><span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: at.is_active ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)', color: at.is_active ? '#4ade80' : '#9ca3af' }}>{at.is_active ? 'Yes' : 'No'}</span></td>
+                    <td style={{ ...sCell, textAlign: 'center' }}>
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: at.is_active ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)', color: at.is_active ? '#4ade80' : '#9ca3af' }}>
+                        {at.is_active ? 'Yes' : 'No'}
+                      </span>
+                    </td>
                     <td style={sCell}>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button onClick={() => setModal({ type: 'articles', item: at })} style={{ padding: '5px 8px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '6px', color: '#60a5fa', cursor: 'pointer' }}><Edit2 size={13} /></button>
@@ -331,13 +511,20 @@ const AdminSpiritual = () => {
       )}
 
       <AnimatePresence>
-        {modal && (
+        {modal && modal.type === 'gemstones' && (
+          <GemstoneModal
+            item={modal.item}
+            onClose={() => setModal(null)}
+            onSave={handleGemSave}
+          />
+        )}
+        {modal && modal.type === 'articles' && (
           <ItemModal
             item={modal.item}
-            title={modal.type === 'gemstones' ? 'Gemstone' : 'Article Type'}
-            fields={modal.type === 'gemstones' ? gemstoneFields : articleFields}
+            title="Article Type"
+            fields={articleFields}
             onClose={() => setModal(null)}
-            onSave={modal.type === 'gemstones' ? handleGemSave : handleArtSave}
+            onSave={handleArtSave}
           />
         )}
       </AnimatePresence>

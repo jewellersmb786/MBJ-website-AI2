@@ -565,7 +565,10 @@ class Gemstone(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
     name: str
-    birth_month: Optional[int] = None
+    birth_months: List[int] = []
+    vedic_rashi: List[str] = []
+    planets: List[str] = []
+    wearing_finger: Optional[str] = None
     color_hex: Optional[str] = None
     properties: Optional[str] = None
     image: Optional[str] = None
@@ -575,7 +578,10 @@ class Gemstone(BaseModel):
 
 class GemstoneCreate(BaseModel):
     name: str
-    birth_month: Optional[int] = None
+    birth_months: List[int] = []
+    vedic_rashi: List[str] = []
+    planets: List[str] = []
+    wearing_finger: Optional[str] = None
     color_hex: Optional[str] = None
     properties: Optional[str] = None
     image: Optional[str] = None
@@ -583,7 +589,10 @@ class GemstoneCreate(BaseModel):
 
 class GemstoneUpdate(BaseModel):
     name: Optional[str] = None
-    birth_month: Optional[int] = None
+    birth_months: Optional[List[int]] = None
+    vedic_rashi: Optional[List[str]] = None
+    planets: Optional[List[str]] = None
+    wearing_finger: Optional[str] = None
     color_hex: Optional[str] = None
     properties: Optional[str] = None
     image: Optional[str] = None

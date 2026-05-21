@@ -185,15 +185,60 @@ async def seed_default_filter_attributes(db, generate_uuid):
 
 
 DEFAULT_GEMSTONES = [
-    {"name": "Ruby",                   "birth_month": 7,    "color_hex": "#C70039", "properties": "Symbolizes passion, vitality, and courage. Believed to attract prosperity and protect against misfortune. Worn for confidence and leadership.", "display_order": 1},
-    {"name": "Emerald",                "birth_month": 5,    "color_hex": "#2E7D32", "properties": "Stone of harmony, love, and renewal. Said to enhance intuition and bring emotional balance. Associated with growth and wisdom.", "display_order": 2},
-    {"name": "Sapphire",               "birth_month": 9,    "color_hex": "#1E40AF", "properties": "Represents truth, sincerity, and inner peace. Believed to bring focus, mental clarity, and protection from negativity.", "display_order": 3},
-    {"name": "Pearl",                  "birth_month": 6,    "color_hex": "#F8F8FF", "properties": "Symbolizes purity, calm, and emotional balance. Worn to soothe the mind and enhance feminine energy. Associated with the moon.", "display_order": 4},
-    {"name": "Yellow Sapphire (Pukhraj)", "birth_month": 11, "color_hex": "#FBC02D", "properties": "Brings wisdom, prosperity, and good fortune. Highly valued in Vedic astrology for Jupiter's blessings — wealth, marriage, and knowledge.", "display_order": 5},
-    {"name": "Coral (Moonga)",          "birth_month": 3,    "color_hex": "#FF6F61", "properties": "Believed to enhance courage and vitality. Associated with Mars — gives strength, removes obstacles, and protects from harm.", "display_order": 6},
-    {"name": "Diamond",                "birth_month": 4,    "color_hex": "#E0F7FA", "properties": "Symbol of eternal love, strength, and clarity. Believed to enhance personal power, attract abundance, and bring success in relationships.", "display_order": 7},
-    {"name": "Cat's Eye (Lehsunia)",   "birth_month": None, "color_hex": "#8B6F47", "properties": "Protects against the evil eye and hidden enemies. Believed to bring sudden wealth and stability. Associated with Ketu in Vedic astrology.", "display_order": 8},
-    {"name": "Hessonite (Gomed)",      "birth_month": None, "color_hex": "#B3541E", "properties": "Said to remove confusion and bring success in legal matters and competitions. Associated with Rahu — helps overcome obstacles and bad luck.", "display_order": 9},
+    {
+        "name": "Ruby", "color_hex": "#C70039", "display_order": 1,
+        "birth_months": [7, 8], "vedic_rashi": ["Simha"], "planets": ["Sun"],
+        "wearing_finger": "Ring finger of the right hand",
+        "properties": "Symbolizes passion, vitality, courage, and leadership. Worn by those seeking confidence, recognition, and protection from misfortune. Associated with the Sun — bestows authority and self-esteem.",
+    },
+    {
+        "name": "Pearl", "color_hex": "#F8F8FF", "display_order": 2,
+        "birth_months": [6, 7], "vedic_rashi": ["Karka"], "planets": ["Moon"],
+        "wearing_finger": "Little finger of the right hand",
+        "properties": "Symbolizes purity, calmness, and emotional balance. Soothes the mind, enhances feminine energy, and brings peace to relationships. Associated with the Moon.",
+    },
+    {
+        "name": "Coral (Moonga)", "color_hex": "#FF6F61", "display_order": 3,
+        "birth_months": [3, 11], "vedic_rashi": ["Mesh", "Vrishchik"], "planets": ["Mars"],
+        "wearing_finger": "Ring finger of the right hand",
+        "properties": "Believed to enhance courage, vitality, and willpower. Removes obstacles, brings strength and stability. Associated with Mars — gives victory over enemies and competitors.",
+    },
+    {
+        "name": "Emerald", "color_hex": "#2E7D32", "display_order": 4,
+        "birth_months": [5, 8], "vedic_rashi": ["Mithun", "Kanya"], "planets": ["Mercury"],
+        "wearing_finger": "Little finger of the right hand",
+        "properties": "Stone of harmony, intellect, and communication. Enhances wisdom, business acumen, and clarity of thought. Associated with Mercury — favors students, writers, and traders.",
+    },
+    {
+        "name": "Yellow Sapphire (Pukhraj)", "color_hex": "#FBC02D", "display_order": 5,
+        "birth_months": [11, 2], "vedic_rashi": ["Dhanu", "Meen"], "planets": ["Jupiter"],
+        "wearing_finger": "Index finger of the right hand",
+        "properties": "Brings wisdom, prosperity, and good fortune. Highly valued in Vedic astrology for Jupiter's blessings — wealth, marriage, education, and spiritual growth.",
+    },
+    {
+        "name": "Diamond", "color_hex": "#E0F7FA", "display_order": 6,
+        "birth_months": [4, 9], "vedic_rashi": ["Vrishabh", "Tula"], "planets": ["Venus"],
+        "wearing_finger": "Middle finger of the right hand",
+        "properties": "Symbol of eternal love, beauty, and strength. Enhances personal magnetism, success in relationships, and artistic ability. Associated with Venus.",
+    },
+    {
+        "name": "Blue Sapphire (Neelam)", "color_hex": "#1E40AF", "display_order": 7,
+        "birth_months": [12, 1], "vedic_rashi": ["Makar", "Kumbh"], "planets": ["Saturn"],
+        "wearing_finger": "Middle finger of the right hand",
+        "properties": "Powerful stone of discipline, focus, and protection. Removes obstacles and brings sudden success — but requires careful astrological consultation before wearing. Associated with Saturn.",
+    },
+    {
+        "name": "Hessonite (Gomed)", "color_hex": "#B3541E", "display_order": 8,
+        "birth_months": [], "vedic_rashi": [], "planets": ["Rahu"],
+        "wearing_finger": "Middle finger of the right hand",
+        "properties": "Removes confusion, brings success in legal matters, competitions, and overcoming hidden enemies. Associated with Rahu — helps navigate sudden changes and unexpected challenges.",
+    },
+    {
+        "name": "Cat's Eye (Lehsunia)", "color_hex": "#8B6F47", "display_order": 9,
+        "birth_months": [], "vedic_rashi": [], "planets": ["Ketu"],
+        "wearing_finger": "Middle finger of the right hand",
+        "properties": "Protects against the evil eye and hidden dangers. Believed to bring sudden wealth and spiritual growth. Associated with Ketu — helps with detachment and intuition.",
+    },
 ]
 
 DEFAULT_ARTICLE_TYPES = [
@@ -212,6 +257,38 @@ async def seed_default_gemstones(db, generate_uuid):
     now = datetime.utcnow()
     docs = [{**g, "id": generate_uuid(), "is_active": True, "image": None, "created_at": now} for g in DEFAULT_GEMSTONES]
     await db.gemstones.insert_many(docs)
+
+
+async def _migrate_gemstone_fields(db):
+    """Migrate old gemstone docs to new schema (idempotent)."""
+    cursor = db.gemstones.find({})
+    async for doc in cursor:
+        updates = {}
+        unsets = {}
+
+        # Migrate singular birth_month → birth_months array
+        if 'birth_month' in doc and 'birth_months' not in doc:
+            bm = doc.get('birth_month')
+            updates['birth_months'] = [bm] if bm else []
+            unsets['birth_month'] = ''
+
+        # Add missing new fields with empty defaults
+        if 'birth_months' not in doc and 'birth_month' not in doc:
+            updates['birth_months'] = []
+        if 'vedic_rashi' not in doc:
+            updates['vedic_rashi'] = []
+        if 'planets' not in doc:
+            updates['planets'] = []
+        if 'wearing_finger' not in doc:
+            updates['wearing_finger'] = None
+
+        if updates or unsets:
+            op = {}
+            if updates:
+                op['$set'] = updates
+            if unsets:
+                op['$unset'] = unsets
+            await db.gemstones.update_one({'id': doc['id']}, op)
 
 
 async def seed_default_article_types(db, generate_uuid):

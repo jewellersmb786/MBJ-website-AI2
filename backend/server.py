@@ -147,13 +147,15 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Filter attribute seeding failed (non-fatal): {e}")
 
-    # Seed default gemstones if collection is empty
+    # Seed default gemstones if collection is empty, then migrate schema
     try:
-        from seed_data import seed_default_gemstones
+        from seed_data import seed_default_gemstones, _migrate_gemstone_fields
         await seed_default_gemstones(db, lambda: str(uuid.uuid4()))
         logger.info("Gemstone seed check complete")
+        await _migrate_gemstone_fields(db)
+        logger.info("Gemstone field migration complete")
     except Exception as e:
-        logger.error(f"Gemstone seeding failed (non-fatal): {e}")
+        logger.error(f"Gemstone seeding/migration failed (non-fatal): {e}")
 
     # Seed default spiritual article types if collection is empty
     try:
