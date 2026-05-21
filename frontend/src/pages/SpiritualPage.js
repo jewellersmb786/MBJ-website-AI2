@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { gemstonesAPI, spiritualArticleTypesAPI, spiritualInquiriesAPI } from '../api';
-import { Sparkles, X, Send, Check, Calendar, Star, Globe, User, LayoutGrid } from 'lucide-react';
+import { Sparkles, X, Send, Check, Calendar, Star, Globe, LayoutGrid } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useUserPhone } from '../contexts/UserPhoneContext';
-import {
-  getRashiFromDOB, getBirthMonthFromDOB,
-  RASHI_LIST, PLANETS_LIST, MONTH_NAMES, RASHI_DEVANAGARI,
-} from '../utils/astrologyMap';
+import { RASHI_LIST, PLANETS_LIST, MONTH_NAMES, RASHI_DEVANAGARI } from '../utils/astrologyMap';
 
 const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -17,11 +14,10 @@ const PLANET_SYMBOLS = {
 };
 
 const MODE_CARDS = [
-  { key: 'month',  Icon: Calendar,   label: 'By Birth Month',     sub: 'Filter by your birth month' },
-  { key: 'rashi',  Icon: Star,       label: 'By Vedic Rashi',     sub: 'Mesh, Karka, Simha...' },
-  { key: 'planet', Icon: Globe,      label: 'By Planet (Graha)',  sub: 'Sun, Moon, Mars, Rahu...' },
-  { key: 'dob',    Icon: User,       label: 'By Birth Date',      sub: "We'll find your Rashi" },
-  { key: 'all',    Icon: LayoutGrid, label: 'Browse All',         sub: 'See all gemstones' },
+  { key: 'month',  Icon: Calendar,   label: 'By Birth Month',         sub: 'Western birthstone — not Vedic Rashi' },
+  { key: 'rashi',  Icon: Star,       label: 'By Vedic Rashi',         sub: 'Mesh, Karka, Simha...' },
+  { key: 'planet', Icon: Globe,      label: 'By Planet (Graha)',      sub: 'Sun, Moon, Mars, Rahu...' },
+  { key: 'all',    Icon: LayoutGrid, label: 'Browse All Gemstones',   sub: 'See the full collection' },
 ];
 
 const Chip = ({ label, sub, active, onClick }) => (
@@ -44,7 +40,7 @@ const StepBadge = ({ num, done }) => (
   </div>
 );
 
-const GemstoneCard = ({ gem, active, onClick, hoveredId, setHoveredId }) => {
+const GemstoneCard = ({ gem, active, onClick, hoveredId, setHoveredId, hideVedicBadges = false }) => {
   const isHovered = hoveredId === gem.id;
   return (
     <motion.div whileHover={{ scale: 1.02 }} onClick={() => onClick(gem)}
@@ -73,8 +69,8 @@ const GemstoneCard = ({ gem, active, onClick, hoveredId, setHoveredId }) => {
           <p style={{ fontSize: '13px', color: active ? '#D4AF37' : '#fff', fontWeight: 600, margin: 0 }}>{gem.name}</p>
         </div>
 
-        {/* Planet badges */}
-        {(gem.planets || []).length > 0 && (
+        {/* Planet badges — hidden in Western birth-month mode */}
+        {!hideVedicBadges && (gem.planets || []).length > 0 && (
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '4px' }}>
             {gem.planets.slice(0, 2).map(p => (
               <span key={p} style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '10px', background: 'rgba(212,175,55,0.1)', color: 'rgba(212,175,55,0.8)', border: '1px solid rgba(212,175,55,0.2)' }}>
@@ -108,7 +104,6 @@ const SpiritualPage = () => {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedRashi, setSelectedRashi] = useState(null);
   const [selectedPlanet, setSelectedPlanet] = useState(null);
-  const [dob, setDob] = useState('');
   const [hoveredId, setHoveredId] = useState(null);
 
   // Selection state
@@ -142,22 +137,13 @@ const SpiritualPage = () => {
     if (pickerMode === 'planet' && selectedPlanet) {
       return gemstones.filter(g => (g.planets || []).includes(selectedPlanet));
     }
-    if (pickerMode === 'dob' && dob) {
-      const rashi = getRashiFromDOB(dob);
-      const month = getBirthMonthFromDOB(dob);
-      return gemstones.filter(g =>
-        (rashi && (g.vedic_rashi || []).includes(rashi)) ||
-        ((g.birth_months || []).includes(month))
-      );
-    }
     return [];
   };
 
   const showGemstoneList = pickerMode === 'all' ||
     (pickerMode === 'month' && selectedMonth !== null) ||
     (pickerMode === 'rashi' && selectedRashi !== null) ||
-    (pickerMode === 'planet' && selectedPlanet !== null) ||
-    (pickerMode === 'dob' && dob !== '');
+    (pickerMode === 'planet' && selectedPlanet !== null);
 
   const filteredGemstones = showGemstoneList ? getFilteredGemstones() : [];
 
@@ -181,7 +167,6 @@ const SpiritualPage = () => {
     setSelectedMonth(null);
     setSelectedRashi(null);
     setSelectedPlanet(null);
-    setDob('');
   };
 
   const handleSubmit = async (e) => {
@@ -226,10 +211,6 @@ const SpiritualPage = () => {
       </div>
     );
   }
-
-  // ── DOB-derived info ─────────────────────────────────────────────────────
-  const dobRashi = dob ? getRashiFromDOB(dob) : null;
-  const dobMonth = dob ? getBirthMonthFromDOB(dob) : null;
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff', paddingTop: '100px', paddingBottom: '80px' }}>
@@ -364,24 +345,6 @@ const SpiritualPage = () => {
                             </div>
                           </>
                         )}
-
-                        {pickerMode === 'dob' && (
-                          <>
-                            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '12px' }}>Enter your date of birth:</p>
-                            <input type="date" value={dob} onChange={e => setDob(e.target.value)}
-                              style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '8px', color: '#fff', fontSize: '14px', outline: 'none', colorScheme: 'dark', marginBottom: '12px' }} />
-                            {dob && dobRashi && (
-                              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: '13px', color: '#D4AF37', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.25)', padding: '4px 12px', borderRadius: '20px' }}>
-                                  Rashi: {dobRashi} ({RASHI_DEVANAGARI[dobRashi]})
-                                </span>
-                                <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '20px' }}>
-                                  Birth Month: {MONTH_NAMES[dobMonth - 1]}
-                                </span>
-                              </div>
-                            )}
-                          </>
-                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -389,12 +352,11 @@ const SpiritualPage = () => {
                   {/* Gemstone grid */}
                   {showGemstoneList && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      {pickerMode === 'dob' && dob && (
-                        <div style={{ marginBottom: '16px' }}>
-                          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, fontStyle: 'italic' }}>
-                            Based on your birth date, here are commonly recommended gemstones for you.
-                          </p>
-                        </div>
+                      {pickerMode === 'month' && selectedMonth && (
+                        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '14px', lineHeight: 1.6, fontStyle: 'italic' }}>
+                          Showing Western birthstones for {MONTH_NAMES[selectedMonth - 1]}.
+                          For Vedic recommendations, use <strong style={{ color: 'rgba(212,175,55,0.7)', fontStyle: 'normal' }}>Rashi</strong> or <strong style={{ color: 'rgba(212,175,55,0.7)', fontStyle: 'normal' }}>Planet</strong> mode — your astrologer can tell you yours.
+                        </p>
                       )}
 
                       {filteredGemstones.length === 0 ? (
@@ -411,15 +373,10 @@ const SpiritualPage = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: '14px' }}>
                           {filteredGemstones.map(g => (
                             <GemstoneCard key={g.id} gem={g} active={selectedGemstone?.id === g.id}
-                              onClick={handleSelectGemstone} hoveredId={hoveredId} setHoveredId={setHoveredId} />
+                              onClick={handleSelectGemstone} hoveredId={hoveredId} setHoveredId={setHoveredId}
+                              hideVedicBadges={pickerMode === 'month'} />
                           ))}
                         </div>
-                      )}
-
-                      {pickerMode === 'dob' && (
-                        <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '14px', fontStyle: 'italic', lineHeight: 1.6 }}>
-                          For a precise recommendation based on your complete birth chart (time and place of birth), please consult a qualified Jyotishi (Vedic astrologer).
-                        </p>
                       )}
                     </motion.div>
                   )}
@@ -515,6 +472,14 @@ const SpiritualPage = () => {
             </AnimatePresence>
           </>
         )}
+      </div>
+
+      {/* Persistent disclaimer */}
+      <div style={{ maxWidth: '960px', margin: '48px auto 0', padding: '0 24px' }}>
+        <p style={{ fontSize: '11px', color: 'rgba(212,175,55,0.45)', fontStyle: 'italic', lineHeight: 1.8, textAlign: 'center' }}>
+          Vedic astrology recommendations require your complete birth chart (date, time, and place of birth).
+          The Birth Month mode follows Western birthstone tradition. For exact Vedic gemstone advice, please consult an astrologer.
+        </p>
       </div>
 
       <style>{`

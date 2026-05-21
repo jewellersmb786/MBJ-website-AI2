@@ -260,23 +260,56 @@ async def seed_default_gemstones(db, generate_uuid):
 
 
 def _find_default_gemstone(name):
-    """Case-insensitive lookup in DEFAULT_GEMSTONES. Returns matching entry or None."""
+    """Case-insensitive lookup in DEFAULT_GEMSTONES with alias map. Returns matching entry or None."""
+    ALIASES = {
+        "sapphire": "Blue Sapphire (Neelam)",
+        "blue sapphire": "Blue Sapphire (Neelam)",
+        "neelam": "Blue Sapphire (Neelam)",
+        "ruby": "Ruby",
+        "manik": "Ruby",
+        "pearl": "Pearl",
+        "moti": "Pearl",
+        "coral": "Coral (Moonga)",
+        "moonga": "Coral (Moonga)",
+        "emerald": "Emerald",
+        "panna": "Emerald",
+        "yellow sapphire": "Yellow Sapphire (Pukhraj)",
+        "pukhraj": "Yellow Sapphire (Pukhraj)",
+        "diamond": "Diamond",
+        "heera": "Diamond",
+        "hessonite": "Hessonite (Gomed)",
+        "gomed": "Hessonite (Gomed)",
+        "cat's eye": "Cat's Eye (Lehsunia)",
+        "cats eye": "Cat's Eye (Lehsunia)",
+        "lehsunia": "Cat's Eye (Lehsunia)",
+    }
+
+    # Build a lookup dict from DEFAULT_GEMSTONES for fast exact access
+    default_by_name = {g['name'].lower(): g for g in DEFAULT_GEMSTONES}
+
     name_lower = name.lower().strip()
-    # Exact match first
-    for g in DEFAULT_GEMSTONES:
-        if g['name'].lower() == name_lower:
-            return g
-    # Partial match: strip parenthetical suffixes from default names for comparison
-    # e.g. "Yellow Sapphire (Pukhraj)" → "yellow sapphire", "Coral (Moonga)" → "coral"
+
+    # 1. Exact match
+    if name_lower in default_by_name:
+        return default_by_name[name_lower]
+
+    # 2. Alias map
+    if name_lower in ALIASES:
+        target = ALIASES[name_lower].lower()
+        if target in default_by_name:
+            return default_by_name[target]
+
+    # 3. Fuzzy: strip parenthetical suffix from DEFAULT names and compare
     for g in DEFAULT_GEMSTONES:
         base = g['name'].lower().split('(')[0].strip()
         if base == name_lower or name_lower.startswith(base) or base.startswith(name_lower):
             return g
+
     return None
 
 
 async def _migrate_gemstone_fields(db):
-    """Migrate old gemstone docs to new schema and auto-fill Vedic data for untouched gemstones (idempotent)."""
+    """Migrate old gemstone docs to new schema and per-field auto-fill Vedic data (idempotent)."""
     cursor = db.gemstones.find({})
     async for doc in cursor:
         updates = {}
@@ -298,7 +331,7 @@ async def _migrate_gemstone_fields(db):
         if 'wearing_finger' not in doc:
             updates['wearing_finger'] = None
 
-        # Apply step 1+2 first so we can check real values below
+        # Apply step 1+2 first so we can read accurate current state below
         if updates or unsets:
             op = {}
             if updates:
@@ -307,33 +340,45 @@ async def _migrate_gemstone_fields(db):
                 op['$unset'] = unsets
             await db.gemstones.update_one({'id': doc['id']}, op)
 
-        # Step 3: Auto-fill Vedic data for untouched gemstones.
-        # Read the doc state after step 1+2 to get current arrays.
-        birth_months_now  = updates.get('birth_months',  doc.get('birth_months',  []))
-        vedic_rashi_now   = updates.get('vedic_rashi',   doc.get('vedic_rashi',   []))
-        planets_now       = updates.get('planets',       doc.get('planets',       []))
+        # Step 3: Per-field auto-fill from defaults.
+        # Read effective values (prefer values set in steps 1+2 over stale doc values).
+        birth_months_now   = updates.get('birth_months',   doc.get('birth_months',   []))
+        vedic_rashi_now    = updates.get('vedic_rashi',    doc.get('vedic_rashi',    []))
+        planets_now        = updates.get('planets',        doc.get('planets',        []))
         wearing_finger_now = updates.get('wearing_finger', doc.get('wearing_finger'))
 
-        all_empty = (
-            not birth_months_now and
-            not vedic_rashi_now and
-            not planets_now and
-            not wearing_finger_now
-        )
+        default = _find_default_gemstone(doc.get('name', ''))
+        if default:
+            vedic_fill = {}
+            log_parts = []
 
-        if all_empty:
-            default = _find_default_gemstone(doc.get('name', ''))
-            if default:
-                vedic_update = {
-                    'birth_months':   default.get('birth_months', []),
-                    'vedic_rashi':    default.get('vedic_rashi', []),
-                    'planets':        default.get('planets', []),
-                    'wearing_finger': default.get('wearing_finger'),
-                }
-                # Only write if there's something non-empty to set
-                if any(v for v in vedic_update.values() if v):
-                    await db.gemstones.update_one({'id': doc['id']}, {'$set': vedic_update})
-                    print(f"Filled Vedic data for '{doc.get('name')}'")  # noqa: T201
+            if not birth_months_now:
+                val = default.get('birth_months', [])
+                if val:
+                    vedic_fill['birth_months'] = val
+                    log_parts.append(f"birth_months={val}")
+
+            if not vedic_rashi_now:
+                val = default.get('vedic_rashi', [])
+                if val:
+                    vedic_fill['vedic_rashi'] = val
+                    log_parts.append(f"vedic_rashi={val}")
+
+            if not planets_now:
+                val = default.get('planets', [])
+                if val:
+                    vedic_fill['planets'] = val
+                    log_parts.append(f"planets={val}")
+
+            if not wearing_finger_now:
+                val = default.get('wearing_finger')
+                if val:
+                    vedic_fill['wearing_finger'] = val
+                    log_parts.append(f"wearing_finger='{val}'")
+
+            if vedic_fill:
+                await db.gemstones.update_one({'id': doc['id']}, {'$set': vedic_fill})
+                print(f"Gemstone '{doc.get('name')}': filled {', '.join(log_parts)}")  # noqa: T201
 
 
 async def seed_default_article_types(db, generate_uuid):
