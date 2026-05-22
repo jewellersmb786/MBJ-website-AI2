@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { settingsAPI, categoriesAPI, testimonialsAPI, festivalBannersAPI } from '../api';
+import CinematicHero from '../components/CinematicHero';
 import * as LucideIcons from 'lucide-react';
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -106,6 +107,11 @@ const HomePage = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff' }}>
+
+      {/* ══════════════════════
+          CINEMATIC HERO
+      ══════════════════════ */}
+      <CinematicHero />
 
       {/* ══════════════════════
           FESTIVAL BANNER MODAL
