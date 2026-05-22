@@ -140,9 +140,6 @@ export default function CinematicHero() {
   // Pulse dots: appear with model
   const dotsOpacity = useTransform(scrollYProgress, [0.72, 0.85], [0, 1]);
 
-  // Scroll hint: fades out as soon as user starts scrolling
-  const scrollHintOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
-
   const hasImages = hero && (hero.piece1_image || hero.piece2_image || hero.model_image);
 
   if (!hero) return null;
@@ -364,7 +361,7 @@ export default function CinematicHero() {
             style={{
               position: 'absolute', bottom: 28, left: '50%',
               transform: 'translateX(-50%)', zIndex: 7,
-              opacity: scrollHintOpacity,
+              opacity: useTransform(scrollYProgress, [0, 0.12], [1, 0]),
             }}
           >
             <div style={{
