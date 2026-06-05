@@ -643,44 +643,6 @@ class SpiritualInquiryCreate(BaseModel):
     selected_article_type_id: Optional[str] = None
     notes: Optional[str] = None
 
-# Hero Content Models
-class HeroContent(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-    id: str
-    tagline_main: str = "Crafted with Devotion"
-    tagline_sub: str = "Heritage. Artistry. Intimacy."
-    piece1_image: Optional[str] = None
-    piece2_image: Optional[str] = None
-    model_image: Optional[str] = None
-    dot1_product_id: Optional[str] = None
-    dot1_label: Optional[str] = "Lakshmi Haram"
-    dot1_meta: Optional[str] = "Bridal · 22K"
-    dot2_product_id: Optional[str] = None
-    dot2_label: Optional[str] = "Antique Earrings"
-    dot2_meta: Optional[str] = "Traditional · 22K"
-    dot3_product_id: Optional[str] = None
-    dot3_label: Optional[str] = "Maang Tikka"
-    dot3_meta: Optional[str] = "Bridal · 22K"
-    is_active: bool = True
-    updated_at: datetime
-
-class HeroContentUpdate(BaseModel):
-    tagline_main: Optional[str] = None
-    tagline_sub: Optional[str] = None
-    piece1_image: Optional[str] = None
-    piece2_image: Optional[str] = None
-    model_image: Optional[str] = None
-    dot1_product_id: Optional[str] = None
-    dot1_label: Optional[str] = None
-    dot1_meta: Optional[str] = None
-    dot2_product_id: Optional[str] = None
-    dot2_label: Optional[str] = None
-    dot2_meta: Optional[str] = None
-    dot3_product_id: Optional[str] = None
-    dot3_label: Optional[str] = None
-    dot3_meta: Optional[str] = None
-    is_active: Optional[bool] = None
-
 # Admin Models
 class AdminUser(BaseModel):
     model_config = ConfigDict(extra="ignore")

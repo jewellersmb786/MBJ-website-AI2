@@ -213,13 +213,4 @@ export const adminAPI = {
       });
     },
   },
-
-  hero: {
-    get: () => api.get('/admin/hero'),
-    update: (data) => api.put('/admin/hero', data),
-  },
-};
-
-export const heroAPI = {
-  getPublic: () => api.get('/hero'),
 };

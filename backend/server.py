@@ -165,14 +165,6 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Article type seeding failed (non-fatal): {e}")
 
-    # Seed default hero content if collection is empty
-    try:
-        from seed_data import seed_default_hero
-        await seed_default_hero(db, lambda: str(uuid.uuid4()))
-        logger.info("Hero content seed check complete")
-    except Exception as e:
-        logger.error(f"Hero content seeding failed (non-fatal): {e}")
-
     # Scrape and cache gold rates
     await update_gold_rates()
 
@@ -1400,41 +1392,6 @@ async def remove_from_wishlist(body: WishlistRemoveItem):
     if not updated:
         return {"customer_phone": phone_clean, "product_ids": []}
     return updated
-
-# ============================================================================
-# Hero Content
-# ============================================================================
-
-@api_router.get("/hero")
-async def get_hero_public():
-    doc = await db.hero_content.find_one({"id": "hero_main"}, {"_id": 0})
-    if not doc:
-        return {
-            "id": "hero_main",
-            "tagline_main": "Crafted with Devotion",
-            "tagline_sub": "Heritage. Artistry. Intimacy.",
-            "piece1_image": None, "piece2_image": None, "model_image": None,
-            "dot1_product_id": None, "dot1_label": "Lakshmi Haram", "dot1_meta": "Bridal · 22K",
-            "dot2_product_id": None, "dot2_label": "Antique Earrings", "dot2_meta": "Traditional · 22K",
-            "dot3_product_id": None, "dot3_label": "Maang Tikka", "dot3_meta": "Bridal · 22K",
-            "is_active": True,
-        }
-    return doc
-
-@api_router.get("/admin/hero")
-async def get_hero_admin(admin=Depends(get_current_admin)):
-    return await get_hero_public()
-
-@api_router.put("/admin/hero")
-async def update_hero(body: HeroContentUpdate, admin=Depends(get_current_admin)):
-    update_data = body.model_dump(exclude_none=True)
-    update_data["updated_at"] = datetime.utcnow()
-    await db.hero_content.update_one(
-        {"id": "hero_main"},
-        {"$set": update_data},
-        upsert=True
-    )
-    return await get_hero_public()
 
 # ============================================================================
 # Include router and setup

@@ -390,32 +390,6 @@ async def seed_default_article_types(db, generate_uuid):
     await db.spiritual_article_types.insert_many(docs)
 
 
-async def seed_default_hero(db, generate_uuid):
-    count = await db.hero_content.count_documents({})
-    if count > 0:
-        return
-    now = datetime.utcnow()
-    await db.hero_content.insert_one({
-        "id": "hero_main",
-        "tagline_main": "Crafted with Devotion",
-        "tagline_sub": "Heritage. Artistry. Intimacy.",
-        "piece1_image": None,
-        "piece2_image": None,
-        "model_image": None,
-        "dot1_product_id": None,
-        "dot1_label": "Lakshmi Haram",
-        "dot1_meta": "Bridal · 22K",
-        "dot2_product_id": None,
-        "dot2_label": "Antique Earrings",
-        "dot2_meta": "Traditional · 22K",
-        "dot3_product_id": None,
-        "dot3_label": "Maang Tikka",
-        "dot3_meta": "Bridal · 22K",
-        "is_active": True,
-        "updated_at": now,
-    })
-
-
 async def _migrate_scheme_types(db):
     """Idempotent: backfills scheme_type and renames monthly_amount→minimum_monthly_amount on schemes."""
     # 1. Backfill missing scheme_type

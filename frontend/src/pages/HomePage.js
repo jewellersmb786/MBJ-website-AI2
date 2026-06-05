@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { settingsAPI, categoriesAPI, testimonialsAPI, festivalBannersAPI } from '../api';
-import CinematicHero from '../components/CinematicHero';
 import * as LucideIcons from 'lucide-react';
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -109,11 +108,6 @@ const HomePage = () => {
     <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff' }}>
 
       {/* ══════════════════════
-          CINEMATIC HERO
-      ══════════════════════ */}
-      <CinematicHero />
-
-      {/* ══════════════════════
           FESTIVAL BANNER MODAL
       ══════════════════════ */}
       {festivalBanner && !bannerDismissed && (
@@ -139,17 +133,39 @@ const HomePage = () => {
       )}
 
       {/* ══════════════════════
-          HERO — image only
+          HERO
       ══════════════════════ */}
-      <section style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
+      <section style={{ position: 'relative', minHeight: '60vh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <img
           src={heroImage}
           alt="MBJ Jewellers"
-          style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.6)', display: 'block' }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,7,16,0.5)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, #0f0f0f 100%)' }} />
-        {/* Scroll indicator */}
-        <div style={{ position: 'absolute', bottom: '32px', left: '50%', transform: 'translateX(-50%)', animation: 'bounce 2s infinite' }}>
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '80px 32px', maxWidth: '700px' }}>
+          {settings?.hero_heading && (
+            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.8rem)', fontFamily: 'Georgia, serif', fontWeight: 400, color: '#fff', marginBottom: '16px', lineHeight: 1.15 }}>
+              {settings.hero_heading}
+            </h1>
+          )}
+          {settings?.hero_subheading && (
+            <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.8, marginBottom: '36px' }}>
+              {settings.hero_subheading}
+            </p>
+          )}
+          {settings?.hero_cta_text && (
+            <Link
+              to={settings.hero_cta_link || '/collections'}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 34px', border: '1px solid rgba(212,175,55,0.6)', color: '#D4AF37', textDecoration: 'none', fontSize: '11px', letterSpacing: '0.15em', textTransform: 'uppercase', background: 'rgba(212,175,55,0.05)', transition: 'all 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.12)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(212,175,55,0.05)'}
+            >
+              {settings.hero_cta_text} <ArrowRight size={13} />
+            </Link>
+          )}
+        </div>
+        <div style={{ position: 'absolute', bottom: '32px', left: '50%', transform: 'translateX(-50%)', animation: 'bounce 2s infinite', zIndex: 10 }}>
           <ChevronDown size={24} color="rgba(212,175,55,0.5)" />
         </div>
       </section>

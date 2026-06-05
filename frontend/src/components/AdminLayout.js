@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAdmin } from '../AdminContext';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, FolderTree, Coins, Sparkles, MessageSquare, SlidersHorizontal, Star, Megaphone, Wand2 } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, FolderTree, Coins, Sparkles, MessageSquare, SlidersHorizontal, Star, Megaphone } from 'lucide-react';
 
 const AdminLayout = () => {
   const { admin, loading, logout } = useAdmin();
@@ -39,7 +39,6 @@ const AdminLayout = () => {
     { to: '/admin/spiritual', label: 'Spiritual', icon: <Sparkles size={20} /> },
     { to: '/admin/testimonials', label: 'Testimonials', icon: <Star size={20} /> },
     { to: '/admin/banners', label: 'Banners', icon: <Megaphone size={20} /> },
-    { to: '/admin/hero', label: 'Hero', icon: <Wand2 size={20} /> },
     { to: '/admin/settings', label: 'Settings', icon: <Settings size={20} /> },
   ];
 

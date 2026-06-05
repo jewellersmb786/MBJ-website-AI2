@@ -32,7 +32,6 @@ import AdminSpiritual from './pages/admin/AdminSpiritual';
 import AdminFilterAttributes from './pages/admin/AdminFilterAttributes';
 import AdminTestimonials from './pages/admin/AdminTestimonials';
 import AdminBanners from './pages/admin/AdminBanners';
-import AdminHero from './pages/admin/AdminHero';
 import MyAccountPage from './pages/MyAccountPage';
 
 // Layout
@@ -81,7 +80,6 @@ function App() {
             <Route path="filter-attributes" element={<AdminFilterAttributes />} />
             <Route path="testimonials" element={<AdminTestimonials />} />
             <Route path="banners" element={<AdminBanners />} />
-            <Route path="hero" element={<AdminHero />} />
           </Route>
         </Routes>
       </BrowserRouter>
