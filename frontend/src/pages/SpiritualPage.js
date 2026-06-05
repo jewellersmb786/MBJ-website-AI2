@@ -216,7 +216,7 @@ const SpiritualPage = () => {
     <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff', paddingTop: '100px', paddingBottom: '80px' }}>
 
       {/* Hero */}
-      <div style={{ textAlign: 'center', padding: '0 32px', marginBottom: '56px' }}>
+      <div style={{ textAlign: 'center', padding: '0 clamp(16px, 4vw, 32px)', marginBottom: '56px' }}>
         <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
           <Sparkles size={26} color="#D4AF37" />
         </div>

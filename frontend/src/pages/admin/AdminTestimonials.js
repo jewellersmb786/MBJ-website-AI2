@@ -199,7 +199,7 @@ const AdminTestimonials = () => {
           <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Customer review link:</span>
           <code style={{ fontSize: '12px', color: '#D4AF37', background: 'rgba(212,175,55,0.08)', padding: '2px 8px', borderRadius: '4px' }}>{reviewLink}</code>
           <button
-            onClick={() => { navigator.clipboard.writeText(reviewLink); toast.success('Copied!'); }}
+            onClick={() => { navigator.clipboard.writeText(reviewLink); toast.success('Message copied to clipboard.'); }}
             style={{ padding: '5px 12px', background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '6px', color: '#D4AF37', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
             Copy
           </button>

@@ -252,7 +252,7 @@ const SchemesPage = () => {
     <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff', paddingTop: '100px', paddingBottom: '80px' }}>
 
       {/* ── Hero ── */}
-      <div style={{ textAlign: 'center', padding: '0 32px', marginBottom: '64px' }}>
+      <div style={{ textAlign: 'center', padding: '0 clamp(16px, 4vw, 32px)', marginBottom: '64px' }}>
         <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
           <Coins size={26} color="#D4AF37" />
         </div>
@@ -278,7 +278,7 @@ const SchemesPage = () => {
             </a>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: '28px' }}>
             {schemes.map((scheme, idx) => (
               <motion.div key={scheme.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.07 }}
                 onClick={() => navigate(`/schemes/${scheme.id}`)}
@@ -333,7 +333,7 @@ const SchemesPage = () => {
         </div>
 
         {/* Phone lookup form */}
-        <form onSubmit={handleLookup} style={{ display: 'flex', gap: '10px', maxWidth: '520px', margin: '0 auto 48px' }}>
+        <form onSubmit={handleLookup} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', maxWidth: '520px', margin: '0 auto 48px' }}>
           <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} style={inpStyle} placeholder="+91 XXXXX XXXXX" />
           <button type="submit" disabled={lookupLoading || phone.replace(/\D/g, '').length < 10}
             style={{ padding: '12px 24px', background: lookupLoading ? 'rgba(212,175,55,0.5)' : '#D4AF37', color: '#000', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '14px', cursor: lookupLoading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>

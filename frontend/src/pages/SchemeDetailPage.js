@@ -60,7 +60,7 @@ const EnrollModal = ({ scheme, onClose }) => {
     >
       <motion.div
         initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }}
-        style={{ background: '#1a0710', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '480px', position: 'relative' }}
+        style={{ background: '#1a0710', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '16px', padding: 'clamp(20px, 4vw, 32px)', width: '100%', maxWidth: '480px', position: 'relative' }}
       >
         <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>
           <X size={18} />
@@ -186,7 +186,7 @@ const SchemeDetailPage = () => {
           <ArrowLeft size={14} /> Schemes
         </button>
 
-        <div style={{ position: 'relative', zIndex: 1, padding: '0 32px 52px', maxWidth: '800px', margin: '0 auto', width: '100%', paddingTop: '160px' }}>
+        <div style={{ position: 'relative', zIndex: 1, padding: `160px clamp(16px, 4vw, 32px) 52px`, maxWidth: '800px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
           <p style={{ fontSize: '10px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.6)', marginBottom: '12px' }}>MBJ Jewellers</p>
           <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: 600, color: '#D4AF37', marginBottom: '10px', lineHeight: 1.2 }}>
             {scheme.name}

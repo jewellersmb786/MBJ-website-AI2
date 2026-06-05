@@ -75,7 +75,7 @@ const MyAccountPage = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f0f', paddingTop: '100px', paddingBottom: '80px' }}>
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 32px' }}>
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 clamp(16px, 4vw, 32px)' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px', flexWrap: 'wrap', gap: '16px' }}>
           <div>

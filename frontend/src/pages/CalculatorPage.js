@@ -104,9 +104,9 @@ const CalculatorPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-16"
           >
-            <div className="flex items-center justify-center space-x-4 mb-6">
-              <CalcIcon className="w-16 h-16 text-gold" />
-              <h1 className="text-6xl font-playfair font-bold gold-text">
+            <div className="flex items-center justify-center gap-3 mb-6 flex-wrap">
+              <CalcIcon className="w-10 h-10 md:w-16 md:h-16 text-gold" />
+              <h1 className="text-4xl md:text-6xl font-playfair font-bold gold-text">
                 Price Calculator
               </h1>
             </div>
@@ -264,13 +264,13 @@ const CalculatorPage = () => {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="glass-gold rounded-3xl p-12 text-center mb-6"
+              className="glass-gold rounded-3xl p-6 md:p-12 text-center mb-6"
             >
               <div className="flex items-center justify-center mb-6">
                 <Sparkles className="w-12 h-12 text-gold" />
               </div>
               <h3 className="text-2xl font-semibold text-gray-300 mb-4">Estimated Final Price</h3>
-              <p className="text-7xl font-playfair font-bold text-[#D4AF37] mb-4" data-testid="final-price">
+              <p className="text-4xl md:text-7xl font-playfair font-bold text-[#D4AF37] mb-4" data-testid="final-price">
                 ₹{result.final_price.toLocaleString('en-IN')}
               </p>
               <p className="text-sm text-gray-400 mb-8">

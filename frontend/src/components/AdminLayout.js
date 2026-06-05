@@ -1,19 +1,21 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAdmin } from '../AdminContext';
-import { motion } from 'framer-motion';
-import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, FolderTree, Coins, Sparkles, MessageSquare, SlidersHorizontal, Star, Megaphone } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, FolderTree, Coins, Sparkles, MessageSquare, SlidersHorizontal, Star, Megaphone, Menu } from 'lucide-react';
 
 const AdminLayout = () => {
   const { admin, loading, logout } = useAdmin();
   const navigate = useNavigate();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !admin && location.pathname !== '/admin/login') {
       navigate('/admin/login');
     }
   }, [admin, loading, location, navigate]);
+
+  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
   if (loading) {
     return (
@@ -44,13 +46,18 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-black">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/60 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 glass border-r border-gold/10 z-40">
-        <div className="p-6">
+      <aside className={`fixed left-0 top-0 h-full w-64 glass border-r border-gold/10 z-40 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <div className="p-6 h-full overflow-y-auto">
           <Link to="/" className="flex items-center space-x-3 mb-8">
-            <img 
-              src="https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/6lie68ha_openart-fabf0c3b-095b-4c9f-ba55-7fb5f24a5ff2.png" 
-              alt="MB Jewellers" 
+            <img
+              src="https://customer-assets.emergentagent.com/job_planning-phase-9/artifacts/6lie68ha_openart-fabf0c3b-095b-4c9f-ba55-7fb5f24a5ff2.png"
+              alt="MB Jewellers"
               className="h-12 w-auto"
             />
           </Link>
@@ -62,6 +69,7 @@ const AdminLayout = () => {
                 <Link
                   key={item.to}
                   to={item.to}
+                  onClick={() => setSidebarOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
                     isActive
                       ? 'bg-gold text-black font-semibold'
@@ -76,7 +84,7 @@ const AdminLayout = () => {
           </nav>
 
           <button
-            onClick={logout}
+            onClick={() => { setSidebarOpen(false); logout(); }}
             className="flex items-center space-x-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all w-full mt-8"
           >
             <LogOut size={20} />
@@ -86,12 +94,21 @@ const AdminLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="ml-64" style={{ minWidth: 0, overflowX: 'hidden', flex: 1 }}>
-        <header className="glass border-b border-gold/10 px-8 py-4">
+      <div className="md:ml-64" style={{ minWidth: 0, overflowX: 'hidden', flex: 1 }}>
+        <header className="glass border-b border-gold/10 px-4 md:px-8 py-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-playfair font-bold gold-text">Admin Panel</h2>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="md:hidden text-gold p-1"
+                aria-label="Open menu"
+              >
+                <Menu size={22} />
+              </button>
+              <h2 className="text-xl md:text-2xl font-playfair font-bold gold-text">Admin Panel</h2>
+            </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-400 text-sm">Welcome, {admin.username}</span>
+              <span className="hidden sm:block text-gray-400 text-sm">Welcome, {admin.username}</span>
               <Link to="/" className="text-gold hover:text-gold-light text-sm">
                 View Site →
               </Link>
@@ -99,7 +116,7 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        <main className="p-8">
+        <main className="p-4 md:p-8">
           <Outlet />
         </main>
       </div>

@@ -106,7 +106,7 @@ const Layout = () => {
       }}>
 
         {/* ── UTILITY BAR ── */}
-        <div style={{
+        <div className="utility-bar" style={{
           background: 'rgba(0,0,0,0.5)',
           borderBottom: '1px solid rgba(212,175,55,0.07)',
           maxHeight: scrolled ? '0' : '36px',
@@ -181,7 +181,7 @@ const Layout = () => {
         </div>
 
         {/* ── MAIN NAV ── */}
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 32px' }}>
+        <div className="nav-outer" style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 32px' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -325,7 +325,7 @@ const Layout = () => {
 
       {/* ── FOOTER ── */}
       <footer style={{ background: '#080808', borderTop: '1px solid rgba(212,175,55,0.1)', marginTop: '80px' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '56px 32px 28px' }}>
+        <div className="footer-inner" style={{ maxWidth: '1400px', margin: '0 auto', padding: '56px 32px 28px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '48px', marginBottom: '36px' }}>
 
             <div>
@@ -434,6 +434,11 @@ const Layout = () => {
         }
         @media (min-width: 1101px) {
           .mobile-btn { display: none !important; }
+        }
+        @media (max-width: 600px) {
+          .utility-bar { display: none !important; }
+          .nav-outer { padding: 0 16px !important; }
+          .footer-inner { padding: 40px 16px 20px !important; }
         }
       `}</style>
     </div>

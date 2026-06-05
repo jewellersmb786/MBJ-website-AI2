@@ -108,7 +108,7 @@ const ProductDetailPage = () => {
   if (loading) {
     return (
       <div style={pageStyle}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 32px 60px' }}>
+        <div className="pdp-outer" style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 32px 60px' }}>
           <div className="pdp-grid" style={{ display: 'grid', gridTemplateColumns: '60% 40%', gap: '48px' }}>
             <div style={{ aspectRatio: '4/5', background: 'rgba(255,255,255,0.04)', borderRadius: '8px' }} className="skel" />
             <div style={{ paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -157,7 +157,7 @@ const ProductDetailPage = () => {
 
   return (
     <div style={pageStyle} onContextMenu={e => { if (e.target.tagName === 'IMG') e.preventDefault(); }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 32px 80px' }}>
+      <div className="pdp-outer" style={{ maxWidth: '1200px', margin: '0 auto', padding: '100px 32px 80px' }}>
 
         {/* Breadcrumb */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '32px', fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>
@@ -414,7 +414,10 @@ const ProductDetailPage = () => {
       </AnimatePresence>
 
       <style>{`
-        @media (max-width: 768px) { .pdp-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 768px) {
+          .pdp-grid { grid-template-columns: 1fr !important; }
+          .pdp-outer { padding: 80px 16px 48px !important; }
+        }
         ${skelStyle}
       `}</style>
     </div>

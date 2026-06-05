@@ -86,7 +86,7 @@ const WishlistPage = () => {
   // ── Has phone ─────────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f0f', paddingTop: '100px', paddingBottom: '80px' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 clamp(16px, 4vw, 32px)' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '36px', flexWrap: 'wrap', gap: '12px' }}>

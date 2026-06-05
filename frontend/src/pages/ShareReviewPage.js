@@ -148,10 +148,10 @@ const ShareReviewPage = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '20px', padding: '36px 32px' }}>
+          style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '20px', padding: '28px clamp(16px, 5vw, 32px)' }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="review-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>Your Name *</label>
                 <input type="text" name="customer_name" value={form.customer_name} onChange={handleChange}
@@ -193,7 +193,7 @@ const ShareReviewPage = () => {
             </div>
 
             {/* Photo uploads */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="review-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <PhotoUploadField label="Photo of you with the item" value={customerPhoto} setter={setCustomerPhoto} hint="Click to upload" preset={PRESET_AVATAR} />
               <PhotoUploadField label="Photo of the item" value={productImage} setter={setProductImage} hint="Click to upload" preset={PRESET_TESTIMONIAL} />
             </div>
@@ -210,6 +210,7 @@ const ShareReviewPage = () => {
           Reviews are moderated and typically approved within 24 hours.
         </p>
       </div>
+      <style>{`@media (max-width: 500px) { .review-2col { grid-template-columns: 1fr !important; } }`}</style>
     </div>
   );
 };

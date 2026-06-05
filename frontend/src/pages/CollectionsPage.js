@@ -98,6 +98,7 @@ const CollectionsPage = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [expandedAttrs, setExpandedAttrs] = useState({});
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -303,7 +304,7 @@ const CollectionsPage = () => {
     const showSearch = debouncedQuery.length > 0 && !loading;
     return (
       <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff', paddingTop: '100px', paddingBottom: '80px' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 32px' }}>
+        <div className="page-pad" style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 32px' }}>
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <p style={{ fontSize: '10px', letterSpacing: '0.4em', textTransform: 'uppercase', color: 'rgba(212,175,55,0.6)', marginBottom: '12px' }}>Explore</p>
             <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontFamily: 'Georgia, serif', fontWeight: 400, color: '#fff', marginBottom: '16px' }}>Our Collections</h1>
@@ -327,7 +328,7 @@ const CollectionsPage = () => {
                   <p style={{ fontSize: '13px', marginTop: '8px' }}>Try a different search term.</p>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
+                <div className="prod-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
                   {searchResults.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
                 </div>
               )}
@@ -369,6 +370,7 @@ const CollectionsPage = () => {
           .cat-card:hover .cat-media { transform: scale(1.06); }
           .pcard:hover .pcard-img { transform: scale(1.05); }
           @keyframes skelPulse { 0%,100%{opacity:1}50%{opacity:0.45} }
+          @media (max-width: 600px) { .page-pad { padding: 0 16px !important; } }
         `}</style>
       </div>
     );
@@ -379,7 +381,7 @@ const CollectionsPage = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f0f', color: '#fff', paddingTop: '100px', paddingBottom: '80px' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 32px' }}>
+      <div className="page-pad" style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 32px' }}>
 
         {/* Top row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -454,10 +456,28 @@ const CollectionsPage = () => {
           </div>
         )}
 
+        {/* Mobile filter toggle */}
+        <button
+          className="mobile-filter-btn"
+          onClick={() => setFilterDrawerOpen(true)}
+          style={{ display: 'none', alignItems: 'center', gap: '8px', padding: '9px 16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '8px', color: '#D4AF37', fontSize: '13px', cursor: 'pointer', marginBottom: '16px' }}>
+          <Filter size={14} /> Filters {activeChips.length > 0 ? `(${activeChips.length})` : ''}
+        </button>
+
+        {/* Mobile filter overlay */}
+        {filterDrawerOpen && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 50 }} onClick={() => setFilterDrawerOpen(false)} />
+        )}
+
         <div style={{ display: 'flex', gap: '28px', alignItems: 'flex-start' }}>
-          {/* Filter sidebar */}
-          <div style={{ width: '210px', flexShrink: 0, position: 'sticky', top: '88px', overflowX: 'hidden' }}>
+          {/* Filter sidebar — desktop sticky / mobile drawer */}
+          <div className={`filter-sidebar ${filterDrawerOpen ? 'filter-drawer-open' : ''}`}
+            style={{ width: '210px', flexShrink: 0, position: 'sticky', top: '88px', overflowX: 'hidden' }}>
             <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '10px', padding: '18px' }}>
+              <button className="filter-close-btn" onClick={() => setFilterDrawerOpen(false)}
+                style={{ display: 'none', position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '4px' }}>
+                <X size={18} />
+              </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
                 <Filter size={14} color="#D4AF37" />
                 <span style={{ fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#D4AF37', fontWeight: 600 }}>Filters</span>
@@ -526,9 +546,9 @@ const CollectionsPage = () => {
           </div>
 
           {/* Product grid */}
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             {loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
+              <div className="prod-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
                 {[1,2,3,4,5,6].map(i => <div key={i} style={{ aspectRatio: '4/5', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', animation: 'skelPulse 1.5s ease-in-out infinite' }} />)}
               </div>
             ) : displayProducts.length === 0 ? (
@@ -547,7 +567,7 @@ const CollectionsPage = () => {
                   {displayProducts.length} piece{displayProducts.length !== 1 ? 's' : ''}
                   {debouncedQuery ? ` matching "${debouncedQuery}"` : ''}
                 </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
+                <div className="prod-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
                   {displayProducts.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
                 </div>
               </>
@@ -594,6 +614,23 @@ const CollectionsPage = () => {
         .cat-card:hover .cat-media { transform: scale(1.06); }
         .pcard:hover .pcard-img { transform: scale(1.05); }
         @keyframes skelPulse { 0%,100%{opacity:1}50%{opacity:0.45} }
+        @media (max-width: 768px) {
+          .mobile-filter-btn { display: flex !important; }
+          .filter-sidebar {
+            position: fixed !important; top: 0 !important; left: 0 !important;
+            height: 100% !important; width: 280px !important;
+            background: #0f0f0f !important; border-right: 1px solid rgba(212,175,55,0.15) !important;
+            overflow-y: auto !important; z-index: 51 !important;
+            transform: translateX(-100%); transition: transform 0.3s ease;
+            padding: 48px 20px 20px !important;
+          }
+          .filter-drawer-open { transform: translateX(0) !important; }
+          .filter-close-btn { display: flex !important; }
+          .prod-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+        }
+        @media (max-width: 400px) {
+          .prod-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+        }
       `}</style>
     </div>
   );
