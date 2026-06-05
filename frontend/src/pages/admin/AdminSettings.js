@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { adminAPI, categoriesAPI } from '../../api';
+import { adminAPI, categoriesAPI, productsAPI } from '../../api';
 import { Save, TrendingUp, Store, Share2, Image, FileText, Upload, X, Layout, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -42,14 +42,17 @@ const AdminSettings = () => {
       { icon: 'Award', title: 'BIS Hallmarked Gold', description: 'Certified purity and quality on every piece we craft' },
       { icon: 'Shield', title: 'Transparent Pricing', description: 'Live gold rates with detailed price breakdown — no hidden charges' },
     ],
+    hero_slides: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     fetchSettings();
     categoriesAPI.getAll().then(r => setCategories(r.data)).catch(() => {});
+    productsAPI.getAll().then(r => setProducts(r.data || [])).catch(() => {});
   }, []);
 
   const fetchSettings = async () => {
@@ -96,6 +99,65 @@ const AdminSettings = () => {
       arr[idx] = { ...arr[idx], [key]: val };
       return { ...prev, mbj_difference: arr };
     });
+  };
+
+  // ── Hero slide helpers ──────────────────────────────────────────────────
+  const addSlide = (mediaType, mediaData) => {
+    setSettings(prev => ({
+      ...prev,
+      hero_slides: [...(prev.hero_slides || []), {
+        media_type: mediaType,
+        media_data: mediaData,
+        link_type: 'none',
+        link_value: null,
+        display_order: (prev.hero_slides || []).length,
+      }],
+    }));
+  };
+
+  const removeSlide = (idx) => {
+    setSettings(prev => ({ ...prev, hero_slides: (prev.hero_slides || []).filter((_, i) => i !== idx) }));
+  };
+
+  const moveSlide = (idx, dir) => {
+    setSettings(prev => {
+      const arr = [...(prev.hero_slides || [])];
+      const to = idx + dir;
+      if (to < 0 || to >= arr.length) return prev;
+      [arr[idx], arr[to]] = [arr[to], arr[idx]];
+      return { ...prev, hero_slides: arr };
+    });
+  };
+
+  const updateSlide = (idx, key, val) => {
+    setSettings(prev => {
+      const arr = [...(prev.hero_slides || [])];
+      arr[idx] = { ...arr[idx], [key]: val };
+      return { ...prev, hero_slides: arr };
+    });
+  };
+
+  const handleAddSlideImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+      const { compressImage, PRESET_HERO } = await import('../../utils/compressImage');
+      const compressed = await compressImage(file, PRESET_HERO);
+      addSlide('image', compressed);
+    } catch { toast.error('Image upload failed'); }
+  };
+
+  const handleAddSlideVideo = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    if (file.size > 10 * 1024 * 1024) { toast.error('Video must be under 10 MB'); return; }
+    try {
+      const { fileToBase64 } = await import('../../utils/fileToBase64');
+      const b64 = await fileToBase64(file);
+      addSlide('video', b64);
+    } catch { toast.error('Video upload failed'); }
   };
 
   const ImageUploadField = ({ field, label }) => (
@@ -206,9 +268,107 @@ const AdminSettings = () => {
           </p>
         </div>
 
-        {/* ── HERO IMAGE ── */}
+        {/* ── HERO SLIDESHOW ── */}
         <div style={sectionStyle}>
-          {sectionTitle(<Image size={20} />, 'Hero Image', 'The main banner image on the homepage')}
+          {sectionTitle(<Image size={20} />, 'Hero Slideshow', 'Up to 5 slides — mix images and short videos. Recommended: 1920×1080 (16:9).')}
+
+          {/* Slide list */}
+          {(settings.hero_slides || []).length === 0 ? (
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', textAlign: 'center', padding: '16px 0' }}>
+              No slides yet. Add images or videos below.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+              {(settings.hero_slides || []).map((slide, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', padding: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '8px' }}>
+                  {/* Thumbnail */}
+                  <div style={{ width: '90px', height: '56px', flexShrink: 0, borderRadius: '4px', overflow: 'hidden', background: '#111' }}>
+                    {slide.media_type === 'video'
+                      ? <video src={slide.media_data} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <img src={slide.media_data} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    }
+                  </div>
+                  {/* Info + link controls */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '9px', padding: '2px 7px', fontWeight: 700, letterSpacing: '0.1em', borderRadius: '3px', background: slide.media_type === 'video' ? 'rgba(99,102,241,0.2)' : 'rgba(212,175,55,0.15)', color: slide.media_type === 'video' ? '#a5b4fc' : '#D4AF37' }}>
+                        {slide.media_type.toUpperCase()}
+                      </span>
+                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>Slide {idx + 1}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <select value={slide.link_type || 'none'} onChange={e => updateSlide(idx, 'link_type', e.target.value)}
+                        style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', width: 'auto' }}>
+                        <option value="none">No link</option>
+                        <option value="product">Link to product</option>
+                        <option value="category">Link to category</option>
+                        <option value="url">Custom URL</option>
+                      </select>
+                      {slide.link_type === 'product' && (
+                        <select value={slide.link_value || ''} onChange={e => updateSlide(idx, 'link_value', e.target.value)}
+                          style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', flex: 1, minWidth: '160px' }}>
+                          <option value="">— select product —</option>
+                          {products.map(p => <option key={p.id} value={p.id}>{p.name}{p.item_code ? ` (${p.item_code})` : ''}</option>)}
+                        </select>
+                      )}
+                      {slide.link_type === 'category' && (
+                        <select value={slide.link_value || ''} onChange={e => updateSlide(idx, 'link_value', e.target.value)}
+                          style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', flex: 1, minWidth: '160px' }}>
+                          <option value="">— select category —</option>
+                          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      )}
+                      {slide.link_type === 'url' && (
+                        <input type="url" value={slide.link_value || ''} onChange={e => updateSlide(idx, 'link_value', e.target.value)}
+                          placeholder="https://..." style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', flex: 1, minWidth: '160px' }} />
+                      )}
+                    </div>
+                  </div>
+                  {/* Reorder + remove */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+                    <button type="button" onClick={() => moveSlide(idx, -1)} disabled={idx === 0}
+                      style={{ width: '28px', height: '28px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: idx === 0 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.6)', borderRadius: '4px', cursor: idx === 0 ? 'not-allowed' : 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>↑</button>
+                    <button type="button" onClick={() => moveSlide(idx, 1)} disabled={idx === (settings.hero_slides || []).length - 1}
+                      style={{ width: '28px', height: '28px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: idx === (settings.hero_slides || []).length - 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.6)', borderRadius: '4px', cursor: idx === (settings.hero_slides || []).length - 1 ? 'not-allowed' : 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>↓</button>
+                    <button type="button" onClick={() => removeSlide(idx)}
+                      style={{ width: '28px', height: '28px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <X size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add buttons */}
+          {(settings.hero_slides || []).length < 5 ? (
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', border: '1px solid rgba(212,175,55,0.4)', color: '#D4AF37', fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px', background: 'rgba(212,175,55,0.04)', transition: 'background 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.04)'; }}
+              >
+                <Upload size={14} /> + Add Image
+                <input type="file" accept="image/*" onChange={handleAddSlideImage} style={{ display: 'none' }} />
+              </label>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', border: '1px solid rgba(99,102,241,0.4)', color: '#a5b4fc', fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px', background: 'rgba(99,102,241,0.04)', transition: 'background 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.04)'; }}
+              >
+                <Upload size={14} /> + Add Video
+                <input type="file" accept="video/mp4,video/webm" onChange={handleAddSlideVideo} style={{ display: 'none' }} />
+              </label>
+            </div>
+          ) : (
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Maximum 5 slides reached.</p>
+          )}
+          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.22)', marginTop: '12px', lineHeight: 1.6 }}>
+            Max 5 slides. Videos max 10 MB (.mp4, .webm). Images compressed automatically to 1920×1080.
+          </p>
+        </div>
+
+        {/* ── HERO IMAGE (FALLBACK) ── */}
+        <div style={sectionStyle}>
+          {sectionTitle(<Image size={20} />, 'Fallback Hero Image', 'Used only if no slideshow slides are set up above')}
           <div>
             <label style={labelStyle}>Hero Image</label>
             {settings.hero_image_url ? (

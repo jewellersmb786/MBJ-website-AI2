@@ -509,6 +509,7 @@ async def get_public_settings():
         "google_maps_review_url": settings.get("google_maps_review_url"),
         "google_review_rating": settings.get("google_review_rating"),
         "google_review_count": settings.get("google_review_count"),
+        "hero_slides": settings.get("hero_slides", []),
     }
 
 # ============================================================================
@@ -846,7 +847,7 @@ async def get_settings(admin = Depends(get_current_admin)):
 @api_router.put("/admin/settings")
 async def update_settings(updates: SettingsUpdate, admin = Depends(get_current_admin)):
     """Update settings"""
-    update_data = {k: v for k, v in updates.model_dump().items() if v is not None}
+    update_data = {k: v for k, v in updates.model_dump().items() if v is not None or k == 'hero_slides'}
     update_data['updated_at'] = datetime.utcnow()
     
     # If any gold rate is updated, update rates_updated_at

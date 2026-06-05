@@ -300,6 +300,14 @@ class PriceResult(BaseModel):
     gold_rate_used: float
     purity: str
 
+# Hero Slide sub-model
+class HeroSlide(BaseModel):
+    media_type: str  # "image" or "video"
+    media_data: str  # base64 data URL
+    link_type: Optional[str] = "none"  # "none" | "product" | "category" | "url"
+    link_value: Optional[str] = None
+    display_order: int = 0
+
 # Settings Models
 class Settings(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -307,6 +315,7 @@ class Settings(BaseModel):
     id: str = "site_settings"
     logo_url: Optional[str] = None
     hero_image_url: Optional[str] = None
+    hero_slides: List[HeroSlide] = []
     business_name: str = "Jewellers MB"
     tagline: str = "Exquisite South Indian Nakshi & Antique Jewellery"
     email: str = "jewellersmb786@gmail.com"
@@ -350,6 +359,7 @@ class Settings(BaseModel):
 class SettingsUpdate(BaseModel):
     logo_url: Optional[str] = None
     hero_image_url: Optional[str] = None
+    hero_slides: Optional[List[HeroSlide]] = None
     business_name: Optional[str] = None
     tagline: Optional[str] = None
     email: Optional[str] = None
