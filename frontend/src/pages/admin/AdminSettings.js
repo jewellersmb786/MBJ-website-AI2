@@ -38,6 +38,8 @@ const AdminSettings = () => {
     google_maps_review_url: '',
     google_review_rating: '',
     google_review_count: '',
+    logo: '',
+    website: '',
     mbj_difference: [
       { icon: 'Sparkles', title: 'Authentic Nakshi Work', description: 'Traditional handcrafted Nakshi jewellery with intricate embossed detailing' },
       { icon: 'Award', title: 'BIS Hallmarked Gold', description: 'Certified purity and quality on every piece we craft' },
@@ -630,6 +632,50 @@ const AdminSettings = () => {
         {/* ── BUSINESS INFO ── */}
         <div style={sectionStyle}>
           {sectionTitle(<Store size={20} />, 'Business Information', '')}
+          {/* Business Logo */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={labelStyle}>Business Logo</label>
+            {settings.logo ? (
+              <div>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img src={settings.logo} alt="Business logo" style={{ height: '100px', width: 'auto', objectFit: 'contain', borderRadius: '6px', border: '1px solid rgba(212,175,55,0.25)', display: 'block', background: 'rgba(255,255,255,0.05)' }} />
+                  <button type="button" onClick={() => setSettings(prev => ({ ...prev, logo: '' }))}
+                    style={{ position: 'absolute', top: '-8px', right: '-8px', width: '22px', height: '22px', borderRadius: '50%', background: '#ef4444', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <X size={13} />
+                  </button>
+                </div>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '12px', color: 'rgba(212,175,55,0.7)', cursor: 'pointer', textDecoration: 'underline' }}>
+                  <Upload size={13} /> Replace
+                  <input type="file" accept="image/*" onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    try {
+                      const { compressImage, PRESET_AVATAR } = await import('../../utils/compressImage');
+                      const compressed = await compressImage(file, PRESET_AVATAR);
+                      setSettings(prev => ({ ...prev, logo: compressed }));
+                    } catch { toast.error('Logo upload failed'); }
+                  }} style={{ display: 'none' }} />
+                </label>
+              </div>
+            ) : (
+              <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '90px', border: '2px dashed rgba(212,175,55,0.3)', borderRadius: '8px', cursor: 'pointer', background: 'rgba(212,175,55,0.02)' }}>
+                <Upload size={18} color="rgba(212,175,55,0.45)" style={{ marginBottom: '6px' }} />
+                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Click to upload logo</span>
+                <input type="file" accept="image/*" onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  try {
+                    const { compressImage, PRESET_AVATAR } = await import('../../utils/compressImage');
+                    const compressed = await compressImage(file, PRESET_AVATAR);
+                    setSettings(prev => ({ ...prev, logo: compressed }));
+                  } catch { toast.error('Logo upload failed'); }
+                }} style={{ display: 'none' }} />
+              </label>
+            )}
+            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '6px' }}>
+              Recommended: 400×400 px, transparent PNG or white background. Auto-compressed on upload.
+            </p>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {[
               { key: 'business_name', label: 'Business Name', type: 'text' },
@@ -637,6 +683,7 @@ const AdminSettings = () => {
               { key: 'email', label: 'Email', type: 'email' },
               { key: 'phone', label: 'Phone', type: 'tel' },
               { key: 'whatsapp', label: 'WhatsApp Number', type: 'tel' },
+              { key: 'website', label: 'Website URL', type: 'url' },
               { key: 'address', label: 'Address', type: 'text' },
             ].map(({ key, label, type }) => (
               <div key={key}>

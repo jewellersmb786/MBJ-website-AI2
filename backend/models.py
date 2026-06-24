@@ -355,6 +355,8 @@ class Settings(BaseModel):
     google_maps_review_url: Optional[str] = None
     google_review_rating: Optional[float] = None
     google_review_count: Optional[int] = None
+    logo: Optional[str] = None
+    website: Optional[str] = None
     rates_updated_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -401,6 +403,8 @@ class SettingsUpdate(BaseModel):
     google_maps_review_url: Optional[str] = None
     google_review_rating: Optional[float] = None
     google_review_count: Optional[int] = None
+    logo: Optional[str] = None
+    website: Optional[str] = None
 
 # Testimonial Models
 class Testimonial(BaseModel):
