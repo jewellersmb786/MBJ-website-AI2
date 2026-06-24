@@ -107,7 +107,6 @@ const HomePage = () => {
     setLightbox({ photos, idx: Math.min(photoIdx, photos.length - 1), testimonial: t });
   };
 
-  const isMobile = window.innerWidth <= 640;
   const bannerImg = festivalBanner ? ((isMobile && festivalBanner.image_mobile) ? festivalBanner.image_mobile : festivalBanner.image) : null;
 
   return (
