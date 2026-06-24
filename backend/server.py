@@ -510,6 +510,8 @@ async def get_public_settings():
         "google_review_rating": settings.get("google_review_rating"),
         "google_review_count": settings.get("google_review_count"),
         "hero_slides": settings.get("hero_slides", []),
+        "hero_slides_mobile": settings.get("hero_slides_mobile", []),
+        "silver_rate": settings.get("silver_rate"),
     }
 
 # ============================================================================

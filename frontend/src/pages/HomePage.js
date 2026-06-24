@@ -42,9 +42,18 @@ const HomePage = () => {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [lightbox, setLightbox] = useState(null); // { photos: [{src,label}], idx, testimonial }
+  const [isMobile, setIsMobile] = useState(false);
   const touchStart = useRef(null);
   const touchEnd = useRef(null);
   const intervalRef = useRef(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mq.matches);
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     settingsAPI.getPublic().then(r => setSettings(r.data)).catch(() => {});
@@ -132,7 +141,11 @@ const HomePage = () => {
       {/* ══════════════════════
           HERO SLIDESHOW
       ══════════════════════ */}
-      <HeroSlideshow settings={settings} />
+      <HeroSlideshow settings={settings} slides={
+        isMobile
+          ? (settings?.hero_slides_mobile?.length > 0 ? settings.hero_slides_mobile : settings?.hero_slides)
+          : (settings?.hero_slides?.length > 0 ? settings.hero_slides : settings?.hero_slides_mobile)
+      } />
 
       {/* ══════════════════════
           OUR SPECIALITIES

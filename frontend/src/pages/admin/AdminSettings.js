@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI, categoriesAPI, productsAPI } from '../../api';
-import { Save, TrendingUp, Store, Share2, Image, FileText, Upload, X, Layout, Star } from 'lucide-react';
+import { Save, TrendingUp, Store, Share2, Image, FileText, Upload, X, Layout, Star, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import RateCardModal from '../../components/RateCardModal';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState({
@@ -43,9 +44,12 @@ const AdminSettings = () => {
       { icon: 'Shield', title: 'Transparent Pricing', description: 'Live gold rates with detailed price breakdown — no hidden charges' },
     ],
     hero_slides: [],
+    hero_slides_mobile: [],
+    silver_rate: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showRateCard, setShowRateCard] = useState(false);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
 
@@ -68,7 +72,7 @@ const AdminSettings = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const isNum = ['k24_rate','k22_rate','k18_rate','gst_percent','advance_payment_percent','google_review_rating','google_review_count'].includes(name);
+    const isNum = ['k24_rate','k22_rate','k18_rate','silver_rate','gst_percent','advance_payment_percent','google_review_rating','google_review_count'].includes(name);
     setSettings(prev => ({ ...prev, [name]: isNum ? (parseFloat(value) || '') : value }));
   };
 
@@ -160,6 +164,65 @@ const AdminSettings = () => {
     } catch { toast.error('Video upload failed'); }
   };
 
+  // ── Mobile hero slide helpers ──────────────────────────────────────────
+  const addMobileSlide = (mediaType, mediaData) => {
+    setSettings(prev => ({
+      ...prev,
+      hero_slides_mobile: [...(prev.hero_slides_mobile || []), {
+        media_type: mediaType,
+        media_data: mediaData,
+        link_type: 'none',
+        link_value: null,
+        display_order: (prev.hero_slides_mobile || []).length,
+      }],
+    }));
+  };
+
+  const removeMobileSlide = (idx) => {
+    setSettings(prev => ({ ...prev, hero_slides_mobile: (prev.hero_slides_mobile || []).filter((_, i) => i !== idx) }));
+  };
+
+  const moveMobileSlide = (idx, dir) => {
+    setSettings(prev => {
+      const arr = [...(prev.hero_slides_mobile || [])];
+      const to = idx + dir;
+      if (to < 0 || to >= arr.length) return prev;
+      [arr[idx], arr[to]] = [arr[to], arr[idx]];
+      return { ...prev, hero_slides_mobile: arr };
+    });
+  };
+
+  const updateMobileSlide = (idx, key, val) => {
+    setSettings(prev => {
+      const arr = [...(prev.hero_slides_mobile || [])];
+      arr[idx] = { ...arr[idx], [key]: val };
+      return { ...prev, hero_slides_mobile: arr };
+    });
+  };
+
+  const handleAddMobileSlideImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+      const { compressImage, PRESET_HERO } = await import('../../utils/compressImage');
+      const compressed = await compressImage(file, { ...PRESET_HERO, maxWidth: 1080, maxHeight: 1920 });
+      addMobileSlide('image', compressed);
+    } catch { toast.error('Image upload failed'); }
+  };
+
+  const handleAddMobileSlideVideo = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    if (file.size > 10 * 1024 * 1024) { toast.error('Video must be under 10 MB'); return; }
+    try {
+      const { fileToBase64 } = await import('../../utils/fileToBase64');
+      const b64 = await fileToBase64(file);
+      addMobileSlide('video', b64);
+    } catch { toast.error('Video upload failed'); }
+  };
+
   const ImageUploadField = ({ field, label }) => (
     <div>
       <label style={labelStyle}>{label}</label>
@@ -246,31 +309,41 @@ const AdminSettings = () => {
         {/* ── GOLD RATES ── */}
         <div style={{ ...sectionStyle, border: '1px solid rgba(212,175,55,0.5)', background: 'rgba(212,175,55,0.04)' }}>
           {sectionTitle(<TrendingUp size={22} />, 'Gold Rates', 'Update daily — these rates are used everywhere on the website and in the calculator')}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
             {[
               { key: 'k24_rate', label: '24K Rate (₹/gram)' },
               { key: 'k22_rate', label: '22K Rate (₹/gram) — used in calculator' },
               { key: 'k18_rate', label: '18K Rate (₹/gram)' },
+              { key: 'silver_rate', label: 'Silver Rate (per gram, INR)' },
             ].map(({ key, label }) => (
               <div key={key}>
                 <label style={labelStyle}>{label}</label>
                 <input
                   type="number" name={key}
-                  value={settings[key]} onChange={handleChange}
+                  value={settings[key] || ''} onChange={handleChange}
                   step="0.01" min="0"
                   style={{ ...inputStyle, color: '#D4AF37', fontSize: '18px', fontWeight: 600 }}
                 />
               </div>
             ))}
           </div>
-          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '12px', textAlign: 'center' }}>
-            Rates are saved permanently until you change them again
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '16px' }}>
+            <button type="button" onClick={() => setShowRateCard(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.4)', color: '#D4AF37', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'background 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(212,175,55,0.18)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(212,175,55,0.1)'}
+            >
+              <Sparkles size={15} /> Generate Rate Card for Today
+            </button>
+            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', margin: 0 }}>
+              Rates are saved permanently until you change them again
+            </p>
+          </div>
         </div>
 
         {/* ── HERO SLIDESHOW ── */}
         <div style={sectionStyle}>
-          {sectionTitle(<Image size={20} />, 'Hero Slideshow', 'Up to 5 slides — mix images and short videos. Recommended: 1920×1080 (16:9).')}
+          {sectionTitle(<Image size={20} />, 'Desktop Hero Slideshow (16:9 horizontal)', 'Up to 5 slides — mix images and short videos. Recommended: 1920×1080 (16:9).')}
 
           {/* Slide list */}
           {(settings.hero_slides || []).length === 0 ? (
@@ -363,6 +436,99 @@ const AdminSettings = () => {
           )}
           <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.22)', marginTop: '12px', lineHeight: 1.6 }}>
             Max 5 slides. Videos max 10 MB (.mp4, .webm). Images compressed automatically to 1920×1080.
+          </p>
+        </div>
+
+        {/* ── MOBILE HERO SLIDESHOW ── */}
+        <div style={sectionStyle}>
+          {sectionTitle(<Image size={20} />, 'Mobile Hero Slideshow (9:16 vertical)', 'Recommended: 1080×1920 (9:16 aspect ratio). These will only show on phones/tablets.')}
+
+          {(settings.hero_slides_mobile || []).length === 0 ? (
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', textAlign: 'center', padding: '16px 0' }}>
+              No mobile slides yet. If empty, desktop slides will be used on mobile as fallback.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+              {(settings.hero_slides_mobile || []).map((slide, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', padding: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: '8px' }}>
+                  <div style={{ width: '50px', height: '90px', flexShrink: 0, borderRadius: '4px', overflow: 'hidden', background: '#111' }}>
+                    {slide.media_type === 'video'
+                      ? <video src={slide.media_data} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <img src={slide.media_data} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    }
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '9px', padding: '2px 7px', fontWeight: 700, letterSpacing: '0.1em', borderRadius: '3px', background: slide.media_type === 'video' ? 'rgba(99,102,241,0.2)' : 'rgba(212,175,55,0.15)', color: slide.media_type === 'video' ? '#a5b4fc' : '#D4AF37' }}>
+                        {slide.media_type.toUpperCase()}
+                      </span>
+                      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>Mobile Slide {idx + 1}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <select value={slide.link_type || 'none'} onChange={e => updateMobileSlide(idx, 'link_type', e.target.value)}
+                        style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', width: 'auto' }}>
+                        <option value="none">No link</option>
+                        <option value="product">Link to product</option>
+                        <option value="category">Link to category</option>
+                        <option value="url">Custom URL</option>
+                      </select>
+                      {slide.link_type === 'product' && (
+                        <select value={slide.link_value || ''} onChange={e => updateMobileSlide(idx, 'link_value', e.target.value)}
+                          style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', flex: 1, minWidth: '160px' }}>
+                          <option value="">— select product —</option>
+                          {products.map(p => <option key={p.id} value={p.id}>{p.name}{p.item_code ? ` (${p.item_code})` : ''}</option>)}
+                        </select>
+                      )}
+                      {slide.link_type === 'category' && (
+                        <select value={slide.link_value || ''} onChange={e => updateMobileSlide(idx, 'link_value', e.target.value)}
+                          style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', flex: 1, minWidth: '160px' }}>
+                          <option value="">— select category —</option>
+                          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      )}
+                      {slide.link_type === 'url' && (
+                        <input type="url" value={slide.link_value || ''} onChange={e => updateMobileSlide(idx, 'link_value', e.target.value)}
+                          placeholder="https://..." style={{ ...inputStyle, fontSize: '12px', padding: '6px 10px', flex: 1, minWidth: '160px' }} />
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flexShrink: 0 }}>
+                    <button type="button" onClick={() => moveMobileSlide(idx, -1)} disabled={idx === 0}
+                      style={{ width: '28px', height: '28px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: idx === 0 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.6)', borderRadius: '4px', cursor: idx === 0 ? 'not-allowed' : 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>↑</button>
+                    <button type="button" onClick={() => moveMobileSlide(idx, 1)} disabled={idx === (settings.hero_slides_mobile || []).length - 1}
+                      style={{ width: '28px', height: '28px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: idx === (settings.hero_slides_mobile || []).length - 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.6)', borderRadius: '4px', cursor: idx === (settings.hero_slides_mobile || []).length - 1 ? 'not-allowed' : 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>↓</button>
+                    <button type="button" onClick={() => removeMobileSlide(idx)}
+                      style={{ width: '28px', height: '28px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <X size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(settings.hero_slides_mobile || []).length < 5 ? (
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', border: '1px solid rgba(212,175,55,0.4)', color: '#D4AF37', fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px', background: 'rgba(212,175,55,0.04)', transition: 'background 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(212,175,55,0.04)'; }}
+              >
+                <Upload size={14} /> + Add Image
+                <input type="file" accept="image/*" onChange={handleAddMobileSlideImage} style={{ display: 'none' }} />
+              </label>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', border: '1px solid rgba(99,102,241,0.4)', color: '#a5b4fc', fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: '4px', background: 'rgba(99,102,241,0.04)', transition: 'background 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.04)'; }}
+              >
+                <Upload size={14} /> + Add Video
+                <input type="file" accept="video/mp4,video/webm" onChange={handleAddMobileSlideVideo} style={{ display: 'none' }} />
+              </label>
+            </div>
+          ) : (
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>Maximum 5 slides reached.</p>
+          )}
+          <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.22)', marginTop: '12px', lineHeight: 1.6 }}>
+            Max 5 slides. Videos max 10 MB (.mp4, .webm). Images compressed automatically. If empty, desktop slides are shown on mobile.
           </p>
         </div>
 
@@ -655,6 +821,8 @@ const AdminSettings = () => {
           {saving ? 'Saving...' : 'Save All Settings'}
         </button>
       </form>
+
+      {showRateCard && <RateCardModal settings={settings} onClose={() => setShowRateCard(false)} />}
     </div>
   );
 };

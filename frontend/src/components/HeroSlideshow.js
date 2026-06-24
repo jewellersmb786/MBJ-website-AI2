@@ -2,14 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
-const HeroSlideshow = ({ settings }) => {
+const HeroSlideshow = ({ settings, slides: slidesProp }) => {
   const navigate = useNavigate();
-  const slides = settings?.hero_slides?.length > 0 ? settings.hero_slides : null;
+  const slides = slidesProp && slidesProp.length > 0 ? slidesProp : null;
   const [current, setCurrent] = useState(0);
   const videoRefs = useRef([]);
   const timerRef = useRef(null);
 
-  // Auto-advance timer for image slides in a multi-slide show
   useEffect(() => {
     if (!slides || slides.length <= 1) return;
     const slide = slides[current];
@@ -21,7 +20,6 @@ const HeroSlideshow = ({ settings }) => {
     return () => clearTimeout(timerRef.current);
   }, [current, slides]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync video playback when active slide changes
   useEffect(() => {
     videoRefs.current.forEach((ref, i) => {
       if (!ref) return;
@@ -112,7 +110,6 @@ const HeroSlideshow = ({ settings }) => {
     background: '#1a0710',
   };
 
-  // No media — dark bg with text only
   if (!slides && !settings?.hero_image_url) {
     return (
       <section style={containerStyle}>
@@ -121,7 +118,6 @@ const HeroSlideshow = ({ settings }) => {
     );
   }
 
-  // Backward-compat: single fallback image
   if (!slides) {
     return (
       <section style={containerStyle}>
@@ -136,7 +132,6 @@ const HeroSlideshow = ({ settings }) => {
     );
   }
 
-  // Slideshow
   const isSingleVideo = slides.length === 1 && slides[0].media_type === 'video';
 
   return (

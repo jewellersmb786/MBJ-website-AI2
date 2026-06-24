@@ -316,6 +316,7 @@ class Settings(BaseModel):
     logo_url: Optional[str] = None
     hero_image_url: Optional[str] = None
     hero_slides: List[HeroSlide] = []
+    hero_slides_mobile: List[HeroSlide] = []
     business_name: str = "Jewellers MB"
     tagline: str = "Exquisite South Indian Nakshi & Antique Jewellery"
     email: str = "jewellersmb786@gmail.com"
@@ -333,6 +334,7 @@ class Settings(BaseModel):
     k24_rate: float = 15093.0
     k22_rate: float = 13835.0
     k18_rate: float = 11320.0
+    silver_rate: Optional[float] = None
     current_gold_rate: float = 13835.0
     razorpay_key_id: Optional[str] = None
     razorpay_key_secret: Optional[str] = None
@@ -360,6 +362,7 @@ class SettingsUpdate(BaseModel):
     logo_url: Optional[str] = None
     hero_image_url: Optional[str] = None
     hero_slides: Optional[List[HeroSlide]] = None
+    hero_slides_mobile: Optional[List[HeroSlide]] = None
     business_name: Optional[str] = None
     tagline: Optional[str] = None
     email: Optional[str] = None
@@ -377,6 +380,7 @@ class SettingsUpdate(BaseModel):
     k24_rate: Optional[float] = None
     k22_rate: Optional[float] = None
     k18_rate: Optional[float] = None
+    silver_rate: Optional[float] = None
     current_gold_rate: Optional[float] = None
     razorpay_key_id: Optional[str] = None
     razorpay_key_secret: Optional[str] = None

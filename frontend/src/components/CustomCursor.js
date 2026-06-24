@@ -1,10 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 
 const CustomCursor = () => {
   const cursorRef = useRef(null);
   const dotRef = useRef(null);
+  const isTouch = useMemo(() => 'ontouchstart' in window || navigator.maxTouchPoints > 0, []);
 
   useEffect(() => {
+    if (isTouch) return;
+
     let mouseX = 0, mouseY = 0;
     let cursorX = 0, cursorY = 0;
     let animating = true;
@@ -55,11 +58,12 @@ const CustomCursor = () => {
       document.removeEventListener('mouseover', onMouseOver);
       document.removeEventListener('mouseout', onMouseOut);
     };
-  }, []);
+  }, [isTouch]);
+
+  if (isTouch) return null;
 
   return (
     <>
-      {/* Outer ring - follows with lag */}
       <div
         ref={cursorRef}
         style={{
@@ -76,7 +80,6 @@ const CustomCursor = () => {
           willChange: 'transform',
         }}
       />
-      {/* Inner dot - follows instantly */}
       <div
         ref={dotRef}
         style={{

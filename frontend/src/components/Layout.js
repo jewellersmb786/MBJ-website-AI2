@@ -88,10 +88,10 @@ const Layout = () => {
     return Number(n).toLocaleString('en-IN');
   };
 
-  // Logo sizing
   const logoW = scrolled ? 40 : (isHome ? 140 : 70);
-  // Clip bottom 38% when scrolled to hide JEWELLERS text
   const logoClip = scrolled ? 'inset(0 0 38% 0)' : 'none';
+
+  const rateStripContent = settings ? `24K ₹${fmtRate(settings.k24_rate)}/g  •  22K ₹${fmtRate(settings.k22_rate)}/g  •  18K ₹${fmtRate(settings.k18_rate)}/g${settings.silver_rate ? `  •  Silver ₹${fmtRate(settings.silver_rate)}/g` : ''}  •  Updated ${formatDate(settings.rates_updated_at)}  •  ` : '';
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f0f' }}>
@@ -105,8 +105,8 @@ const Layout = () => {
         transition: 'background 0.4s, box-shadow 0.4s',
       }}>
 
-        {/* ── UTILITY BAR ── */}
-        <div className="utility-bar" style={{
+        {/* ── UTILITY BAR (desktop) ── */}
+        <div className="utility-bar-desktop" style={{
           background: 'rgba(0,0,0,0.5)',
           borderBottom: '1px solid rgba(212,175,55,0.07)',
           maxHeight: scrolled ? '0' : '36px',
@@ -118,7 +118,7 @@ const Layout = () => {
             maxWidth: '1400px', margin: '0 auto', padding: '0 32px',
             height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            {/* Gold rates — from settings (same source as calculator) */}
+            {/* Gold rates */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: '12px',
               fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
@@ -180,6 +180,40 @@ const Layout = () => {
           </div>
         </div>
 
+        {/* ── MOBILE RATE STRIP (marquee) ── */}
+        {settings && (
+          <div className="mobile-rate-strip" style={{
+            background: '#1a0710',
+            borderBottom: '1px solid rgba(212,175,55,0.15)',
+            height: '34px',
+            overflow: 'hidden',
+            display: 'none',
+          }}>
+            <div className="rate-marquee" style={{
+              display: 'flex',
+              alignItems: 'center',
+              height: '100%',
+              width: 'max-content',
+              whiteSpace: 'nowrap',
+            }}>
+              <span style={{
+                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                fontVariantNumeric: 'tabular-nums',
+                fontSize: '11px', letterSpacing: '0.06em',
+                color: 'rgba(212,175,55,0.8)',
+                paddingRight: '40px',
+              }}>{rateStripContent}</span>
+              <span style={{
+                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                fontVariantNumeric: 'tabular-nums',
+                fontSize: '11px', letterSpacing: '0.06em',
+                color: 'rgba(212,175,55,0.8)',
+                paddingRight: '40px',
+              }}>{rateStripContent}</span>
+            </div>
+          </div>
+        )}
+
         {/* ── MAIN NAV ── */}
         <div className="nav-outer" style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 32px' }}>
           <div style={{
@@ -206,7 +240,7 @@ const Layout = () => {
               />
             </Link>
 
-            {/* NAV LINKS — equal flex boxes, vertically centered, no underline */}
+            {/* NAV LINKS */}
             <nav style={{
               display: 'flex',
               alignItems: 'stretch',
@@ -217,7 +251,6 @@ const Layout = () => {
                 const act = isActive(to);
                 const isCollections = to === '/collections';
 
-                // Featured subcategories for hover dropdown
                 const featuredSubs = isCollections
                   ? allCategories.filter(c => c.parent_id && c.is_featured_in_nav).slice(0, 8)
                   : [];
@@ -417,15 +450,31 @@ const Layout = () => {
       )}
 
       {/* ── FLOATING WHATSAPP ── */}
-      <a
-        href={`https://wa.me/${settings?.whatsapp?.replace(/[^0-9]/g,'')||'917019539776'}?text=Hi!`}
-        target="_blank" rel="noopener noreferrer"
-        style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 40, width: '50px', height: '50px', borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(34,197,94,0.4)', textDecoration: 'none', transition: 'transform 0.2s' }}
-        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-      >
-        <MessageCircle size={22} color="white" />
-      </a>
+      {settings?.whatsapp && (
+        <a
+          href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g,'')}?text=Hi!`}
+          target="_blank" rel="noopener noreferrer"
+          className="floating-whatsapp"
+          style={{
+            position: 'fixed', bottom: '16px', right: '16px', zIndex: 50,
+            width: '56px', height: '56px', borderRadius: '50%',
+            background: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 16px rgba(37,211,102,0.4)',
+            textDecoration: 'none', transition: 'transform 0.2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          <MessageCircle size={28} color="white" />
+          <span className="whatsapp-tooltip" style={{
+            position: 'absolute', right: '66px', top: '50%', transform: 'translateY(-50%)',
+            background: '#fff', color: '#333', fontSize: '12px', fontWeight: 500,
+            padding: '6px 12px', borderRadius: '6px', whiteSpace: 'nowrap',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            opacity: 0, pointerEvents: 'none', transition: 'opacity 0.2s',
+          }}>Chat with us</span>
+        </a>
+      )}
 
       <style>{`
         @media (max-width: 1100px) {
@@ -436,9 +485,26 @@ const Layout = () => {
           .mobile-btn { display: none !important; }
         }
         @media (max-width: 600px) {
-          .utility-bar { display: none !important; }
+          .utility-bar-desktop { display: none !important; }
+          .mobile-rate-strip { display: block !important; }
           .nav-outer { padding: 0 16px !important; }
           .footer-inner { padding: 40px 16px 20px !important; }
+        }
+        @media (min-width: 601px) {
+          .mobile-rate-strip { display: none !important; }
+        }
+        .floating-whatsapp:hover .whatsapp-tooltip {
+          opacity: 1 !important;
+        }
+        @media (max-width: 768px) {
+          .whatsapp-tooltip { display: none !important; }
+        }
+        @keyframes scroll-left {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        .rate-marquee {
+          animation: scroll-left 30s linear infinite;
         }
       `}</style>
     </div>
